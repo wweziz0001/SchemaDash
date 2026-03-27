@@ -8,7 +8,7 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Note } from '@/lib/domain/note';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useTranslation } from 'react-i18next';
 import { ColorPicker } from '@/components/color-picker/color-picker';
 import {

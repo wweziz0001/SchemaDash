@@ -6,8 +6,8 @@ import type {
     AuditRecord,
     CanonicalSchema,
     ChangePlan,
-} from '@chartdb/schema-sync-core';
-import { hashCanonicalSchema } from '@chartdb/schema-sync-core';
+} from '@schemadash/schema-sync-core';
+import { hashCanonicalSchema } from '@schemadash/schema-sync-core';
 import { MetadataRepository } from '../repositories/metadata-repository.js';
 
 const introspectPostgresSchemaMock = vi.fn();

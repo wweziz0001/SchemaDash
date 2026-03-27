@@ -19,7 +19,7 @@ import {
     SelectValue,
 } from '@/components/select/select';
 import { Textarea } from '@/components/textarea/textarea';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useConfig } from '@/hooks/use-config';
 import { useDialog } from '@/hooks/use-dialog';
 import { useStorage } from '@/hooks/use-storage';

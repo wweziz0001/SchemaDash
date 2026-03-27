@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useReactFlow, useViewport } from '@xyflow/react';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 
 interface LivePresenceCursorsProps {
     containerRef: React.RefObject<HTMLDivElement | null>;

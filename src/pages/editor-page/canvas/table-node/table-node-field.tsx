@@ -21,7 +21,7 @@ import {
     Pencil,
 } from 'lucide-react';
 import { generateDBFieldSuffix, type DBField } from '@/lib/domain/db-field';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { cn } from '@/lib/utils';
 import {
     Tooltip,

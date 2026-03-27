@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { Button } from '@/components/button/button';
 import { X, Plus } from 'lucide-react';
 import { Input } from '@/components/input/input';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { EmptyState } from '@/components/empty-state/empty-state';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { useTranslation } from 'react-i18next';

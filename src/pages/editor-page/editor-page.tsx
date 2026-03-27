@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useDialog } from '@/hooks/use-dialog';
 import { Toaster } from '@/components/toast/toaster';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
@@ -10,7 +10,7 @@ import { LocalConfigProvider } from '@/context/local-config-context/local-config
 import { StorageProvider } from '@/context/storage-context/storage-provider';
 import { ConfigProvider } from '@/context/config-context/config-provider';
 import { RedoUndoStackProvider } from '@/context/history-context/redo-undo-stack-provider';
-import { SchemaDashProvider } from '@/context/chartdb-context/chartdb-provider';
+import { SchemaDashProvider } from '@/context/schemadash-context/schemadash-provider';
 import { HistoryProvider } from '@/context/history-context/history-provider';
 import { ThemeProvider } from '@/context/theme-context/theme-provider';
 import { ReactFlowProvider } from '@xyflow/react';

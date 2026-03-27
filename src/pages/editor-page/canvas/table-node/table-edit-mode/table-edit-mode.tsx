@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { Button } from '@/components/button/button';
 import { ColorPicker } from '@/components/color-picker/color-picker';
 import { Separator } from '@/components/separator/separator';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useUpdateTable } from '@/hooks/use-update-table';
 import { useTranslation } from 'react-i18next';
 import { useLayout } from '@/hooks/use-layout';

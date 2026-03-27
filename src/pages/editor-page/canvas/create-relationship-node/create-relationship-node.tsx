@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NodeProps, Node } from '@xyflow/react';
 import { Button } from '@/components/button/button';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import type { SelectBoxOption } from '@/components/select-box/select-box';
 import { SelectBox } from '@/components/select-box/select-box';
 import { areFieldTypesCompatible } from '@/lib/data/data-types/data-types';

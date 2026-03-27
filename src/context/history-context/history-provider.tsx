@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { historyContext } from './history-context';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useRedoUndoStack } from '@/hooks/use-redo-undo-stack';
 import type { RedoUndoActionHandlers } from './redo-undo-action';
 

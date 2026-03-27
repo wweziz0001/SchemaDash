@@ -11,7 +11,7 @@ import { Separator } from '@/components/separator/separator';
 import { Label } from '@/components/label/label';
 import { Textarea } from '@/components/textarea/textarea';
 import { useTranslation } from 'react-i18next';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { validateCheckConstraintWithDetails } from '@/lib/check-constraints/check-constraints-validator';
 
 export interface TableCheckConstraintProps {

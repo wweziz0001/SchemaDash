@@ -3,7 +3,7 @@ import { Button } from '@/components/button/button';
 import { StickyNote, X } from 'lucide-react';
 import { Input } from '@/components/input/input';
 import type { Note } from '@/lib/domain/note';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useLayout } from '@/hooks/use-layout';
 import { EmptyState } from '@/components/empty-state/empty-state';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';

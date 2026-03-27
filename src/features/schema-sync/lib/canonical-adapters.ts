@@ -6,7 +6,7 @@ import {
     type CanonicalForeignKey,
     type CanonicalSchema,
     type CanonicalTable,
-} from '@chartdb/schema-sync-core';
+} from '@schemadash/schema-sync-core';
 import { DatabaseType } from '@/lib/domain/database-type';
 import type {
     Diagram,

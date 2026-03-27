@@ -6,7 +6,7 @@ import React, {
     useRef,
 } from 'react';
 import { useDebounceFn } from 'ahooks';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useTheme } from '@/hooks/use-theme';
 import { CodeSnippet } from '@/components/code-snippet/code-snippet';
 import type { EffectiveTheme } from '@/context/theme-context/theme-context';

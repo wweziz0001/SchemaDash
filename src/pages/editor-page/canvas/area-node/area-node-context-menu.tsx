@@ -5,7 +5,7 @@ import {
     ContextMenuTrigger,
 } from '@/components/context-menu/context-menu';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import type { Area } from '@/lib/domain/area';
 import { Pencil, Trash2 } from 'lucide-react';
 import React, { useCallback } from 'react';

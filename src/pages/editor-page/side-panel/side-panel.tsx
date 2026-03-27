@@ -11,7 +11,7 @@ import { TablesSection } from './tables-section/tables-section';
 import { useLayout } from '@/hooks/use-layout';
 import type { SidebarSection } from '@/context/layout-context/layout-context';
 import { useTranslation } from 'react-i18next';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { CustomTypesSection } from './custom-types-section/custom-types-section';
 import { supportsCustomTypes } from '@/lib/domain/database-capabilities';

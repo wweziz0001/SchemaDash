@@ -4,7 +4,7 @@ import type {
     ConnectionTestResponse,
     ConnectionUpsert,
     DatabaseConnectionSecret,
-} from '@chartdb/schema-sync-core';
+} from '@schemadash/schema-sync-core';
 import { decryptJson, encryptJson } from '../security/encryption.js';
 import type { MetadataRepository } from '../repositories/metadata-repository.js';
 import { generateId } from '../utils/id.js';

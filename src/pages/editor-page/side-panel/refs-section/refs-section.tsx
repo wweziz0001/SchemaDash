@@ -3,7 +3,7 @@ import { Button } from '@/components/button/button';
 import { ListCollapse, Workflow } from 'lucide-react';
 import { Input } from '@/components/input/input';
 import { RefsList } from './refs-list/refs-list';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import type { DBRelationship } from '@/lib/domain/db-relationship';
 import type { DBDependency } from '@/lib/domain/db-dependency';
 import { useLayout } from '@/hooks/use-layout';

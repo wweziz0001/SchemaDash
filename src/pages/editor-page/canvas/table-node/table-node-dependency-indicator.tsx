@@ -1,4 +1,4 @@
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import type { DBTable } from '@/lib/domain/db-table';
 import {
     Handle,

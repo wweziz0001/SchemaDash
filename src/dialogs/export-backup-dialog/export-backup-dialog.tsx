@@ -15,7 +15,7 @@ import { SelectBox } from '@/components/select-box/select-box';
 import { Spinner } from '@/components/spinner/spinner';
 import { useToast } from '@/components/toast/use-toast';
 import { useDialog } from '@/hooks/use-dialog';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useStorage } from '@/hooks/use-storage';
 import {
     CHARTDB_BACKUP_FILE_EXTENSION,

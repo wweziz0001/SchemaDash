@@ -1,5 +1,5 @@
 import type { DBTable } from '@/lib/domain/db-table';
-import type { SchemaDashContext } from '../chartdb-context/chartdb-context';
+import type { SchemaDashContext } from '../schemadash-context/schemadash-context';
 import type { DBField } from '@/lib/domain/db-field';
 import type { DBIndex } from '@/lib/domain/db-index';
 import type { DBCheckConstraint } from '@/lib/domain/db-check-constraint';

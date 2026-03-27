@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import type { CanvasContext, CanvasEvent } from './canvas-context';
 import { canvasContext } from './canvas-context';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { adjustTablePositions } from '@/lib/domain/db-table';
 import { useReactFlow } from '@xyflow/react';
 import { findOverlappingTables } from '@/pages/editor-page/canvas/canvas-utils';

@@ -40,7 +40,7 @@ import type {
     SavedDiagram,
     SavedProject,
 } from '@/context/storage-context/storage-context';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useConfig } from '@/hooks/use-config';
 import { useDialog } from '@/hooks/use-dialog';
 import { useStorage } from '@/hooks/use-storage';

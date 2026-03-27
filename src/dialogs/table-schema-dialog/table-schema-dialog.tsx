@@ -25,7 +25,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/tooltip/tooltip';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { defaultSchemas } from '@/lib/data/default-schemas';
 import { Label } from '@/components/label/label';
 

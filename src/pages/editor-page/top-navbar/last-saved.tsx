@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import TimeAgo from 'timeago-react';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { Badge } from '@/components/badge/badge';
 import {
     Tooltip,

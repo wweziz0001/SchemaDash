@@ -7,7 +7,7 @@ import {
 } from './keyboard-shortcuts';
 import { useHistory } from '@/hooks/use-history';
 import { useDialog } from '@/hooks/use-dialog';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useLayout } from '@/hooks/use-layout';
 import { useReactFlow } from '@xyflow/react';
 

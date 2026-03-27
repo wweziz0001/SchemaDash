@@ -6,7 +6,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/tooltip/tooltip';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { cn } from '@/lib/utils';
 
 const MAX_VISIBLE_PARTICIPANTS = 4;

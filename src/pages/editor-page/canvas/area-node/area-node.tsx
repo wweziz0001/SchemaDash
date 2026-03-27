@@ -8,7 +8,7 @@ import React, {
 import type { NodeProps, Node } from '@xyflow/react';
 import { NodeResizer } from '@xyflow/react';
 import type { Area } from '@/lib/domain/area';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { Input } from '@/components/input/input';
 import { useClickAway, useKeyPressEvent } from 'react-use';
 import {

@@ -8,7 +8,7 @@ export interface TemplatesPageHelmetProps {
     isFeatured: boolean;
 }
 
-const CHARTDB_HOST_URL = 'https://schemadash.io';
+const SCHEMADASH_HOST_URL = 'https://schemadash.io';
 export const TemplatesPageHelmet: React.FC<TemplatesPageHelmetProps> = ({
     tag,
     isFeatured,
@@ -28,11 +28,12 @@ export const TemplatesPageHelmet: React.FC<TemplatesPageHelmetProps> = ({
             suffix += '/featured';
         }
 
-        return `${CHARTDB_HOST_URL}${suffix}`;
+        return `${SCHEMADASH_HOST_URL}${suffix}`;
     }, [isFeatured, formattedUrlTag]);
 
     const needCanonical =
-        HOST_URL !== CHARTDB_HOST_URL || (tag && formattedUrlTag !== tagParam);
+        HOST_URL !== SCHEMADASH_HOST_URL ||
+        (tag && formattedUrlTag !== tagParam);
 
     return (
         <Helmet>

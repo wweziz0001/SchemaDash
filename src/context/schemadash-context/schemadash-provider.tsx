@@ -8,8 +8,8 @@ import React, {
 import type { DBTable } from '@/lib/domain/db-table';
 import { deepCopy, generateId } from '@/lib/utils';
 import { defaultTableColor, defaultAreaColor, viewColor } from '@/lib/colors';
-import type { SchemaDashContext, SchemaDashEvent } from './chartdb-context';
-import { chartDBContext } from './chartdb-context';
+import type { SchemaDashContext, SchemaDashEvent } from './schemadash-context';
+import { schemaDashContext } from './schemadash-context';
 import { DatabaseType } from '@/lib/domain/database-type';
 import type { DBField } from '@/lib/domain/db-field';
 import {
@@ -2545,7 +2545,7 @@ export const SchemaDashProvider: React.FC<
     );
 
     return (
-        <chartDBContext.Provider
+        <schemaDashContext.Provider
             value={{
                 diagramId,
                 diagramName,
@@ -2635,6 +2635,6 @@ export const SchemaDashProvider: React.FC<
             }}
         >
             {children}
-        </chartDBContext.Provider>
+        </schemaDashContext.Provider>
     );
 };

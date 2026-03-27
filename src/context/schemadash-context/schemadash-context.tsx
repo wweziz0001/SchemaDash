@@ -339,7 +339,7 @@ export interface SchemaDashContext {
     ) => Promise<void>;
 }
 
-export const chartDBContext = createContext<SchemaDashContext>({
+export const schemaDashContext = createContext<SchemaDashContext>({
     databaseType: DatabaseType.GENERIC,
     diagramName: '',
     diagramId: '',

@@ -38,7 +38,7 @@ import {
 } from './table-node/table-node';
 import type { RelationshipEdgeType } from './relationship-edge/relationship-edge';
 import { RelationshipEdge } from './relationship-edge/relationship-edge';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import {
     LEFT_HANDLE_ID_PREFIX,
     TARGET_ID_PREFIX,
@@ -76,7 +76,7 @@ import {
 } from './canvas-utils';
 import type { Graph } from '@/lib/graph';
 import { removeVertex } from '@/lib/graph';
-import type { SchemaDashEvent } from '@/context/chartdb-context/chartdb-context';
+import type { SchemaDashEvent } from '@/context/schemadash-context/schemadash-context';
 import { cn, debounce, getOperatingSystem } from '@/lib/utils';
 import type { DependencyEdgeType } from './dependency-edge/dependency-edge';
 import { DependencyEdge } from './dependency-edge/dependency-edge';

@@ -62,7 +62,9 @@ export const requestJson = async <T>(
                   }`
                 : `Request to ${path} failed`;
         if (response.status === 401) {
-            window.dispatchEvent(new CustomEvent('chartdb:auth-unauthorized'));
+            window.dispatchEvent(
+                new CustomEvent('schemadash:auth-unauthorized')
+            );
         }
         throw new RequestError(error, response.status);
     }

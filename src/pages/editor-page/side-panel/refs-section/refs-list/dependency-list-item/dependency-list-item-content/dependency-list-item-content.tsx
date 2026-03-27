@@ -4,7 +4,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/tooltip/tooltip';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import type { DBDependency } from '@/lib/domain/db-dependency';
 import { useReactFlow } from '@xyflow/react';
 import { FileMinus2, FileOutput, Trash2 } from 'lucide-react';

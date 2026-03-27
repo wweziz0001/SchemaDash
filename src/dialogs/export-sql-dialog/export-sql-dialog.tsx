@@ -12,7 +12,7 @@ import {
 } from '@/components/dialog/dialog';
 import { Label } from '@/components/label/label';
 import { Spinner } from '@/components/spinner/spinner';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useDialog } from '@/hooks/use-dialog';
 import {
     exportBaseSQL,

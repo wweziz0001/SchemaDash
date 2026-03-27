@@ -18,8 +18,8 @@ import { Badge } from '@/components/badge/badge';
 import { Separator } from '@/components/separator/separator';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { useSchemaSync } from '../hooks/use-schema-sync';
-import type { ConnectionUpsert } from '@chartdb/schema-sync-core';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import type { ConnectionUpsert } from '@schemadash/schema-sync-core';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useToast } from '@/components/toast/use-toast';
 
 const initialConnectionDraft: ConnectionUpsert = {

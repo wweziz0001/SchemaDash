@@ -9,7 +9,7 @@ import {
 import { ListItemHeaderButton } from '../../../../list-item-header-button/list-item-header-button';
 import type { DBRelationship } from '@/lib/domain/db-relationship';
 import { useReactFlow } from '@xyflow/react';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useFocusOn } from '@/hooks/use-focus-on';
 import { useClickAway, useKeyPressEvent } from 'react-use';
 import {

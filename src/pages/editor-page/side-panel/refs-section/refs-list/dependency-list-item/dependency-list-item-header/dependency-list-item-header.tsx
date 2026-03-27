@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { EllipsisVertical, CircleDotDashed, Trash2 } from 'lucide-react';
 import { ListItemHeaderButton } from '../../../../list-item-header-button/list-item-header-button';
 import { useReactFlow } from '@xyflow/react';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import {
     DropdownMenu,
     DropdownMenuContent,

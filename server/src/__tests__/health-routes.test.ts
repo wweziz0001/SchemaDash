@@ -70,7 +70,7 @@ describe('health routes', () => {
         expect(livez.statusCode).toBe(200);
         expect(livez.json()).toMatchObject({
             ok: true,
-            service: 'chartdb-api',
+            service: 'schemadash-api',
         });
 
         expect(readyz.statusCode).toBe(200);
@@ -89,7 +89,7 @@ describe('health routes', () => {
         expect(health.statusCode).toBe(200);
         expect(health.json()).toMatchObject({
             ok: true,
-            service: 'chartdb-api',
+            service: 'schemadash-api',
             persistence: {
                 app: {
                     adapter: 'sqlite',

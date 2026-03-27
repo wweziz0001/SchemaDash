@@ -56,7 +56,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - chartdb-api-data:/app/data
+      - schemadash-api-data:/app/data
     healthcheck:
       test:
         [
@@ -98,4 +98,4 @@ services:
 
 volumes:
   postgres-data:
-  chartdb-api-data:
+  schemadash-api-data:

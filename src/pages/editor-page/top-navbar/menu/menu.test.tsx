@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Menu } from './menu';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 
-vi.mock('@/hooks/use-chartdb', () => ({
+vi.mock('@/hooks/use-schemadash', () => ({
     useSchemaDash: vi.fn(),
 }));
 

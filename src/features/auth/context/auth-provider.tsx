@@ -107,12 +107,12 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
         };
 
         window.addEventListener(
-            'chartdb:auth-unauthorized',
+            'schemadash:auth-unauthorized',
             handleUnauthorized
         );
         return () => {
             window.removeEventListener(
-                'chartdb:auth-unauthorized',
+                'schemadash:auth-unauthorized',
                 handleUnauthorized
             );
         };

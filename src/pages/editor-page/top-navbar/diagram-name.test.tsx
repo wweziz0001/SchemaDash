@@ -2,10 +2,10 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DiagramName } from './diagram-name';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { TooltipProvider } from '@/components/tooltip/tooltip';
 
-vi.mock('@/hooks/use-chartdb', () => ({
+vi.mock('@/hooks/use-schemadash', () => ({
     useSchemaDash: vi.fn(),
 }));
 

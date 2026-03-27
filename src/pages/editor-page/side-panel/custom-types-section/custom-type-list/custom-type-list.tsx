@@ -14,7 +14,7 @@ import {
     SortableContext,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useSchemaDash } from '@/hooks/use-chartdb.ts';
+import { useSchemaDash } from '@/hooks/use-schemadash.ts';
 import type { DBCustomType } from '@/lib/domain/db-custom-type';
 import { CustomTypeListItem } from './custom-type-list-item/custom-type-list-item';
 

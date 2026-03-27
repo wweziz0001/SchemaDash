@@ -11,7 +11,7 @@ import {
 import { useDialog } from '@/hooks/use-dialog';
 import { FileOutput, FileMinus2, FileType2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import type { SelectBoxOption } from '@/components/select-box/select-box';
 import { SelectBox } from '@/components/select-box/select-box';
 import { useLayout } from '@/hooks/use-layout';

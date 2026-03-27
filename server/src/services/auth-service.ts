@@ -1243,7 +1243,10 @@ export class AuthService {
         errorCode: string,
         returnTo = '/'
     ) {
-        const url = new URL(sanitizeReturnTo(returnTo), 'http://chartdb.local');
+        const url = new URL(
+            sanitizeReturnTo(returnTo),
+            'http://schemadash.local'
+        );
         url.searchParams.set('authError', errorCode);
         url.searchParams.set(
             'authErrorMessage',

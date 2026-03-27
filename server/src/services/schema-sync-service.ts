@@ -7,7 +7,7 @@ import {
     type DiffSchemaResponse,
     type ImportLiveSchemaRequest,
     type ImportLiveSchemaResponse,
-} from '@chartdb/schema-sync-core';
+} from '@schemadash/schema-sync-core';
 import type {
     MetadataRepository,
     StoredSnapshot,

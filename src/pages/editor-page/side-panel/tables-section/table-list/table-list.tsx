@@ -16,7 +16,7 @@ import {
     SortableContext,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useSchemaDash } from '@/hooks/use-chartdb.ts';
+import { useSchemaDash } from '@/hooks/use-schemadash.ts';
 
 export interface TableListProps {
     tables: DBTable[];

@@ -8,7 +8,7 @@ export const buildLoggerOptions = (
     messageKey: 'message',
     timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
     base: {
-        service: 'chartdb-api',
+        service: 'schemadash-api',
         env: env.nodeEnv,
     },
     formatters: {

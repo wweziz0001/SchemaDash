@@ -36,7 +36,7 @@ import {
 } from '@/lib/domain/db-table';
 import { TableNodeField } from './table-node-field';
 import { useLayout } from '@/hooks/use-layout';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import type { RelationshipEdgeType } from '../relationship-edge/relationship-edge';
 import type { DBField } from '@/lib/domain/db-field';
 import { useTranslation } from 'react-i18next';

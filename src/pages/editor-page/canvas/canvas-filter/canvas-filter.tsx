@@ -6,7 +6,7 @@ import React, {
     useRef,
 } from 'react';
 import { X, Search, Database, Table, Box, SearchX } from 'lucide-react';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/button/button';
 import { Input } from '@/components/input/input';

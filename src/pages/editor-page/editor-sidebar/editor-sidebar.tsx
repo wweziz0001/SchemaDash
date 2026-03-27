@@ -26,7 +26,7 @@ import { useBreakpoint } from '@/hooks/use-breakpoint';
 import SchemaDashLogo from '@/assets/logo-light.png';
 import SchemaDashDarkLogo from '@/assets/logo-dark.png';
 import { useTheme } from '@/hooks/use-theme';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { supportsCustomTypes } from '@/lib/domain/database-capabilities';
 import { useDialog } from '@/hooks/use-dialog';
 import { Separator } from '@/components/separator/separator';

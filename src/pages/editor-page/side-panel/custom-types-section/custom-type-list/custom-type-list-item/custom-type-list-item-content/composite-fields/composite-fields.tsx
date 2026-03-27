@@ -14,7 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/select/select';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import type { DataTypeData } from '@/lib/data/data-types/data-types';
 import { dataTypeMap } from '@/lib/data/data-types/data-types';
 import type { DragEndEvent } from '@dnd-kit/core';

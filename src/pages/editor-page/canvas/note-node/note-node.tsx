@@ -2,7 +2,7 @@ import React, { useCallback, useState, useRef } from 'react';
 import { NodeResizer, type NodeProps, type Node } from '@xyflow/react';
 import { Pencil, Trash2 } from 'lucide-react';
 import type { Note } from '@/lib/domain/note';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useClickAway, useKeyPressEvent } from 'react-use';
 import { ColorPicker } from '@/components/color-picker/color-picker';
 import { Button } from '@/components/button/button';

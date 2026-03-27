@@ -16,11 +16,11 @@ import {
     spreadFilterTables,
 } from '@/lib/domain/diagram-filter/diagram-filter';
 import { useStorage } from '@/hooks/use-storage';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { filterTable } from '@/lib/domain/diagram-filter/filter';
 import { databasesWithSchemas, schemaNameToSchemaId } from '@/lib/domain';
 import { defaultSchemas } from '@/lib/data/default-schemas';
-import type { SchemaDashEvent } from '../chartdb-context/chartdb-context';
+import type { SchemaDashEvent } from '../schemadash-context/schemadash-context';
 
 export const DiagramFilterProvider: React.FC<React.PropsWithChildren> = ({
     children,

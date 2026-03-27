@@ -10,8 +10,8 @@ import type {
     CanonicalTable,
     CanonicalUniqueConstraint,
     DatabaseConnectionSecret,
-} from '@chartdb/schema-sync-core';
-import { hashCanonicalSchema } from '@chartdb/schema-sync-core';
+} from '@schemadash/schema-sync-core';
+import { hashCanonicalSchema } from '@schemadash/schema-sync-core';
 
 const actionMap: Record<string, string> = {
     a: 'NO ACTION',

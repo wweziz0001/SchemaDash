@@ -5,13 +5,13 @@ import type {
     ConnectionSummary,
     ConnectionTestResponse,
     ConnectionUpsert,
-} from '@chartdb/schema-sync-core';
+} from '@schemadash/schema-sync-core';
 import { schemaSyncClient } from '../api/schema-sync-client';
 import {
     canonicalSchemaToDiagram,
     diagramToCanonicalSchema,
 } from '../lib/canonical-adapters';
-import { useSchemaDash } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useStorage } from '@/hooks/use-storage';
 import { useNavigate } from 'react-router-dom';
 import { generateDiagramId } from '@/lib/utils';
