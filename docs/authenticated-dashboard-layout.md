@@ -2,7 +2,7 @@
 
 ## Overview
 
-ChartDB now uses a library-first authenticated experience instead of dropping
+SchemaDash now uses a library-first authenticated experience instead of dropping
  signed-in users directly into the editor.
 
 After a successful login, the default application route is the main dashboard at
@@ -92,12 +92,12 @@ The authenticated shell now hosts these pages:
 
 ## Data model integration
 
-The dashboard and sidebar use real ChartDB data sources:
+The dashboard and sidebar use real SchemaDash data sources:
 
 - Collections from `/api/collections`
 - Projects from `/api/projects`
 - Diagrams from `/api/projects/:id/diagrams`
-- Auth identity from the ChartDB auth session
+- Auth identity from the SchemaDash auth session
 - Local UI preferences from the existing local config context
 - Saved config from the existing config context
 

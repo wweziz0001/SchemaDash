@@ -1,6 +1,6 @@
-# **Contributing to ChartDB**
+# **Contributing to SchemaDash**
 
-Thank you for your interest in contributing to ChartDB! We want to make your experience as easy as possible.
+Thank you for your interest in contributing to SchemaDash! We want to make your experience as easy as possible.
 
 ## How to Contribute
 
@@ -16,21 +16,21 @@ To submit a pull request:
 
 ### Reporting Bugs
 
-If you find a bug, check [GitHub issues](https://github.com/chartdb/chartdb/issues) to see if it’s already reported. If not, feel free to [report it](https://github.com/chartdb/chartdb/issues/new?labels=bug).
+If you find a bug, check [GitHub issues](https://github.com/wweziz0001/SchemaDash/issues) to see if it’s already reported. If not, feel free to [report it](https://github.com/wweziz0001/SchemaDash/issues/new?labels=bug).
 
-For questions about using ChartDB, reach out to us via Email (support@chartdb.io) or [Discord](https://discord.gg/QeFwyWSKwC). For feature requests, create a [new feature](https://github.com/chartdb/chartdb/issues/new?labels=enhancement).
+For questions about using SchemaDash, reach out to us via Email (support@chartdb.io) or [Discord](https://discord.gg/QeFwyWSKwC). For feature requests, create a [new feature](https://github.com/wweziz0001/SchemaDash/issues/new?labels=enhancement).
 
 ### Creating a Branch
 
 To get started:
 
-1. Fork [the repository](https://github.com/chartdb/chartdb/fork).
+1. Fork [the repository](https://github.com/wweziz0001/SchemaDash/fork).
 2. Create a branch from `main`.
 3. If you’re new to GitHub pull requests, check out [this video series](https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github).
 
 ### License
 
-By contributing, you agree that your work will be licensed under ChartDB's [license](https://github.com/chartdb/chartdb/blob/main/LICENSE).
+By contributing, you agree that your work will be licensed under SchemaDash's [license](https://github.com/wweziz0001/SchemaDash/blob/main/LICENSE).
 
 ## Questions?
 

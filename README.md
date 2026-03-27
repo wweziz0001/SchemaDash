@@ -1,9 +1,9 @@
 <h1 align="center">
-  <a href="https://chartdb.io#gh-light-mode-only">
-    <img src="https://github.com/chartdb/chartdb/blob/main/src/assets/logo-light.png" width="400" height="70" alt="ChartDB">
+  <a href="https://schemadash.io#gh-light-mode-only">
+    <img src="https://github.com/wweziz0001/SchemaDash/blob/main/src/assets/logo-light.png" width="400" height="70" alt="SchemaDash">
   </a>
-  <a href="https://chartdb.io##gh-dark-mode-only">
-    <img src="https://github.com/chartdb/chartdb/blob/main/src/assets/logo-dark.png" width="400" height="70" alt="ChartDB">
+  <a href="https://schemadash.io##gh-dark-mode-only">
+    <img src="https://github.com/wweziz0001/SchemaDash/blob/main/src/assets/logo-dark.png" width="400" height="70" alt="SchemaDash">
   </a>
   <br>
 </h1>
@@ -15,16 +15,16 @@
 
 <h3 align="center">
   <a href="https://discord.gg/QeFwyWSKwC">Community</a>  &bull;
-  <a href="https://www.chartdb.io?ref=github_readme">Website</a>  &bull;
-  <a href="https://chartdb.io/templates?ref=github_readme">Examples</a>  &bull;
-  <a href="https://app.chartdb.io?ref=github_readme">Demo</a>
+  <a href="https://www.schemadash.io?ref=github_readme">Website</a>  &bull;
+  <a href="https://schemadash.io/templates?ref=github_readme">Examples</a>  &bull;
+  <a href="https://app.schemadash.io?ref=github_readme">Demo</a>
 </h3>
 
 <h4 align="center">
-  <a href="https://github.com/chartdb/chartdb?tab=AGPL-3.0-1-ov-file#readme">
-    <img src="https://img.shields.io/github/license/chartdb/chartdb?color=blue" alt="ChartDB is released under the AGPL license." />
+  <a href="https://github.com/wweziz0001/SchemaDash?tab=AGPL-3.0-1-ov-file#readme">
+    <img src="https://img.shields.io/github/license/chartdb/chartdb?color=blue" alt="SchemaDash is released under the AGPL license." />
   </a>
-  <a href="https://github.com/chartdb/chartdb/blob/main/CONTRIBUTING.md">
+  <a href="https://github.com/wweziz0001/SchemaDash/blob/main/CONTRIBUTING.md">
     <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs welcome!" />
   </a>
   <a href="https://discord.gg/QeFwyWSKwC">
@@ -39,12 +39,12 @@
 ---
 
 <p align="center">
-  <img width='700px' src="./public/chartdb.png">
+  <img width='700px' src="./public/schemadash.png">
 </p>
 
-### 🎉 ChartDB
+### 🎉 SchemaDash
 
-ChartDB is a powerful, web-based database diagramming editor that now also includes a production-minded schema synchronization workflow for PostgreSQL.
+SchemaDash is a powerful, web-based database diagramming editor that now also includes a production-minded schema synchronization workflow for PostgreSQL.
 You can import a live schema from a real database, edit it visually, persist projects safely in a self-hosted backend, preview a structured migration plan, inspect generated SQL, and apply approved changes through a server-side safety layer.
 
 **What it does now**:
@@ -53,7 +53,7 @@ You can import a live schema from a real database, edit it visually, persist pro
   Store database connections server-side, test them safely, and keep passwords out of the browser after submission.
 
 - **Self-Hosted Project Persistence**
-  Persist ChartDB projects and diagrams through the backend API instead of relying only on browser storage. The editor still works locally, but a running backend now becomes the durable source of truth for saved work.
+  Persist SchemaDash projects and diagrams through the backend API instead of relying only on browser storage. The editor still works locally, but a running backend now becomes the durable source of truth for saved work.
   Save, save as, reopen, rename, and delete flows now operate on saved projects and diagrams from inside the editor.
 
 - **Collections For Organization**
@@ -63,7 +63,7 @@ You can import a live schema from a real database, edit it visually, persist pro
   Import the live PostgreSQL schema into the existing visual editor and keep a persisted baseline snapshot for later diff/apply.
 
 - **Visual Editing + Change Preview**
-  Reuse the existing ChartDB editor to modify tables, columns, constraints, and indexes, then preview a canonical schema diff with grouped warnings and SQL.
+  Reuse the existing SchemaDash editor to modify tables, columns, constraints, and indexes, then preview a canonical schema diff with grouped warnings and SQL.
 
 - **Migration SQL Generation**
   Generate PostgreSQL migration SQL from the baseline-vs-target diff in dependency-aware order.
@@ -75,13 +75,13 @@ You can import a live schema from a real database, edit it visually, persist pro
   Run a single query to instantly retrieve your database schema as JSON. This makes it incredibly fast to visualize your database schema, whether for documentation, team discussions, or simply understanding your data better.
 
 - **AI-Powered Export for Easy Migration**
-  Our AI-driven export feature allows you to generate the DDL script in the dialect of your choice. Whether you're migrating from MySQL to PostgreSQL or from SQLite to MariaDB, ChartDB simplifies the process by providing the necessary scripts tailored to your target database.
+  Our AI-driven export feature allows you to generate the DDL script in the dialect of your choice. Whether you're migrating from MySQL to PostgreSQL or from SQLite to MariaDB, SchemaDash simplifies the process by providing the necessary scripts tailored to your target database.
 - **Interactive Editing**
   Fine-tune your database schema using our intuitive editor. Easily make adjustments or annotations to better visualize complex structures.
 
 ### Status
 
-ChartDB is currently in Public Beta. Star and watch this repository to get notified of updates.
+SchemaDash is currently in Public Beta. Star and watch this repository to get notified of updates.
 
 ### Supported Databases
 
@@ -118,7 +118,7 @@ Planned next adapters:
 
 ## Getting Started
 
-Use the [cloud version](https://app.chartdb.io?ref=github_readme_2) or deploy locally.
+Use the [cloud version](https://app.schemadash.io?ref=github_readme_2) or deploy locally.
 
 ### Local Development
 
@@ -131,7 +131,7 @@ npm run dev:web
 ```
 
 The Vite development server proxies `/api` to `http://localhost:4010` by default.
-When the backend is available, ChartDB bootstraps a default self-hosted owner/project and persists diagrams there.
+When the backend is available, SchemaDash bootstraps a default self-hosted owner/project and persists diagrams there.
 Saved-project behavior now looks like this:
 
 - `Save` persists the current diagram back to its saved project immediately.
@@ -146,12 +146,12 @@ See [Scoped Sharing](./docs/scoped-sharing.md) for private, authenticated, and l
 See [Real-Time Collaboration](./docs/realtime-collaboration.md) for shared editing architecture, setup, and current limitations.
 See [Admin Dashboard](./docs/admin-dashboard.md) for the basic self-hosted admin surface.
 See [Schema Sync Architecture](./docs/schema-sync-architecture.md) for live PostgreSQL import, diff, apply, and safety details.
-See [Self-Hosting ChartDB](./docs/self-hosting.md) for Docker, reverse proxy, health check, and deployment guidance.
+See [Self-Hosting SchemaDash](./docs/self-hosting.md) for Docker, reverse proxy, health check, and deployment guidance.
 See [Post-Merge Integration Audit](./docs/post-merge-integration-audit.md) for the current audited feature matrix and remaining limitations.
 
 ### Full Local Stack With Docker
 
-Copy the example environment file first and set at least `CHARTDB_SECRET_KEY` and `CHARTDB_POSTGRES_PASSWORD`:
+Copy the example environment file first and set at least `SCHEMADASH_SECRET_KEY` and `SCHEMADASH_POSTGRES_PASSWORD`:
 
 ```bash
 cp .env.example .env
@@ -174,57 +174,57 @@ Useful operational endpoints:
 - `GET /api/readyz`
 - `GET /api/health`
 
-See [Self-Hosting ChartDB](./docs/self-hosting.md) for reverse-proxy notes, deployment basics, and environment variable details.
+See [Self-Hosting SchemaDash](./docs/self-hosting.md) for reverse-proxy notes, deployment basics, and environment variable details.
 
 ### Optional Authentication
 
-ChartDB supports three self-hosted modes:
+SchemaDash supports three self-hosted modes:
 
-- `CHARTDB_AUTH_MODE=disabled`
+- `SCHEMADASH_AUTH_MODE=disabled`
   Keeps the existing lightweight flow. The app uses the backend when it is available and falls back to browser-local storage when it is not.
-- `CHARTDB_AUTH_MODE=password`
+- `SCHEMADASH_AUTH_MODE=password`
   Requires users to log in before accessing protected backend routes. The first administrator is initialized through a one-time bootstrap flow and sessions are stored server-side in an HTTP-only cookie.
-- `CHARTDB_AUTH_MODE=oidc`
-  Redirects users to an OpenID Connect provider such as Keycloak, then issues a ChartDB session cookie after the callback is validated. The first admin is assigned to the configured bootstrap OIDC email.
+- `SCHEMADASH_AUTH_MODE=oidc`
+  Redirects users to an OpenID Connect provider such as Keycloak, then issues a SchemaDash session cookie after the callback is validated. The first admin is assigned to the configured bootstrap OIDC email.
 
 Minimal password-auth setup:
 
 ```dotenv
-CHARTDB_AUTH_MODE=password
-CHARTDB_CORS_ORIGIN=http://localhost:8080
-CHARTDB_SECRET_KEY=replace-with-a-long-random-secret
-CHARTDB_BOOTSTRAP_SETUP_CODE=replace-with-a-one-time-random-code
+SCHEMADASH_AUTH_MODE=password
+SCHEMADASH_CORS_ORIGIN=http://localhost:8080
+SCHEMADASH_SECRET_KEY=replace-with-a-long-random-secret
+SCHEMADASH_BOOTSTRAP_SETUP_CODE=replace-with-a-one-time-random-code
 ```
 
 Environment-assisted first-admin bootstrap:
 
 ```dotenv
-CHARTDB_AUTH_MODE=password
-CHARTDB_AUTH_EMAIL=owner@example.com
-CHARTDB_AUTH_PASSWORD=replace-with-a-long-random-password
-CHARTDB_AUTH_DISPLAY_NAME=ChartDB Owner
-CHARTDB_CORS_ORIGIN=http://localhost:8080
-CHARTDB_SECRET_KEY=replace-with-a-long-random-secret
+SCHEMADASH_AUTH_MODE=password
+SCHEMADASH_AUTH_EMAIL=owner@example.com
+SCHEMADASH_AUTH_PASSWORD=replace-with-a-long-random-password
+SCHEMADASH_AUTH_DISPLAY_NAME=SchemaDash Owner
+SCHEMADASH_CORS_ORIGIN=http://localhost:8080
+SCHEMADASH_SECRET_KEY=replace-with-a-long-random-secret
 ```
 
-Production note: when authentication is enabled, `CHARTDB_CORS_ORIGIN` must be an explicit origin, not `*`.
-If you omit `CHARTDB_BOOTSTRAP_SETUP_CODE`, ChartDB generates a short-lived setup code and logs it while the deployment is still uninitialized.
+Production note: when authentication is enabled, `SCHEMADASH_CORS_ORIGIN` must be an explicit origin, not `*`.
+If you omit `SCHEMADASH_BOOTSTRAP_SETUP_CODE`, SchemaDash generates a short-lived setup code and logs it while the deployment is still uninitialized.
 When authentication is enabled, PostgreSQL connection management plus schema import/diff/apply routes are limited to authenticated administrators.
 
 Minimal OIDC setup:
 
 ```dotenv
-CHARTDB_AUTH_MODE=oidc
-CHARTDB_CORS_ORIGIN=http://localhost:5173
-CHARTDB_SECRET_KEY=replace-with-a-long-random-secret
-CHARTDB_BOOTSTRAP_ADMIN_EMAIL=owner@example.com
-CHARTDB_OIDC_ISSUER=https://sso.example.com/realms/chartdb
-CHARTDB_OIDC_CLIENT_ID=chartdb
-CHARTDB_OIDC_CLIENT_SECRET=replace-with-your-client-secret
-CHARTDB_OIDC_REDIRECT_URL=http://localhost:5173/api/auth/oidc/callback
+SCHEMADASH_AUTH_MODE=oidc
+SCHEMADASH_CORS_ORIGIN=http://localhost:5173
+SCHEMADASH_SECRET_KEY=replace-with-a-long-random-secret
+SCHEMADASH_BOOTSTRAP_ADMIN_EMAIL=owner@example.com
+SCHEMADASH_OIDC_ISSUER=https://sso.example.com/realms/chartdb
+SCHEMADASH_OIDC_CLIENT_ID=chartdb
+SCHEMADASH_OIDC_CLIENT_SECRET=replace-with-your-client-secret
+SCHEMADASH_OIDC_REDIRECT_URL=http://localhost:5173/api/auth/oidc/callback
 ```
 
-If you want logout to continue to the provider, also set `CHARTDB_OIDC_LOGOUT_URL`.
+If you want logout to continue to the provider, also set `SCHEMADASH_OIDC_LOGOUT_URL`.
 See [docs/oidc-authentication.md](./docs/oidc-authentication.md) for the full Keycloak example and reverse-proxy guidance.
 
 ### Environment Variables
@@ -234,34 +234,34 @@ See [`.env.example`](./.env.example) for the full list.
 Key variables:
 
 - `VITE_API_BASE_URL`: optional frontend API base override
-- `CHARTDB_API_HOST`: backend bind host
-- `CHARTDB_API_PORT`: backend port
-- `CHARTDB_TRUST_PROXY`: `false`, `true`, or a positive proxy-hop count such as `1`
-- `CHARTDB_SECRET_KEY`: encryption key for stored PostgreSQL connection secrets and auth-related server state
-- `CHARTDB_DATA_DIR`: default directory for backend SQLite files
-- `CHARTDB_APP_DB_PATH`: optional override for the self-hosted app persistence database
-- `CHARTDB_METADATA_DB_PATH`: optional override for the schema-sync metadata database
-- `CHARTDB_LOG_LEVEL`: Fastify/Pino log level
-- `CHARTDB_AUTH_MODE`: `disabled`, `password`, or `oidc`
-- `CHARTDB_AUTH_EMAIL`: optional one-time environment-assisted first-admin email for password mode
-- `CHARTDB_AUTH_PASSWORD`: optional one-time environment-assisted first-admin password for password mode
-- `CHARTDB_AUTH_DISPLAY_NAME`: display name for the environment-assisted bootstrap local account
-- `CHARTDB_BOOTSTRAP_SETUP_CODE`: optional operator-managed setup code for interactive password bootstrap
-- `CHARTDB_BOOTSTRAP_SETUP_CODE_TTL_MS`: lifetime for generated interactive bootstrap setup codes
-- `CHARTDB_BOOTSTRAP_SETUP_CODE_MAX_ATTEMPTS`: failed-attempt threshold before interactive bootstrap locks
-- `CHARTDB_BOOTSTRAP_ADMIN_EMAIL`: OIDC email that should become the first administrator during bootstrap
-- `CHARTDB_SESSION_TTL_HOURS`: session lifetime in hours
-- `CHARTDB_SESSION_COOKIE_NAME`: session cookie name
-- `CHARTDB_SESSION_COOKIE_SECURE`: optional `true`/`false` override for the cookie `Secure` flag
-- `CHARTDB_OIDC_ISSUER`: OIDC issuer URL for OIDC mode
-- `CHARTDB_OIDC_CLIENT_ID`: OIDC client ID for OIDC mode
-- `CHARTDB_OIDC_CLIENT_SECRET`: optional OIDC client secret for confidential clients
-- `CHARTDB_OIDC_REDIRECT_URL`: callback URL registered with the OIDC provider
-- `CHARTDB_OIDC_LOGOUT_URL`: optional provider logout URL to continue to after local logout
-- `CHARTDB_OIDC_SCOPES`: optional OIDC scopes, defaults to `openid profile email`
-- `CHARTDB_DEFAULT_PROJECT_NAME`: initial self-hosted project name
-- `CHARTDB_DEFAULT_OWNER_NAME`: initial placeholder owner name
-- `CHARTDB_CORS_ORIGIN`: backend CORS policy
+- `SCHEMADASH_API_HOST`: backend bind host
+- `SCHEMADASH_API_PORT`: backend port
+- `SCHEMADASH_TRUST_PROXY`: `false`, `true`, or a positive proxy-hop count such as `1`
+- `SCHEMADASH_SECRET_KEY`: encryption key for stored PostgreSQL connection secrets and auth-related server state
+- `SCHEMADASH_DATA_DIR`: default directory for backend SQLite files
+- `SCHEMADASH_APP_DB_PATH`: optional override for the self-hosted app persistence database
+- `SCHEMADASH_METADATA_DB_PATH`: optional override for the schema-sync metadata database
+- `SCHEMADASH_LOG_LEVEL`: Fastify/Pino log level
+- `SCHEMADASH_AUTH_MODE`: `disabled`, `password`, or `oidc`
+- `SCHEMADASH_AUTH_EMAIL`: optional one-time environment-assisted first-admin email for password mode
+- `SCHEMADASH_AUTH_PASSWORD`: optional one-time environment-assisted first-admin password for password mode
+- `SCHEMADASH_AUTH_DISPLAY_NAME`: display name for the environment-assisted bootstrap local account
+- `SCHEMADASH_BOOTSTRAP_SETUP_CODE`: optional operator-managed setup code for interactive password bootstrap
+- `SCHEMADASH_BOOTSTRAP_SETUP_CODE_TTL_MS`: lifetime for generated interactive bootstrap setup codes
+- `SCHEMADASH_BOOTSTRAP_SETUP_CODE_MAX_ATTEMPTS`: failed-attempt threshold before interactive bootstrap locks
+- `SCHEMADASH_BOOTSTRAP_ADMIN_EMAIL`: OIDC email that should become the first administrator during bootstrap
+- `SCHEMADASH_SESSION_TTL_HOURS`: session lifetime in hours
+- `SCHEMADASH_SESSION_COOKIE_NAME`: session cookie name
+- `SCHEMADASH_SESSION_COOKIE_SECURE`: optional `true`/`false` override for the cookie `Secure` flag
+- `SCHEMADASH_OIDC_ISSUER`: OIDC issuer URL for OIDC mode
+- `SCHEMADASH_OIDC_CLIENT_ID`: OIDC client ID for OIDC mode
+- `SCHEMADASH_OIDC_CLIENT_SECRET`: optional OIDC client secret for confidential clients
+- `SCHEMADASH_OIDC_REDIRECT_URL`: callback URL registered with the OIDC provider
+- `SCHEMADASH_OIDC_LOGOUT_URL`: optional provider logout URL to continue to after local logout
+- `SCHEMADASH_OIDC_SCOPES`: optional OIDC scopes, defaults to `openid profile email`
+- `SCHEMADASH_DEFAULT_PROJECT_NAME`: initial self-hosted project name
+- `SCHEMADASH_DEFAULT_OWNER_NAME`: initial placeholder owner name
+- `SCHEMADASH_CORS_ORIGIN`: backend CORS policy
 
 Current schema-sync limitations:
 
@@ -329,7 +329,7 @@ npm run dev:web
 2. Create or update a PostgreSQL connection.
 3. Click `Test Connection`.
 4. Use `Import Live Schema` to bring the live schema into the canvas.
-5. Modify the schema visually in ChartDB.
+5. Modify the schema visually in SchemaDash.
 6. Open `Preview Changes` to inspect:
    - summary
    - detailed diff
@@ -346,7 +346,7 @@ npm run dev:web
 - `server`
   Fastify API for self-hosted app persistence, connection storage, PostgreSQL introspection, plan generation, apply execution, and audit/history persistence.
 - `src`
-  Existing ChartDB editor plus schema-sync UI, a hybrid local/remote storage boundary, adapters between `Diagram` and `CanonicalSchema`, and toolbar/dialog integration.
+  Existing SchemaDash editor plus schema-sync UI, a hybrid local/remote storage boundary, adapters between `Diagram` and `CanonicalSchema`, and toolbar/dialog integration.
 
 See [docs/schema-sync-architecture.md](./docs/schema-sync-architecture.md) for the detailed design.
 See [docs/backend-persistence-foundation.md](./docs/backend-persistence-foundation.md) for the self-hosted backend/persistence foundation.
@@ -363,7 +363,7 @@ See [docs/admin-dashboard.md](./docs/admin-dashboard.md) for the admin overview 
 - Raw database passwords are never returned to the browser after submission.
 - Connection secrets are encrypted at rest using application-level AES-256-GCM.
 - Password authentication uses salted `scrypt` hashes and server-side session invalidation.
-- OIDC authentication validates authorization code callbacks with PKCE, `state`, and a signed flow cookie before issuing a ChartDB session.
+- OIDC authentication validates authorization code callbacks with PKCE, `state`, and a signed flow cookie before issuing a SchemaDash session.
 - The UI cannot execute arbitrary SQL.
 - Apply only executes server-generated plans.
 - Destructive operations require explicit confirmation text.
@@ -390,14 +390,14 @@ The CI workflow runs these checks and a self-hosted container smoke test on pull
 
 ## 💚 Community & Support
 
-- [Discord](https://discord.gg/QeFwyWSKwC) (For live discussion with the community and the ChartDB team)
-- [GitHub Issues](https://github.com/chartdb/chartdb/issues) (For any bugs and errors you encounter using ChartDB)
+- [Discord](https://discord.gg/QeFwyWSKwC) (For live discussion with the community and the SchemaDash team)
+- [GitHub Issues](https://github.com/wweziz0001/SchemaDash/issues) (For any bugs and errors you encounter using SchemaDash)
 - [Twitter](https://x.com/intent/follow?screen_name=jonathanfishner) (Get news fast)
 
 ## Contributing
 
 We welcome community contributions, big or small, and are here to guide you along
-the way. Message us in the [ChartDB Community Discord](https://discord.gg/QeFwyWSKwC).
+the way. Message us in the [SchemaDash Community Discord](https://discord.gg/QeFwyWSKwC).
 
 For more information on how to contribute, please see our
 [Contributing Guide](/CONTRIBUTING.md).
@@ -405,8 +405,8 @@ For more information on how to contribute, please see our
 This project is released with a [Contributor Code of Conduct](/CODE_OF_CONDUCT.md).
 By participating in this project, you agree to follow its terms.
 
-Thank you for helping us make ChartDB better for everyone :heart:.
+Thank you for helping us make SchemaDash better for everyone :heart:.
 
 ## License
 
-ChartDB is licensed under the [GNU Affero General Public License v3.0](LICENSE)
+SchemaDash is licensed under the [GNU Affero General Public License v3.0](LICENSE)

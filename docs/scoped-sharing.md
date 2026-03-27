@@ -1,13 +1,13 @@
 # Scoped Sharing
 
-ChartDB supports scoped sharing for saved projects and diagrams.
+SchemaDash supports scoped sharing for saved projects and diagrams.
 
 ## Sharing Modes
 
 - `private`
-  Only the owner and ChartDB administrators can open the resource.
+  Only the owner and SchemaDash administrators can open the resource.
 - `authenticated`
-  Any signed-in ChartDB user can open the resource. The owner chooses whether that access is `view` or `edit`.
+  Any signed-in SchemaDash user can open the resource. The owner chooses whether that access is `view` or `edit`.
 - `link`
   Anyone with the generated link can open the resource through the shared route. Link sharing is intentionally `view`-only in v1.
 

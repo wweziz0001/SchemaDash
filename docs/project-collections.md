@@ -1,6 +1,6 @@
 # Project Collections
 
-ChartDB now supports a flat collection model for organizing saved work.
+SchemaDash now supports a flat collection model for organizing saved work.
 
 ## How it works
 

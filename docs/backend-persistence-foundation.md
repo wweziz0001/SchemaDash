@@ -2,7 +2,7 @@
 
 ## Goal
 
-ChartDB now has a minimal self-hosted backend foundation for durable application data, without expanding into full auth, sharing, or admin flows yet.
+SchemaDash now has a minimal self-hosted backend foundation for durable application data, without expanding into full auth, sharing, or admin flows yet.
 
 ## What Was Added
 

@@ -2,7 +2,7 @@
 
 ## Summary
 
-ChartDB now has a split architecture:
+SchemaDash now has a split architecture:
 
 - `src/`: the existing Vite/React editor, still local-first for visual editing and diagram persistence
 - `packages/schema-sync-core/`: shared canonical schema model, diff engine, SQL generation, warnings, and API contracts

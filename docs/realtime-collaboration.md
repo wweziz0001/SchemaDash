@@ -2,7 +2,7 @@
 
 ## Scope
 
-ChartDB now supports a first practical version of real-time collaboration for persisted diagrams.
+SchemaDash now supports a first practical version of real-time collaboration for persisted diagrams.
 
 What ships in this version:
 
@@ -43,7 +43,7 @@ This is intentionally closer to “server-authoritative snapshots with live inva
 ## Shared Editing Flow
 
 - A collaborator opens the diagram through the authenticated editor flow.
-- `ChartDBProvider` activates a diagram session in `view` or `edit` mode.
+- `SchemaDashProvider` activates a diagram session in `view` or `edit` mode.
 - `StorageProvider` keeps local autosync, session state, and cached snapshots in sync with the server.
 - The editor subscribes to the diagram event stream.
 - When another session saves:
@@ -62,7 +62,7 @@ Realtime collaboration uses the same access model as persisted diagrams:
 
 ## Setup
 
-For practical multi-user collaboration, use an authenticated ChartDB deployment.
+For practical multi-user collaboration, use an authenticated SchemaDash deployment.
 
 1. Enable a multi-user auth mode such as password auth or OIDC.
 2. Start the web app and API together with `npm run dev:full`.
@@ -72,7 +72,7 @@ For practical multi-user collaboration, use an authenticated ChartDB deployment.
 Notes:
 
 - Public share-link routes remain read-only viewers in this version.
-- The event stream uses same-origin cookies, so the web app and API should remain deployed behind the same origin or proxy arrangement already used for authenticated ChartDB sessions.
+- The event stream uses same-origin cookies, so the web app and API should remain deployed behind the same origin or proxy arrangement already used for authenticated SchemaDash sessions.
 
 ## Limitations
 
