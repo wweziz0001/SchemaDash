@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 
 COPY package.json package-lock.json ./
 COPY packages/schema-sync-core/package.json ./packages/schema-sync-core/package.json
-COPY server/package.json ./server/package.json
+COPY backend/package.json ./backend/package.json
 
 RUN npm ci
 
@@ -14,9 +14,9 @@ RUN npm run build:web
 
 FROM nginx:stable-alpine AS production
 
-COPY --from=builder /usr/src/app/dist /usr/share/nginx/html
-COPY ./default.conf.template /etc/nginx/conf.d/default.conf.template
-COPY entrypoint.sh /entrypoint.sh
+COPY --from=builder /usr/src/app/frontend/dist /usr/share/nginx/html
+COPY ./deploy/nginx/default.conf.template /etc/nginx/conf.d/default.conf.template
+COPY ./scripts/docker/web-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 80

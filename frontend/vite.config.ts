@@ -6,6 +6,7 @@ import UnpluginInjectPreload from 'unplugin-inject-preload/vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+    root: __dirname,
     plugins: [
         react(),
         visualizer({
@@ -25,6 +26,9 @@ export default defineConfig({
             ],
         }),
     ],
+    css: {
+        postcss: path.resolve(__dirname, './postcss.config.js'),
+    },
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
@@ -38,7 +42,9 @@ export default defineConfig({
                     if (
                         assetInfo.names &&
                         assetInfo.originalFileNames.some((name) =>
-                            name.startsWith('src/assets/templates/')
+                            /(^|\/)src\/assets\/templates\//.test(
+                                name.replaceAll('\\', '/')
+                            )
                         )
                     ) {
                         return 'assets/[name][extname]';
