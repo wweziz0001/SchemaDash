@@ -34,7 +34,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
     return (
         <nav className="flex flex-col justify-between border-b px-3 md:h-12 md:flex-row md:items-center md:px-4">
             <div className="flex flex-1 flex-col justify-between gap-x-1 md:flex-row md:justify-normal">
-                <div className="flex items-center justify-between pt-[8px] font-primary md:py-[10px]">
+                <div className="flex items-center justify-between pt-[8px] font-primary md:py-[0px]">
                     <a
                         href="https://schemadash.io"
                         className="cursor-pointer"
@@ -47,7 +47,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                                     : SchemaDashDarkLogo
                             }
                             alt="SchemaDash"
-                            className="h-4 max-w-fit"
+                            className="h-8 max-w-fit"
                         />
                     </a>
                 </div>
