@@ -12,6 +12,11 @@ import { FlatCompat } from '@eslint/eslintrc';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const frontendTailwindConfig = path.join(
+    __dirname,
+    'frontend/tailwind.config.js'
+);
+const frontendCssFiles = [path.join(__dirname, 'frontend/src/**/*.css')];
 const compat = new FlatCompat({
     baseDirectory: __dirname,
     recommendedConfig: js.configs.recommended,
@@ -56,6 +61,10 @@ export default [
         settings: {
             react: {
                 version: 'detect',
+            },
+            tailwindcss: {
+                config: frontendTailwindConfig,
+                cssFiles: frontendCssFiles,
             },
         },
 

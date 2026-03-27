@@ -1,9 +1,9 @@
 <h1 align="center">
   <a href="https://schemadash.io#gh-light-mode-only">
-    <img src="https://github.com/wweziz0001/SchemaDash/blob/main/src/assets/logo-light.png" width="400" height="70" alt="SchemaDash">
+    <img src="https://github.com/wweziz0001/SchemaDash/blob/main/frontend/src/assets/logo-light.png" width="400" height="70" alt="SchemaDash">
   </a>
   <a href="https://schemadash.io##gh-dark-mode-only">
-    <img src="https://github.com/wweziz0001/SchemaDash/blob/main/src/assets/logo-dark.png" width="400" height="70" alt="SchemaDash">
+    <img src="https://github.com/wweziz0001/SchemaDash/blob/main/frontend/src/assets/logo-dark.png" width="400" height="70" alt="SchemaDash">
   </a>
   <br>
 </h1>
@@ -39,7 +39,7 @@
 ---
 
 <p align="center">
-  <img width='700px' src="./public/schemadash.png">
+  <img width='700px' src="./frontend/public/schemadash.png">
 </p>
 
 ### 🎉 SchemaDash
@@ -85,11 +85,11 @@ SchemaDash is currently in Public Beta. Star and watch this repository to get no
 
 ### Supported Databases
 
-- ✅ PostgreSQL (<img src="./src/assets/postgresql_logo_2.png" width="15"/> + <img src="./src/assets/supabase.png" alt="Supabase" width="15"/> + <img src="./src/assets/timescale.png" alt="Timescale" width="15"/> )
+- ✅ PostgreSQL (<img src="./frontend/src/assets/postgresql_logo_2.png" width="15"/> + <img src="./frontend/src/assets/supabase.png" alt="Supabase" width="15"/> + <img src="./frontend/src/assets/timescale.png" alt="Timescale" width="15"/> )
 - ✅ MySQL
 - ✅ SQL Server
 - ✅ MariaDB
-- ✅ SQLite (<img src="./src/assets/sqlite_logo_2.png" width="15"/> + <img src="./src/assets/cloudflare_d1.png" alt="Cloudflare D1" width="15"/> Cloudflare D1)
+- ✅ SQLite (<img src="./frontend/src/assets/sqlite_logo_2.png" width="15"/> + <img src="./frontend/src/assets/cloudflare_d1.png" alt="Cloudflare D1" width="15"/> Cloudflare D1)
 - ✅ CockroachDB
 - ✅ ClickHouse
 
@@ -126,8 +126,16 @@ Install everything and run the frontend and backend separately:
 
 ```bash
 npm install
-npm run dev:server
+npm run dev:backend
 npm run dev:web
+```
+
+Common shortcuts are also available through the root `Makefile`:
+
+```bash
+make dev
+make build
+make test
 ```
 
 The Vite development server proxies `/api` to `http://localhost:4010` by default.
@@ -139,15 +147,16 @@ Saved-project behavior now looks like this:
 - `Open Saved Project` lets you browse collections, filter projects by collection, move projects between collections, reopen diagrams, rename saved diagrams, and delete saved diagrams or whole projects.
 - Browser-local Dexie storage still acts as the editor working cache, but the backend becomes the durable source of truth for saved projects when it is reachable.
 
-See [Project Collections](./docs/project-collections.md) for the organization model.
-See [Project Backup Format](./docs/project-backup-format.md) for the backup/import archive format.
-See [Optional Authentication](./docs/optional-authentication.md) for self-hosted auth modes and [OIDC Authentication](./docs/oidc-authentication.md) for enterprise SSO setup.
-See [Scoped Sharing](./docs/scoped-sharing.md) for private, authenticated, and link-based sharing rules.
-See [Real-Time Collaboration](./docs/realtime-collaboration.md) for shared editing architecture, setup, and current limitations.
-See [Admin Dashboard](./docs/admin-dashboard.md) for the basic self-hosted admin surface.
-See [Schema Sync Architecture](./docs/schema-sync-architecture.md) for live PostgreSQL import, diff, apply, and safety details.
-See [Self-Hosting SchemaDash](./docs/self-hosting.md) for Docker, reverse proxy, health check, and deployment guidance.
-See [Post-Merge Integration Audit](./docs/post-merge-integration-audit.md) for the current audited feature matrix and remaining limitations.
+See [Project Collections](./docs/architecture/project-collections.md) for the organization model.
+See [Project Backup Format](./docs/architecture/project-backup-format.md) for the backup/import archive format.
+See [Optional Authentication](./docs/auth/optional-authentication.md) for self-hosted auth modes and [OIDC Authentication](./docs/auth/oidc-authentication.md) for enterprise SSO setup.
+See [Scoped Sharing](./docs/architecture/scoped-sharing.md) for private, authenticated, and link-based sharing rules.
+See [Real-Time Collaboration](./docs/architecture/realtime-collaboration.md) for shared editing architecture, setup, and current limitations.
+See [Admin Dashboard](./docs/operations/admin-dashboard.md) for the basic self-hosted admin surface.
+See [Schema Sync Architecture](./docs/architecture/schema-sync-architecture.md) for live PostgreSQL import, diff, apply, and safety details.
+See [Self-Hosting SchemaDash](./docs/operations/self-hosting.md) for Docker, reverse proxy, health check, and deployment guidance.
+See [Post-Merge Integration Audit](./docs/audits/post-merge-integration-audit.md) for the current audited feature matrix and remaining limitations.
+See [Repository Organization](./docs/repository-organization.md) for the current repository layout.
 
 ### Full Local Stack With Docker
 
@@ -174,7 +183,7 @@ Useful operational endpoints:
 - `GET /api/readyz`
 - `GET /api/health`
 
-See [Self-Hosting SchemaDash](./docs/self-hosting.md) for reverse-proxy notes, deployment basics, and environment variable details.
+See [Self-Hosting SchemaDash](./docs/operations/self-hosting.md) for reverse-proxy notes, deployment basics, and environment variable details.
 
 ### Optional Authentication
 
@@ -225,7 +234,7 @@ SCHEMADASH_OIDC_REDIRECT_URL=http://localhost:5173/api/auth/oidc/callback
 ```
 
 If you want logout to continue to the provider, also set `SCHEMADASH_OIDC_LOGOUT_URL`.
-See [docs/oidc-authentication.md](./docs/oidc-authentication.md) for the full Keycloak example and reverse-proxy guidance.
+See [docs/auth/oidc-authentication.md](./docs/auth/oidc-authentication.md) for the full Keycloak example and reverse-proxy guidance.
 
 ### Environment Variables
 
@@ -287,7 +296,7 @@ npm run test:ci
 ### Run Only The Backend
 
 ```bash
-npm run dev -w @chartdb/server
+npm run dev:backend
 ```
 
 Useful backend endpoints:
@@ -343,19 +352,30 @@ npm run dev:web
 
 - `packages/schema-sync-core`
   Shared canonical schema model, diff engine, SQL generation, risk analysis, and API contracts.
-- `server`
+- `backend`
   Fastify API for self-hosted app persistence, connection storage, PostgreSQL introspection, plan generation, apply execution, and audit/history persistence.
-- `src`
+- `frontend/src`
   Existing SchemaDash editor plus schema-sync UI, a hybrid local/remote storage boundary, adapters between `Diagram` and `CanonicalSchema`, and toolbar/dialog integration.
 
-See [docs/schema-sync-architecture.md](./docs/schema-sync-architecture.md) for the detailed design.
-See [docs/backend-persistence-foundation.md](./docs/backend-persistence-foundation.md) for the self-hosted backend/persistence foundation.
-See [docs/self-hosting.md](./docs/self-hosting.md) for self-hosted runtime, Docker, reverse proxy, and deployment guidance.
-See [docs/project-backup-format.md](./docs/project-backup-format.md) for the saved project backup and restore workflow.
-See [docs/optional-authentication.md](./docs/optional-authentication.md) for optional auth modes and [docs/oidc-authentication.md](./docs/oidc-authentication.md) for OIDC and Keycloak setup.
-See [docs/scoped-sharing.md](./docs/scoped-sharing.md) for sharing modes, shared routes, and security behavior.
-See [docs/realtime-collaboration.md](./docs/realtime-collaboration.md) for the live collaboration transport, setup flow, and current guardrails.
-See [docs/admin-dashboard.md](./docs/admin-dashboard.md) for the admin overview surface that ships with self-hosted auth.
+## Repository Layout
+
+- `frontend/` contains the Vite/React web app, static assets, and frontend test harness.
+- `backend/` contains the Fastify API, backend runtime config, and backend integration/unit tests under `backend/test/`.
+- `packages/schema-sync-core/` contains the shared schema-sync domain model and diff/apply primitives.
+- `deploy/` contains deployment-specific assets such as the nginx template.
+- `scripts/` contains operational helper scripts such as the web container entrypoint.
+- `tests/e2e/` is reserved for future browser end-to-end coverage.
+- `docs/` is organized into `architecture/`, `auth/`, `operations/`, `audits/`, and `migration/`.
+
+See [docs/repository-organization.md](./docs/repository-organization.md) for the detailed repository map.
+See [docs/architecture/schema-sync-architecture.md](./docs/architecture/schema-sync-architecture.md) for the detailed design.
+See [docs/architecture/backend-persistence-foundation.md](./docs/architecture/backend-persistence-foundation.md) for the self-hosted backend/persistence foundation.
+See [docs/operations/self-hosting.md](./docs/operations/self-hosting.md) for self-hosted runtime, Docker, reverse proxy, and deployment guidance.
+See [docs/architecture/project-backup-format.md](./docs/architecture/project-backup-format.md) for the saved project backup and restore workflow.
+See [docs/auth/optional-authentication.md](./docs/auth/optional-authentication.md) for optional auth modes and [docs/auth/oidc-authentication.md](./docs/auth/oidc-authentication.md) for OIDC and Keycloak setup.
+See [docs/architecture/scoped-sharing.md](./docs/architecture/scoped-sharing.md) for sharing modes, shared routes, and security behavior.
+See [docs/architecture/realtime-collaboration.md](./docs/architecture/realtime-collaboration.md) for the live collaboration transport, setup flow, and current guardrails.
+See [docs/operations/admin-dashboard.md](./docs/operations/admin-dashboard.md) for the admin overview surface that ships with self-hosted auth.
 
 ## Security Considerations
 

@@ -27,5 +27,5 @@ dist-ssr
 stats/
 .schemadash-data/
 .chartdb-data/
-server/.schemadash-data/
-server/.chartdb-data/
+backend/.schemadash-data/
+backend/.chartdb-data/
