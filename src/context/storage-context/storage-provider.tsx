@@ -1372,10 +1372,6 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
 
             syncInFlightRef.current.add(diagramId);
             const sessionState = diagramSessionsRef.current.get(diagramId);
-            if (!sessionState) {
-                syncInFlightRef.current.delete(diagramId);
-                return;
-            }
 
             try {
                 const diagram = await readLocalDiagram(
@@ -1398,9 +1394,10 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                     {
                         projectId: targetProjectId,
                         description: savedDiagram?.description ?? undefined,
-                        sessionId: sessionState?.session.id,
+                        sessionId: sessionState?.session.id ?? undefined,
                         baseVersion:
-                            sessionState?.collaboration.document.version,
+                            sessionState?.collaboration.document.version ??
+                            undefined,
                         diagram: serializeDiagram(diagram),
                     }
                 );
@@ -2649,7 +2646,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
     const addDiagram: StorageContext['addDiagram'] = useCallback(
         async ({ diagram }) => {
             await replaceLocalDiagramSnapshot(diagram);
-            void syncDiagramToRemote(diagram.id);
+            await syncDiagramToRemote(diagram.id);
         },
         [replaceLocalDiagramSnapshot, syncDiagramToRemote]
     );

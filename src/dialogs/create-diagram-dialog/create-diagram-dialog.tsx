@@ -27,6 +27,7 @@ import {
     importDBMLToDiagram,
 } from '@/lib/dbml/dbml-import/dbml-import';
 import type { ImportMethod } from '@/lib/import-method/import-method';
+import { useToast } from '@/components/toast/use-toast';
 
 export interface CreateDiagramDialogProps extends BaseDialogProps {}
 
@@ -53,6 +54,7 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
     const navigate = useNavigate();
     const [parsedMetadata, setParsedMetadata] = useState<DatabaseMetadata>();
     const [isParsingMetadata, setIsParsingMetadata] = useState(false);
+    const { toast } = useToast();
 
     useEffect(() => {
         setDatabaseEdition(undefined);
@@ -127,13 +129,24 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
                 });
             }
 
-            await addDiagram({ diagram });
-            await updateConfig({
-                config: { defaultDiagramId: diagram.id },
-            });
+            try {
+                await addDiagram({ diagram });
+                await updateConfig({
+                    config: { defaultDiagramId: diagram.id },
+                });
 
-            closeCreateDiagramDialog();
-            navigate(`/diagrams/${diagram.id}`);
+                closeCreateDiagramDialog();
+                navigate(`/diagrams/${diagram.id}`);
+            } catch (error) {
+                toast({
+                    title: 'Unable to create diagram',
+                    description:
+                        error instanceof Error
+                            ? error.message
+                            : 'Something went wrong while saving the diagram.',
+                    variant: 'destructive',
+                });
+            }
         },
         [
             importMethod,
@@ -145,6 +158,7 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
             updateConfig,
             scriptResult,
             diagramNumber,
+            toast,
         ]
     );
 
@@ -161,10 +175,21 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
             updatedAt: new Date(),
         };
 
-        await addDiagram({ diagram });
-        await updateConfig({ config: { defaultDiagramId: diagram.id } });
-        closeCreateDiagramDialog();
-        navigate(`/diagrams/${diagram.id}`);
+        try {
+            await addDiagram({ diagram });
+            await updateConfig({ config: { defaultDiagramId: diagram.id } });
+            closeCreateDiagramDialog();
+            navigate(`/diagrams/${diagram.id}`);
+        } catch (error) {
+            toast({
+                title: 'Unable to create diagram',
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : 'Something went wrong while saving the diagram.',
+                variant: 'destructive',
+            });
+        }
     }, [
         databaseType,
         addDiagram,
@@ -173,6 +198,7 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
         navigate,
         updateConfig,
         diagramNumber,
+        toast,
     ]);
 
     const importNewDiagramOrFilterTables = useCallback(async () => {
