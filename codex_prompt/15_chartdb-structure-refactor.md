@@ -4,19 +4,19 @@ SOURCE REPOSITORY TO ANALYZE FOR ORGANIZATIONAL PATTERNS:
 https://github.com/wweziz0001/ExcaliDash
 
 TARGET REPOSITORY TO RESTRUCTURE:
-https://github.com/wweziz0001/chartdb
+https://github.com/wweziz0001/SchemaDash
 
 WORKING BRANCH:
-feature/chartdb-structure-refactor
+feature/SchemaDash-structure-refactor
 
 PULL REQUEST TITLE:
-Restructure ChartDB repository using ExcaliDash-inspired organization patterns
+Restructure SchemaDash repository using ExcaliDash-inspired organization patterns
 
 ==================================================
 MISSION
 ==================================================
 
-Your task is to inspect the actual repository organization of ExcaliDash and use its strongest structural and organizational patterns to improve the repository layout of chartdb.
+Your task is to inspect the actual repository organization of ExcaliDash and use its strongest structural and organizational patterns to improve the repository layout of SchemaDash.
 
 This task is about:
 - repository structure
@@ -29,8 +29,8 @@ This task is about:
 - maintainability
 
 This task is NOT about copying product features.
-Do not turn chartdb into ExcaliDash.
-Preserve chartdb’s identity as a database diagram and schema-sync platform.
+Do not turn SchemaDash into ExcaliDash.
+Preserve SchemaDash’s identity as a database diagram and schema-sync platform.
 
 ==================================================
 MANDATORY PROCESS
@@ -50,8 +50,8 @@ Pay special attention to:
 - RELEASE.md / VERSION
 - operational clarity in repository root
 
-STEP 2 — AUDIT CURRENT CHARTDB STRUCTURE
-Inspect chartdb and identify:
+STEP 2 — AUDIT CURRENT SchemaDash STRUCTURE
+Inspect SchemaDash and identify:
 - overloaded folders
 - unclear boundaries
 - mixed concerns
@@ -59,7 +59,7 @@ Inspect chartdb and identify:
 - weak discoverability of backend/frontend/core/auth/tests/docs/deploy structure
 
 STEP 3 — PRODUCE A TARGET FOLDER TREE BEFORE IMPLEMENTING
-Before moving files or refactoring structure, you must produce an explicit target repository tree for chartdb.
+Before moving files or refactoring structure, you must produce an explicit target repository tree for SchemaDash.
 
 This target tree must show the intended top-level structure and major subdirectories.
 For example, clearly indicate where these concerns should live:
@@ -81,14 +81,14 @@ You must not start the reorganization until you have internally defined this tar
 
 STEP 4 — VALIDATE THE TARGET STRUCTURE AGAINST REALITY
 Before implementing, verify that the target tree:
-- fits chartdb’s actual codebase
+- fits SchemaDash’s actual codebase
 - does not introduce unnecessary churn
 - does not break build/test/runtime assumptions more than necessary
 - improves discoverability and architectural clarity
 - borrows the right organizational ideas from ExcaliDash without blindly copying
 
 STEP 5 — IMPLEMENT THE REORGANIZATION
-Then implement the new structure directly in chartdb by:
+Then implement the new structure directly in SchemaDash by:
 - moving or regrouping files/folders where justified
 - improving naming and boundaries
 - introducing clearer structural areas if needed
@@ -112,7 +112,7 @@ Use ExcaliDash as inspiration for repository organization quality, especially ar
 - clearer identity-related/config-related boundaries
 - obvious placement of tooling and release/process files
 
-Improve chartdb in these areas:
+Improve SchemaDash in these areas:
 
 1. Top-level organization
 2. Frontend/backend boundary clarity
@@ -133,7 +133,7 @@ Do NOT:
 - move files around without a clear structural reason
 - rename things gratuitously
 - remove working features
-- change chartdb’s product identity
+- change SchemaDash’s product identity
 
 ==================================================
 MANDATORY COMMIT DISCIPLINE
@@ -148,9 +148,9 @@ Rules:
 - commit after each major logical phase
 
 Required commit sequence:
-1. chore: audit excalidash and chartdb repository structure
-2. docs: add target chartdb repository tree and restructuring plan
-3. refactor: reorganize chartdb folders and architectural boundaries
+1. chore: audit excalidash and SchemaDash repository structure
+2. docs: add target SchemaDash repository tree and restructuring plan
+3. refactor: reorganize SchemaDash folders and architectural boundaries
 4. refactor: update config scripts imports and build paths for new layout
 5. test: fix or update tests after repository reorganization
 6. docs: update repository structure and developer documentation
@@ -173,7 +173,7 @@ You must create a document before the main refactor, for example:
 docs/repository-organization-plan.md
 
 This document must include:
-1. current chartdb structure summary
+1. current SchemaDash structure summary
 2. relevant ExcaliDash structural lessons
 3. the proposed target folder tree
 4. mapping from old paths to new paths
@@ -188,9 +188,9 @@ ACCEPTANCE CRITERIA
 
 The task is complete only if:
 - ExcaliDash repository organization was actually inspected
-- chartdb repository structure was actually audited
+- SchemaDash repository structure was actually audited
 - a target folder tree was created before refactoring
-- chartdb repository layout was meaningfully improved
+- SchemaDash repository layout was meaningfully improved
 - boundaries are clearer than before
 - operational/test/docs structure is more discoverable
 - imports/config/build/test paths still work
@@ -202,7 +202,7 @@ FINAL DELIVERABLES
 ==================================================
 
 You must provide:
-1. actual chartdb repository reorganization
+1. actual SchemaDash repository reorganization
 2. updated imports/config/scripts/build/test paths as needed
 3. docs/repository-organization-plan.md
 4. docs/repository-organization.md
@@ -216,9 +216,9 @@ You must provide:
 
 Start now by:
 1. auditing ExcaliDash repository layout
-2. auditing chartdb repository layout
+2. auditing SchemaDash repository layout
 3. producing the target folder tree document
-4. implementing the approved structure directly in chartdb
+4. implementing the approved structure directly in SchemaDash
 5. committing in logical phases
 6. summarizing the final result
 
