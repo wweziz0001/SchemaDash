@@ -4,9 +4,18 @@ const isoDateTimeSchema = z.string().datetime({ offset: true });
 
 const diagramRecordSchema = z.record(z.string(), z.unknown());
 
-export const CHARTDB_BACKUP_FORMAT = 'chartdb-backup';
-export const CHARTDB_BACKUP_FORMAT_VERSION = 1;
-export const CHARTDB_BACKUP_FILE_EXTENSION = '.chartdb-backup.json';
+export const SCHEMADASH_BACKUP_FORMAT = 'schemadash-backup';
+export const LEGACY_CHARTDB_BACKUP_FORMAT = 'chartdb-backup';
+export const SCHEMADASH_BACKUP_FORMAT_VERSION = 1;
+export const SCHEMADASH_BACKUP_FILE_EXTENSION = '.schemadash-backup.json';
+export const CHARTDB_BACKUP_FORMAT = SCHEMADASH_BACKUP_FORMAT;
+export const CHARTDB_BACKUP_FORMAT_VERSION = SCHEMADASH_BACKUP_FORMAT_VERSION;
+export const CHARTDB_BACKUP_FILE_EXTENSION = SCHEMADASH_BACKUP_FILE_EXTENSION;
+
+const backupFormatSchema = z.enum([
+    SCHEMADASH_BACKUP_FORMAT,
+    LEGACY_CHARTDB_BACKUP_FORMAT,
+]);
 
 export const exportBackupRequestSchema = z.discriminatedUnion('scope', [
     z.object({
@@ -23,9 +32,10 @@ export const exportBackupRequestSchema = z.discriminatedUnion('scope', [
 ]);
 
 export const chartDbBackupArchiveSchema = z.object({
-    format: z.literal(CHARTDB_BACKUP_FORMAT),
+    format: backupFormatSchema,
     formatVersion: z.literal(CHARTDB_BACKUP_FORMAT_VERSION),
     exportedAt: isoDateTimeSchema,
+    schemadashVersion: z.string().min(1).optional(),
     chartdbVersion: z.string().min(1).optional(),
     scope: z.enum(['all-projects', 'projects', 'diagrams']),
     counts: z.object({

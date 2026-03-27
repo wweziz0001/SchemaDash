@@ -14,8 +14,12 @@ const backupDiagramDocumentSchema = diagramDocumentSchema.extend({
     updatedAt: isoDateTimeSchema,
 });
 
+export const SCHEMADASH_BACKUP_FORMAT = 'schemadash-backup';
+export const LEGACY_CHARTDB_BACKUP_FORMAT = 'chartdb-backup';
+export const SCHEMADASH_BACKUP_FORMAT_VERSION = 1;
+
 export const chartDbBackupEnvelopeSchema = z.object({
-    format: z.string().min(1),
+    format: z.enum([SCHEMADASH_BACKUP_FORMAT, LEGACY_CHARTDB_BACKUP_FORMAT]),
     formatVersion: z.number().int(),
 });
 
@@ -70,9 +74,10 @@ export const chartDbBackupDiagramSchema = z.object({
 });
 
 export const chartDbBackupArchiveSchema = z.object({
-    format: z.literal('chartdb-backup'),
-    formatVersion: z.literal(1),
+    format: z.enum([SCHEMADASH_BACKUP_FORMAT, LEGACY_CHARTDB_BACKUP_FORMAT]),
+    formatVersion: z.literal(SCHEMADASH_BACKUP_FORMAT_VERSION),
     exportedAt: isoDateTimeSchema,
+    schemadashVersion: z.string().min(1).optional(),
     chartdbVersion: z.string().min(1).optional(),
     scope: z.enum(['all-projects', 'projects', 'diagrams']),
     counts: z.object({

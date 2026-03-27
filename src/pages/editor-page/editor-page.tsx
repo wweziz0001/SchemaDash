@@ -21,7 +21,7 @@ import { Spinner } from '@/components/spinner/spinner';
 import { Helmet } from 'react-helmet-async';
 import { AlertProvider } from '@/context/alert-context/alert-provider';
 import { CanvasProvider } from '@/context/canvas-context/canvas-provider';
-import { HIDE_CHARTDB_CLOUD } from '@/lib/env';
+import { HIDE_SCHEMADASH_CLOUD } from '@/lib/env';
 import { useDiagramLoader } from './use-diagram-loader';
 import { DiffProvider } from '@/context/diff-context/diff-provider';
 import { TopNavbarMock } from './top-navbar/top-navbar-mock';
@@ -55,7 +55,7 @@ const EditorPageComponent: React.FC<{
     const resolvedInitialDiagram = initialDiagramOverride ?? initialDiagram;
 
     useEffect(() => {
-        if (HIDE_CHARTDB_CLOUD) {
+        if (HIDE_SCHEMADASH_CLOUD) {
             return;
         }
 

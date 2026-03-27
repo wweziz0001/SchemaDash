@@ -38,7 +38,7 @@ const selectTokenEndpointAuthMethod = (options: {
     if (!options.hasClientSecret) {
         if (supported && supported.length > 0 && !supported.includes('none')) {
             throw new Error(
-                'OIDC client is configured without CHARTDB_OIDC_CLIENT_SECRET, but the provider does not advertise support for public clients.'
+                'OIDC client is configured without SCHEMADASH_OIDC_CLIENT_SECRET, but the provider does not advertise support for public clients.'
             );
         }
         return 'none';

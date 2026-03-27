@@ -130,10 +130,10 @@ export const ExportBackupDialog: React.FC<ExportBackupDialogProps> = ({
         }
 
         if (scope === 'project') {
-            return `chartdb-project-backup-${today}${CHARTDB_BACKUP_FILE_EXTENSION}`;
+            return `schemadash-project-backup-${today}${CHARTDB_BACKUP_FILE_EXTENSION}`;
         }
 
-        return `chartdb-backup-${today}${CHARTDB_BACKUP_FILE_EXTENSION}`;
+        return `schemadash-backup-${today}${CHARTDB_BACKUP_FILE_EXTENSION}`;
     }, [currentDiagram.name, scope]);
 
     const handleExport = useCallback(async () => {

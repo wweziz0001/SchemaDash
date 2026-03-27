@@ -52,7 +52,9 @@ export default defineConfig({
         proxy: {
             '/api': {
                 target:
-                    process.env.CHARTDB_API_PROXY ?? 'http://localhost:4010',
+                    process.env.SCHEMADASH_API_PROXY ??
+                    process.env.CHARTDB_API_PROXY ??
+                    'http://localhost:4010',
                 changeOrigin: true,
             },
         },

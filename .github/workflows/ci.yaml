@@ -47,10 +47,10 @@ jobs:
   containers:
     runs-on: ubuntu-latest
     env:
-      CHARTDB_SECRET_KEY: ci-chartdb-secret-key-please-rotate-in-real-deployments
-      CHARTDB_POSTGRES_PASSWORD: ci-chartdb-postgres-password
-      CHARTDB_CORS_ORIGIN: http://localhost:8080
-      CHARTDB_LOG_LEVEL: warn
+      SCHEMADASH_SECRET_KEY: ci-schemadash-secret-key-please-rotate-in-real-deployments
+      SCHEMADASH_POSTGRES_PASSWORD: ci-schemadash-postgres-password
+      SCHEMADASH_CORS_ORIGIN: http://localhost:8080
+      SCHEMADASH_LOG_LEVEL: warn
 
     steps:
       - name: Checkout repository

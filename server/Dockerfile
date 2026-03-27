@@ -19,7 +19,7 @@ FROM node:24-bookworm-slim AS production
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV CHARTDB_DATA_DIR=/app/data
+ENV SCHEMADASH_DATA_DIR=/app/data
 
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/server/dist ./dist
