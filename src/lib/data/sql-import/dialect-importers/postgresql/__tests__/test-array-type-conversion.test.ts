@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { fromPostgres } from '../postgresql';
-import { convertToChartDBDiagram } from '../../../common';
+import { convertToSchemaDashDiagram } from '../../../common';
 import { DatabaseType } from '@/lib/domain/database-type';
 
 describe('Array Type Conversion', () => {
@@ -39,7 +39,7 @@ CREATE INDEX idx_int_array ON test_arrays USING GIN (int_array);
         expect(varcharArrayCol?.type).toBe('varchar(255)[]');
 
         // Convert to diagram
-        const diagram = convertToChartDBDiagram(
+        const diagram = convertToSchemaDashDiagram(
             parserResult,
             DatabaseType.POSTGRESQL,
             DatabaseType.POSTGRESQL
@@ -139,7 +139,7 @@ CREATE INDEX idx_tags_hash ON test_gin_index USING HASH (id);
         expect(hashIndex!.type).toBe('hash');
 
         // Convert to diagram and verify index types are preserved
-        const diagram = convertToChartDBDiagram(
+        const diagram = convertToSchemaDashDiagram(
             parserResult,
             DatabaseType.POSTGRESQL,
             DatabaseType.POSTGRESQL

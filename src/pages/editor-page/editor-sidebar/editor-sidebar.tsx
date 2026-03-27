@@ -23,10 +23,10 @@ import { useLayout } from '@/hooks/use-layout';
 import { useTranslation } from 'react-i18next';
 import { DiscordLogoIcon, TwitterLogoIcon } from '@radix-ui/react-icons';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import ChartDBLogo from '@/assets/logo-light.png';
-import ChartDBDarkLogo from '@/assets/logo-dark.png';
+import SchemaDashLogo from '@/assets/logo-light.png';
+import SchemaDashDarkLogo from '@/assets/logo-dark.png';
 import { useTheme } from '@/hooks/use-theme';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { supportsCustomTypes } from '@/lib/domain/database-capabilities';
 import { useDialog } from '@/hooks/use-dialog';
 import { Separator } from '@/components/separator/separator';
@@ -51,7 +51,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
     const { t } = useTranslation();
     const { isMd: isDesktop } = useBreakpoint('md');
     const { effectiveTheme } = useTheme();
-    const { databaseType, customTypes } = useChartDB();
+    const { databaseType, customTypes } = useSchemaDash();
     const { openCreateDiagramDialog, openOpenDiagramDialog } = useDialog();
     const canShowCustomTypes =
         supportsCustomTypes(databaseType) || customTypes.length > 0;
@@ -163,7 +163,8 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
             {
                 title: 'Docs',
                 icon: BookOpen,
-                onClick: () => window.open('https://docs.chartdb.io', '_blank'),
+                onClick: () =>
+                    window.open('https://docs.schemadash.io', '_blank'),
                 active: false,
             },
         ],
@@ -180,17 +181,17 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
             {!isDesktop ? (
                 <SidebarHeader>
                     <a
-                        href="https://chartdb.io"
+                        href="https://schemadash.io"
                         className="cursor-pointer"
                         rel="noreferrer"
                     >
                         <img
                             src={
                                 effectiveTheme === 'light'
-                                    ? ChartDBLogo
-                                    : ChartDBDarkLogo
+                                    ? SchemaDashLogo
+                                    : SchemaDashDarkLogo
                             }
-                            alt="chartDB"
+                            alt="SchemaDash"
                             className="h-4 max-w-fit"
                         />
                     </a>

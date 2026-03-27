@@ -13,7 +13,7 @@ import {
     X,
 } from 'lucide-react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import ChartDBLogo from '@/assets/logo-light.png';
+import SchemaDashLogo from '@/assets/logo-light.png';
 import { Button } from '@/components/button/button';
 import { Avatar, AvatarFallback } from '@/components/avatar/avatar';
 import { cn } from '@/lib/utils';
@@ -153,14 +153,14 @@ export const DashboardShellFrame = () => {
                 <Link to="/" className="flex items-center gap-3">
                     <div className="flex size-11 items-center justify-center rounded-2xl bg-stone-950 shadow-lg shadow-stone-950/10 dark:bg-amber-300">
                         <img
-                            src={ChartDBLogo}
-                            alt="ChartDB"
+                            src={SchemaDashLogo}
+                            alt="SchemaDash"
                             className="h-5 w-auto brightness-[3] dark:brightness-100"
                         />
                     </div>
                     <div className="min-w-0">
                         <div className="text-sm font-semibold text-stone-950 dark:text-stone-50">
-                            ChartDB
+                            SchemaDash
                         </div>
                         <div className="text-xs uppercase tracking-[0.24em] text-stone-400">
                             Diagram Library
@@ -256,7 +256,7 @@ export const DashboardShellFrame = () => {
                                 {initialsFromName(
                                     user?.displayName ??
                                         user?.email ??
-                                        'ChartDB'
+                                        'SchemaDash'
                                 )}
                             </AvatarFallback>
                         </Avatar>

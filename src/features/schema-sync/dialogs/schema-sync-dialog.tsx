@@ -19,7 +19,7 @@ import { Separator } from '@/components/separator/separator';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { useSchemaSync } from '../hooks/use-schema-sync';
 import type { ConnectionUpsert } from '@chartdb/schema-sync-core';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { useToast } from '@/components/toast/use-toast';
 
 const initialConnectionDraft: ConnectionUpsert = {
@@ -54,7 +54,7 @@ export const SchemaSyncDialog: React.FC = () => {
         previewChanges,
         applyChanges,
     } = useSchemaSync();
-    const { currentDiagram } = useChartDB();
+    const { currentDiagram } = useSchemaDash();
     const { toast } = useToast();
     const [draft, setDraft] = useState<ConnectionUpsert>(
         initialConnectionDraft

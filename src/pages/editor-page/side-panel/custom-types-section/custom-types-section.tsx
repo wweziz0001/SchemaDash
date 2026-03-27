@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { Button } from '@/components/button/button';
 import { X, Plus } from 'lucide-react';
 import { Input } from '@/components/input/input';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { EmptyState } from '@/components/empty-state/empty-state';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,7 @@ export interface CustomTypesSectionProps {}
 
 export const CustomTypesSection: React.FC<CustomTypesSectionProps> = () => {
     const { t } = useTranslation();
-    const { customTypes, createCustomType, readonly } = useChartDB();
+    const { customTypes, createCustomType, readonly } = useSchemaDash();
     const [filterText, setFilterText] = React.useState('');
     const filterInputRef = React.useRef<HTMLInputElement>(null);
 

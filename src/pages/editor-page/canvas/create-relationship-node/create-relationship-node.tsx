@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NodeProps, Node } from '@xyflow/react';
 import { Button } from '@/components/button/button';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import type { SelectBoxOption } from '@/components/select-box/select-box';
 import { SelectBox } from '@/components/select-box/select-box';
 import { areFieldTypesCompatible } from '@/lib/data/data-types/data-types';
@@ -30,7 +30,7 @@ export const CreateRelationshipNode: React.FC<
 > = React.memo(({ data }) => {
     const { sourceTableId, targetTableId } = data;
     const { getTable, createRelationship, databaseType, addField } =
-        useChartDB();
+        useSchemaDash();
     const { hideCreateRelationshipNode } = useCanvas();
     const { setEdges } = useReactFlow();
     const { openRelationshipFromSidebar } = useLayout();

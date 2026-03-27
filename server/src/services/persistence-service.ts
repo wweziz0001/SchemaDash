@@ -234,7 +234,7 @@ export class PersistenceService {
             defaultProject = {
                 id: projectId,
                 name: this.defaults.defaultProjectName,
-                description: 'Default self-hosted ChartDB project',
+                description: 'Default self-hosted SchemaDash project',
                 collectionId: null,
                 ownerUserId: user.id,
                 visibility: 'private',
@@ -276,7 +276,7 @@ export class PersistenceService {
             defaultProject = {
                 id: projectId,
                 name: this.defaults.defaultProjectName,
-                description: 'Default self-hosted ChartDB project',
+                description: 'Default self-hosted SchemaDash project',
                 collectionId: null,
                 ownerUserId: user.id,
                 visibility: 'private',

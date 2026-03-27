@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import { useChartDB } from './use-chartdb';
+import { useSchemaDash } from './use-chartdb';
 import { useDebounce } from './use-debounce-v2';
 import type { DatabaseType, DBField, DBTable } from '@/lib/domain';
 import type {
@@ -81,7 +81,7 @@ export const useUpdateTableField = (
         customTypes,
         updateField: chartDBUpdateField,
         removeField: chartDBRemoveField,
-    } = useChartDB();
+    } = useSchemaDash();
 
     // Local state for responsive UI
     const [localFieldName, setLocalFieldName] = useState(field.name);

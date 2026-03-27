@@ -28,7 +28,7 @@ const createOidcEnv = (): ServerEnv => {
         authMode: 'oidc',
         authEmail: null,
         authPassword: null,
-        authDisplayName: 'ChartDB Owner',
+        authDisplayName: 'SchemaDash Owner',
         bootstrapSetupCode: null,
         bootstrapSetupCodeTtlMs: 15 * 60 * 1000,
         bootstrapSetupCodeMaxAttempts: 10,

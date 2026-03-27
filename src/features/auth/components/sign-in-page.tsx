@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ChartDBLogo from '@/assets/logo-light.png';
+import SchemaDashLogo from '@/assets/logo-light.png';
 import { Button } from '@/components/button/button';
 import {
     Card,
@@ -46,8 +46,8 @@ export const SignInPage: React.FC = () => {
             <div className="relative z-10 w-full max-w-md">
                 <div className="mb-6 flex items-center justify-center gap-3">
                     <img
-                        src={ChartDBLogo}
-                        alt="ChartDB"
+                        src={SchemaDashLogo}
+                        alt="SchemaDash"
                         className="h-5 w-auto"
                     />
                     <span className="text-sm uppercase tracking-[0.3em] text-stone-400">
@@ -57,7 +57,7 @@ export const SignInPage: React.FC = () => {
                 <Card className="border-stone-800/80 bg-stone-900/90 shadow-2xl shadow-black/40">
                     <CardHeader>
                         <CardTitle className="text-2xl text-stone-50">
-                            Sign in to ChartDB
+                            Sign in to SchemaDash
                         </CardTitle>
                         <CardDescription className="text-stone-400">
                             {mode === 'oidc'
@@ -111,7 +111,7 @@ export const SignInPage: React.FC = () => {
                             ) : (
                                 <p className="text-sm leading-6 text-stone-300">
                                     Continue with your identity provider to
-                                    access this ChartDB deployment.
+                                    access this SchemaDash deployment.
                                 </p>
                             )}
                             {error ? (

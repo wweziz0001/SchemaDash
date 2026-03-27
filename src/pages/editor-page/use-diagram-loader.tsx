@@ -1,4 +1,4 @@
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { useConfig } from '@/hooks/use-config';
 import { useDialog } from '@/hooks/use-dialog';
 import { useFullScreenLoader } from '@/hooks/use-full-screen-spinner';
@@ -13,7 +13,7 @@ export const useDiagramLoader = (options?: { enabled?: boolean }) => {
     const { diagramId } = useParams<{ diagramId: string }>();
     const [searchParams] = useSearchParams();
     const { config } = useConfig();
-    const { loadDiagram, currentDiagram } = useChartDB();
+    const { loadDiagram, currentDiagram } = useSchemaDash();
     const { resetRedoStack, resetUndoStack } = useRedoUndoStack();
     const { showLoader, hideLoader } = useFullScreenLoader();
     const {

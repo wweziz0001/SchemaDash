@@ -1,12 +1,12 @@
 import { createContext } from 'react';
 import { emptyFn } from '@/lib/utils';
-import type { ChartDBConfig } from '@/lib/domain/config';
+import type { SchemaDashConfig } from '@/lib/domain/config';
 
 export interface ConfigContext {
-    config?: ChartDBConfig;
+    config?: SchemaDashConfig;
     updateConfig: (params: {
-        config?: Partial<ChartDBConfig>;
-        updateFn?: (config: ChartDBConfig) => ChartDBConfig;
+        config?: Partial<SchemaDashConfig>;
+        updateFn?: (config: SchemaDashConfig) => SchemaDashConfig;
     }) => Promise<void>;
 }
 

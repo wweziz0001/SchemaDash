@@ -25,7 +25,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/tooltip/tooltip';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { defaultSchemas } from '@/lib/data/default-schemas';
 import { Label } from '@/components/label/label';
 
@@ -44,7 +44,7 @@ export const TableSchemaDialog: React.FC<TableSchemaDialogProps> = ({
     allowSchemaCreation = false,
 }) => {
     const { t } = useTranslation();
-    const { databaseType } = useChartDB();
+    const { databaseType } = useSchemaDash();
     const [selectedSchemaId, setSelectedSchemaId] = useState<string>(
         table?.schema
             ? schemaNameToSchemaId(table.schema)

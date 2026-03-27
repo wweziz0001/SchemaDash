@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { fromSQLServer } from '../sqlserver';
-import { convertToChartDBDiagram } from '../../../common';
+import { convertToSchemaDashDiagram } from '../../../common';
 import { DatabaseType } from '@/lib/domain/database-type';
 
 describe('SQL Server varchar(max) and nvarchar(max) preservation', () => {
@@ -59,7 +59,7 @@ describe('SQL Server varchar(max) and nvarchar(max) preservation', () => {
         `;
 
         const result = await fromSQLServer(sql);
-        const diagram = convertToChartDBDiagram(
+        const diagram = convertToSchemaDashDiagram(
             result,
             DatabaseType.SQL_SERVER,
             DatabaseType.SQL_SERVER

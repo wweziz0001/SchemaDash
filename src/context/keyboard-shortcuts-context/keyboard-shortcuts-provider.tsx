@@ -7,7 +7,7 @@ import {
 } from './keyboard-shortcuts';
 import { useHistory } from '@/hooks/use-history';
 import { useDialog } from '@/hooks/use-dialog';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { useLayout } from '@/hooks/use-layout';
 import { useReactFlow } from '@xyflow/react';
 
@@ -16,7 +16,7 @@ export const KeyboardShortcutsProvider: React.FC<React.PropsWithChildren> = ({
 }) => {
     const { redo, undo } = useHistory();
     const { openOpenDiagramDialog } = useDialog();
-    const { saveDiagram, readonly } = useChartDB();
+    const { saveDiagram, readonly } = useSchemaDash();
     const { toggleSidePanel } = useLayout();
     const { fitView } = useReactFlow();
 

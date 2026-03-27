@@ -1,7 +1,7 @@
 import React from 'react';
 
-import ChartDBLogo from '@/assets/logo-light.png';
-import ChartDBDarkLogo from '@/assets/logo-dark.png';
+import SchemaDashLogo from '@/assets/logo-light.png';
+import SchemaDashDarkLogo from '@/assets/logo-dark.png';
 import { useTheme } from '@/hooks/use-theme';
 
 export const TopNavbarMock: React.FC = () => {
@@ -11,17 +11,17 @@ export const TopNavbarMock: React.FC = () => {
             <div className="flex flex-1 flex-col justify-between gap-x-1 md:flex-row md:justify-normal">
                 <div className="flex items-center justify-between pt-[8px] font-primary md:py-[10px]">
                     <a
-                        href="https://chartdb.io"
+                        href="https://schemadash.io"
                         className="cursor-pointer"
                         rel="noreferrer"
                     >
                         <img
                             src={
                                 effectiveTheme === 'light'
-                                    ? ChartDBLogo
-                                    : ChartDBDarkLogo
+                                    ? SchemaDashLogo
+                                    : SchemaDashDarkLogo
                             }
-                            alt="chartDB"
+                            alt="SchemaDash"
                             className="h-4 max-w-fit"
                         />
                     </a>

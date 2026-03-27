@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { ConfigContext } from './config-context';
 
 import { useStorage } from '@/hooks/use-storage';
-import type { ChartDBConfig } from '@/lib/domain/config';
+import type { SchemaDashConfig } from '@/lib/domain/config';
 
 export const ConfigProvider: React.FC<React.PropsWithChildren> = ({
     children,
 }) => {
     const { getConfig, updateConfig: updateDataConfig } = useStorage();
-    const [config, setConfig] = useState<ChartDBConfig | undefined>();
+    const [config, setConfig] = useState<SchemaDashConfig | undefined>();
 
     useEffect(() => {
         const loadConfig = async () => {
@@ -25,7 +25,7 @@ export const ConfigProvider: React.FC<React.PropsWithChildren> = ({
     }) => {
         const promise = new Promise<void>((resolve) => {
             setConfig((prevConfig) => {
-                let baseConfig: ChartDBConfig = { defaultDiagramId: '' };
+                let baseConfig: SchemaDashConfig = { defaultDiagramId: '' };
                 if (prevConfig) {
                     baseConfig = prevConfig;
                 }

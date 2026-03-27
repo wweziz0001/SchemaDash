@@ -636,8 +636,9 @@ export const SharingSettingsDialog: React.FC<SharingSettingsDialogProps> = ({
                                         Add people
                                     </h3>
                                     <p className="text-xs text-muted-foreground">
-                                        Search for an existing ChartDB user and
-                                        grant viewer or editor access directly.
+                                        Search for an existing SchemaDash user
+                                        and grant viewer or editor access
+                                        directly.
                                     </p>
                                 </div>
 

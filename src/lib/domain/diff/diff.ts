@@ -24,7 +24,7 @@ import type {
     Note,
 } from '..';
 
-export type ChartDBDiff<
+export type SchemaDashDiff<
     TTable = DBTable,
     TField = DBField,
     TIndex = DBIndex,
@@ -41,7 +41,7 @@ export type ChartDBDiff<
     | AreaDiff<TArea>
     | NoteDiff<TNote>;
 
-export const createChartDBDiffSchema = <
+export const createSchemaDashDiffSchema = <
     TTable = DBTable,
     TField = DBField,
     TIndex = DBIndex,
@@ -58,7 +58,7 @@ export const createChartDBDiffSchema = <
     areaSchema: z.ZodType<TArea>,
     noteSchema: z.ZodType<TNote>
 ): z.ZodType<
-    ChartDBDiff<
+    SchemaDashDiff<
         TTable,
         TField,
         TIndex,
@@ -77,7 +77,7 @@ export const createChartDBDiffSchema = <
         createAreaDiffSchema(areaSchema),
         createNoteDiffSchema(noteSchema),
     ]) as z.ZodType<
-        ChartDBDiff<
+        SchemaDashDiff<
             TTable,
             TField,
             TIndex,
@@ -99,7 +99,7 @@ export type DiffMap<
     TNote = Note,
 > = Map<
     string,
-    ChartDBDiff<
+    SchemaDashDiff<
         TTable,
         TField,
         TIndex,
@@ -142,7 +142,7 @@ export type DiffKind<
     TArea = Area,
     TNote = Note,
 > = ExtractDiffKind<
-    ChartDBDiff<
+    SchemaDashDiff<
         TTable,
         TField,
         TIndex,
@@ -162,7 +162,7 @@ export const isDiffOfKind = <
     TArea = Area,
     TNote = Note,
 >(
-    diff: ChartDBDiff<
+    diff: SchemaDashDiff<
         TTable,
         TField,
         TIndex,

@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import ChartDBLogo from '@/assets/logo-2.png';
+import SchemaDashLogo from '@/assets/logo-2.png';
 import { DiagramName } from './diagram-name';
 import { LanguageNav } from './language-nav/language-nav';
 import { Menu } from './menu/menu';
@@ -20,7 +20,7 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
     const renderStars = useCallback(() => {
         return (
             <iframe
-                src="https://ghbtns.com/github-btn.html?user=chartdb&repo=chartdb&type=star&size=small&text=false"
+                src="https://ghbtns.com/github-btn.html?user=wweziz0001&repo=SchemaDash&type=star&size=small&text=false"
                 width="25"
                 height="20"
                 title="GitHub"
@@ -43,13 +43,13 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                             <MenuIcon className="size-5" />
                         </Button>
                         <a
-                            href="https://chartdb.io"
+                            href="https://schemadash.io"
                             className="cursor-pointer"
                             rel="noreferrer"
                         >
                             <img
-                                src={ChartDBLogo}
-                                alt="chartDB"
+                                src={SchemaDashLogo}
+                                alt="SchemaDash"
                                 className="h-4 max-w-fit"
                             />
                         </a>

@@ -19,7 +19,7 @@ import {
     SelectValue,
 } from '@/components/select/select';
 import { Textarea } from '@/components/textarea/textarea';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { useConfig } from '@/hooks/use-config';
 import { useDialog } from '@/hooks/use-dialog';
 import { useStorage } from '@/hooks/use-storage';
@@ -37,7 +37,7 @@ export const SaveDiagramDialog: React.FC<SaveDiagramDialogProps> = ({
 }) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { currentDiagram } = useChartDB();
+    const { currentDiagram } = useSchemaDash();
     const { updateConfig } = useConfig();
     const { closeSaveDiagramDialog } = useDialog();
     const { listCollections, listProjects, getSavedDiagram, saveDiagramAs } =

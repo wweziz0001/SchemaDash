@@ -15,7 +15,7 @@ import { SelectBox } from '@/components/select-box/select-box';
 import { Spinner } from '@/components/spinner/spinner';
 import { useToast } from '@/components/toast/use-toast';
 import { useDialog } from '@/hooks/use-dialog';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { useStorage } from '@/hooks/use-storage';
 import {
     CHARTDB_BACKUP_FILE_EXTENSION,
@@ -41,7 +41,7 @@ export const ExportBackupDialog: React.FC<ExportBackupDialogProps> = ({
 }) => {
     const { t } = useTranslation();
     const { toast } = useToast();
-    const { currentDiagram } = useChartDB();
+    const { currentDiagram } = useSchemaDash();
     const { getSavedDiagram, exportBackup } = useStorage();
     const { closeExportBackupDialog } = useDialog();
     const [scope, setScope] = useState<BackupScope>('all-projects');

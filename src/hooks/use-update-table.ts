@@ -1,11 +1,11 @@
 import { useCallback, useState, useEffect } from 'react';
-import { useChartDB } from './use-chartdb';
+import { useSchemaDash } from './use-chartdb';
 import { useDebounce } from './use-debounce-v2';
 import type { DBTable } from '@/lib/domain';
 
 // Hook for updating table properties with debouncing for performance
 export const useUpdateTable = (table: DBTable) => {
-    const { updateTable: chartDBUpdateTable } = useChartDB();
+    const { updateTable: chartDBUpdateTable } = useSchemaDash();
     const [localTableName, setLocalTableName] = useState(table.name);
 
     // Debounced update function

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { fromPostgres } from '../postgresql';
-import { convertToChartDBDiagram } from '../../../common';
+import { convertToSchemaDashDiagram } from '../../../common';
 import { DatabaseType } from '@/lib/domain/database-type';
 
 describe('Enum to Diagram Conversion', () => {
@@ -26,7 +26,7 @@ CREATE TABLE spellbooks (
         expect(parserResult.enums).toHaveLength(3);
 
         // Convert to diagram
-        const diagram = convertToChartDBDiagram(
+        const diagram = convertToSchemaDashDiagram(
             parserResult,
             DatabaseType.POSTGRESQL,
             DatabaseType.POSTGRESQL

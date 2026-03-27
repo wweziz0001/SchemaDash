@@ -38,7 +38,7 @@ export const ProfilePage: React.FC = () => {
     return (
         <div className="space-y-6">
             <Helmet>
-                <title>ChartDB - Profile</title>
+                <title>SchemaDash - Profile</title>
             </Helmet>
 
             <section className="rounded-[28px] border border-stone-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,245,244,0.92))] p-6 shadow-sm dark:border-stone-800/80 dark:bg-[linear-gradient(135deg,rgba(28,25,23,0.94),rgba(12,10,9,0.9))]">
@@ -54,7 +54,7 @@ export const ProfilePage: React.FC = () => {
                             <p className="text-sm leading-6 text-stone-600 dark:text-stone-300">
                                 Account identity, self-hosted access mode, and
                                 the workspace scope currently attached to this
-                                ChartDB session.
+                                SchemaDash session.
                             </p>
                         </div>
                     </div>
@@ -74,7 +74,7 @@ export const ProfilePage: React.FC = () => {
                     <CardHeader>
                         <CardTitle>Identity</CardTitle>
                         <CardDescription>
-                            The current user context returned by the ChartDB
+                            The current user context returned by the SchemaDash
                             authentication session.
                         </CardDescription>
                     </CardHeader>
@@ -84,7 +84,7 @@ export const ProfilePage: React.FC = () => {
                                 Display name
                             </div>
                             <div className="mt-1 font-medium text-stone-950 dark:text-stone-50">
-                                {user?.displayName ?? 'Local ChartDB user'}
+                                {user?.displayName ?? 'Local SchemaDash user'}
                             </div>
                         </div>
                         <div>

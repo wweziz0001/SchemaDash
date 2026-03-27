@@ -11,7 +11,7 @@ import { TablesSection } from './tables-section/tables-section';
 import { useLayout } from '@/hooks/use-layout';
 import type { SidebarSection } from '@/context/layout-context/layout-context';
 import { useTranslation } from 'react-i18next';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { CustomTypesSection } from './custom-types-section/custom-types-section';
 import { supportsCustomTypes } from '@/lib/domain/database-capabilities';
@@ -23,7 +23,7 @@ export interface SidePanelProps {}
 
 export const SidePanel: React.FC<SidePanelProps> = () => {
     const { t } = useTranslation();
-    const { databaseType, customTypes } = useChartDB();
+    const { databaseType, customTypes } = useSchemaDash();
     const { selectSidebarSection, selectedSidebarSection } = useLayout();
     const { isMd: isDesktop } = useBreakpoint('md');
     const canShowCustomTypes =

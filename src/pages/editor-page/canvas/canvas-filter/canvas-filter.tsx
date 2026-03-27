@@ -6,7 +6,7 @@ import React, {
     useRef,
 } from 'react';
 import { X, Search, Database, Table, Box, SearchX } from 'lucide-react';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/button/button';
 import { Input } from '@/components/input/input';
@@ -36,7 +36,7 @@ export interface CanvasFilterProps {
 
 export const CanvasFilter: React.FC<CanvasFilterProps> = ({ onClose }) => {
     const { t } = useTranslation();
-    const { tables, databaseType, areas } = useChartDB();
+    const { tables, databaseType, areas } = useSchemaDash();
     const { checkIfNewTable } = useDiff();
     const {
         filter,

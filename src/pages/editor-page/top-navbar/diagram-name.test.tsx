@@ -2,11 +2,11 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DiagramName } from './diagram-name';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { TooltipProvider } from '@/components/tooltip/tooltip';
 
 vi.mock('@/hooks/use-chartdb', () => ({
-    useChartDB: vi.fn(),
+    useSchemaDash: vi.fn(),
 }));
 
 vi.mock('@/hooks/use-dialog', () => ({
@@ -26,15 +26,15 @@ vi.mock('react-use', () => ({
     useKeyPressEvent: vi.fn(),
 }));
 
-const mockedUseChartDB = vi.mocked(useChartDB);
+const mockedUseSchemaDash = vi.mocked(useSchemaDash);
 
 describe('diagram name readonly behavior', () => {
     beforeEach(() => {
-        mockedUseChartDB.mockReset();
+        mockedUseSchemaDash.mockReset();
     });
 
     it('shows a view-only badge and blocks inline renaming for viewers', () => {
-        mockedUseChartDB.mockReturnValue({
+        mockedUseSchemaDash.mockReturnValue({
             diagramName: 'Shared Diagram',
             updateDiagramName: vi.fn(),
             currentDiagram: {
@@ -61,7 +61,7 @@ describe('diagram name readonly behavior', () => {
     });
 
     it('still allows inline renaming for editors', () => {
-        mockedUseChartDB.mockReturnValue({
+        mockedUseSchemaDash.mockReturnValue({
             diagramName: 'Editable Diagram',
             updateDiagramName: vi.fn(),
             currentDiagram: {

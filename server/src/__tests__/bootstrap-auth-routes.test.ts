@@ -20,7 +20,7 @@ const createBootstrapEnv = (): ServerEnv => {
         authMode: 'password',
         authEmail: null,
         authPassword: null,
-        authDisplayName: 'ChartDB Owner',
+        authDisplayName: 'SchemaDash Owner',
         bootstrapSetupCode: 'INIT-2026',
         bootstrapSetupCodeTtlMs: 15 * 60 * 1000,
         bootstrapSetupCodeMaxAttempts: 10,

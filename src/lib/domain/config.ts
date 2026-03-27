@@ -1,4 +1,4 @@
-export interface ChartDBConfig {
+export interface SchemaDashConfig {
     defaultDiagramId: string;
     exportActions?: Date[];
 }

@@ -12,7 +12,7 @@ import {
 } from '@/components/dialog/dialog';
 import { Label } from '@/components/label/label';
 import { Spinner } from '@/components/spinner/spinner';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { useDialog } from '@/hooks/use-dialog';
 import {
     exportBaseSQL,
@@ -43,7 +43,7 @@ export const ExportSQLDialog: React.FC<ExportSQLDialogProps> = ({
     targetDatabaseType,
 }) => {
     const { closeExportSQLDialog } = useDialog();
-    const { currentDiagram } = useChartDB();
+    const { currentDiagram } = useSchemaDash();
     const { filter } = useDiagramFilter();
     const { t } = useTranslation();
     const [script, setScript] = React.useState<string>();
@@ -204,7 +204,7 @@ export const ExportSQLDialog: React.FC<ExportSQLDialogProps> = ({
                             components={[
                                 <a
                                     key={0}
-                                    href="mailto:support@chartdb.io"
+                                    href="mailto:support@schemadash.io"
                                     target="_blank"
                                     className="text-pink-600 hover:underline"
                                     rel="noreferrer"
@@ -218,7 +218,7 @@ export const ExportSQLDialog: React.FC<ExportSQLDialogProps> = ({
                             components={[
                                 <a
                                     key={0}
-                                    href="https://github.com/chartdb/chartdb"
+                                    href="https://github.com/wweziz0001/SchemaDash"
                                     target="_blank"
                                     rel="noreferrer"
                                     className="text-pink-600 hover:underline"

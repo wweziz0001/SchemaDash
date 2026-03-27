@@ -1,5 +1,5 @@
 import type { DBTable } from '@/lib/domain/db-table';
-import type { ChartDBContext } from '../chartdb-context/chartdb-context';
+import type { SchemaDashContext } from '../chartdb-context/chartdb-context';
 import type { DBField } from '@/lib/domain/db-field';
 import type { DBIndex } from '@/lib/domain/db-index';
 import type { DBCheckConstraint } from '@/lib/domain/db-check-constraint';
@@ -9,7 +9,7 @@ import type { Area } from '@/lib/domain/area';
 import type { DBCustomType } from '@/lib/domain/db-custom-type';
 import type { Note } from '@/lib/domain/note';
 
-type Action = keyof ChartDBContext;
+type Action = keyof SchemaDashContext;
 
 type RedoUndoActionBase<T extends Action, RD, UD> = {
     action: T;

@@ -3,7 +3,7 @@ import { Button } from '@/components/button/button';
 import { StickyNote, X } from 'lucide-react';
 import { Input } from '@/components/input/input';
 import type { Note } from '@/lib/domain/note';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { useLayout } from '@/hooks/use-layout';
 import { EmptyState } from '@/components/empty-state/empty-state';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
@@ -14,7 +14,7 @@ import { NotesList } from './notes-list/notes-list';
 export interface NotesTabProps {}
 
 export const NotesTab: React.FC<NotesTabProps> = () => {
-    const { createNote, notes, readonly } = useChartDB();
+    const { createNote, notes, readonly } = useSchemaDash();
     const viewport = useViewport();
     const { t } = useTranslation();
     const { openNoteFromSidebar } = useLayout();

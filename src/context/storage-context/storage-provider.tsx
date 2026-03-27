@@ -12,7 +12,7 @@ import type { Diagram } from '@/lib/domain/diagram';
 import type { DBTable } from '@/lib/domain/db-table';
 import type { DBRelationship } from '@/lib/domain/db-relationship';
 import { determineCardinalities } from '@/lib/domain/db-relationship';
-import type { ChartDBConfig } from '@/lib/domain/config';
+import type { SchemaDashConfig } from '@/lib/domain/config';
 import type { DBDependency } from '@/lib/domain/db-dependency';
 import type { Area } from '@/lib/domain/area';
 import type { DBCustomType } from '@/lib/domain/db-custom-type';
@@ -201,7 +201,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
     >(new Map());
 
     const db = useMemo(() => {
-        const dexieDB = new Dexie('ChartDB') as Dexie & {
+        const dexieDB = new Dexie('SchemaDash') as Dexie & {
             diagrams: EntityTable<
                 Diagram,
                 'id' // primary key "id" (for the typings only)
@@ -231,7 +231,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 'id' // primary key "id" (for the typings only)
             >;
             config: EntityTable<
-                ChartDBConfig & { id: number },
+                SchemaDashConfig & { id: number },
                 'id' // primary key "id" (for the typings only)
             >;
             diagram_filters: EntityTable<
@@ -519,7 +519,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
     );
 
     const getConfig: StorageContext['getConfig'] =
-        useCallback(async (): Promise<ChartDBConfig | undefined> => {
+        useCallback(async (): Promise<SchemaDashConfig | undefined> => {
             return await db.config.get(1);
         }, [db]);
 
@@ -929,7 +929,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 id: LOCAL_ONLY_PROJECT_ID,
                 name: LOCAL_ONLY_PROJECT_NAME,
                 description:
-                    'Fallback browser-only project when the ChartDB API is unavailable.',
+                    'Fallback browser-only project when the SchemaDash API is unavailable.',
                 collectionId: null,
                 ownerUserId: null,
                 visibility: 'private',
@@ -1098,7 +1098,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                     } else {
                         remoteReadyRef.current = false;
                         console.warn(
-                            'ChartDB server persistence is unavailable; continuing with local browser storage only.',
+                            'SchemaDash server persistence is unavailable; continuing with local browser storage only.',
                             error
                         );
                     }
@@ -1452,7 +1452,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 syncTimersRef.current.delete(diagramId);
                 void syncDiagramToRemote(diagramId).catch((error) => {
                     console.warn(
-                        'Failed to synchronize diagram to ChartDB API.',
+                        'Failed to synchronize diagram to SchemaDash API.',
                         {
                             diagramId,
                             error,
@@ -1911,7 +1911,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             await ensureRemotePersistenceReady();
             if (!remoteReadyRef.current) {
                 throw new Error(
-                    'ChartDB server persistence is unavailable. Collections can only be created when the API is reachable.'
+                    'SchemaDash server persistence is unavailable. Collections can only be created when the API is reachable.'
                 );
             }
 
@@ -1930,7 +1930,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             await ensureRemotePersistenceReady();
             if (!remoteReadyRef.current) {
                 throw new Error(
-                    'ChartDB server persistence is unavailable. Collection metadata cannot be updated right now.'
+                    'SchemaDash server persistence is unavailable. Collection metadata cannot be updated right now.'
                 );
             }
 
@@ -1949,7 +1949,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             await ensureRemotePersistenceReady();
             if (!remoteReadyRef.current) {
                 throw new Error(
-                    'ChartDB server persistence is unavailable. Collections cannot be deleted right now.'
+                    'SchemaDash server persistence is unavailable. Collections cannot be deleted right now.'
                 );
             }
 
@@ -1964,7 +1964,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             await ensureRemotePersistenceReady();
             if (!remoteReadyRef.current) {
                 throw new Error(
-                    'ChartDB server persistence is unavailable. Projects can only be created when the API is reachable.'
+                    'SchemaDash server persistence is unavailable. Projects can only be created when the API is reachable.'
                 );
             }
 
@@ -1984,7 +1984,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             await ensureRemotePersistenceReady();
             if (!remoteReadyRef.current) {
                 throw new Error(
-                    'ChartDB server persistence is unavailable. Project metadata cannot be updated right now.'
+                    'SchemaDash server persistence is unavailable. Project metadata cannot be updated right now.'
                 );
             }
 
@@ -2003,7 +2003,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             await ensureRemotePersistenceReady();
             if (!remoteReadyRef.current) {
                 throw new Error(
-                    'ChartDB server persistence is unavailable. Projects cannot be deleted right now.'
+                    'SchemaDash server persistence is unavailable. Projects cannot be deleted right now.'
                 );
             }
 
@@ -2018,7 +2018,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             await ensureRemotePersistenceReady();
             if (!remoteReadyRef.current) {
                 throw new Error(
-                    'ChartDB server persistence is unavailable. Sharing settings cannot be loaded right now.'
+                    'SchemaDash server persistence is unavailable. Sharing settings cannot be loaded right now.'
                 );
             }
 
@@ -2035,7 +2035,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 await ensureRemotePersistenceReady();
                 if (!remoteReadyRef.current) {
                     throw new Error(
-                        'ChartDB server persistence is unavailable. People search cannot be loaded right now.'
+                        'SchemaDash server persistence is unavailable. People search cannot be loaded right now.'
                     );
                 }
 
@@ -2052,7 +2052,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 await ensureRemotePersistenceReady();
                 if (!remoteReadyRef.current) {
                     throw new Error(
-                        'ChartDB server persistence is unavailable. Sharing settings cannot be updated right now.'
+                        'SchemaDash server persistence is unavailable. Sharing settings cannot be updated right now.'
                     );
                 }
 
@@ -2072,7 +2072,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 await ensureRemotePersistenceReady();
                 if (!remoteReadyRef.current) {
                     throw new Error(
-                        'ChartDB server persistence is unavailable. Sharing settings cannot be updated right now.'
+                        'SchemaDash server persistence is unavailable. Sharing settings cannot be updated right now.'
                     );
                 }
 
@@ -2092,7 +2092,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 await ensureRemotePersistenceReady();
                 if (!remoteReadyRef.current) {
                     throw new Error(
-                        'ChartDB server persistence is unavailable. Sharing settings cannot be updated right now.'
+                        'SchemaDash server persistence is unavailable. Sharing settings cannot be updated right now.'
                     );
                 }
 
@@ -2114,7 +2114,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 await ensureRemotePersistenceReady();
                 if (!remoteReadyRef.current) {
                     throw new Error(
-                        'ChartDB server persistence is unavailable. Sharing settings cannot be updated right now.'
+                        'SchemaDash server persistence is unavailable. Sharing settings cannot be updated right now.'
                     );
                 }
 
@@ -2291,7 +2291,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             await ensureRemotePersistenceReady();
             if (!remoteReadyRef.current) {
                 throw new Error(
-                    'ChartDB server persistence is unavailable. Sharing settings cannot be loaded right now.'
+                    'SchemaDash server persistence is unavailable. Sharing settings cannot be loaded right now.'
                 );
             }
 
@@ -2308,7 +2308,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 await ensureRemotePersistenceReady();
                 if (!remoteReadyRef.current) {
                     throw new Error(
-                        'ChartDB server persistence is unavailable. Sharing settings cannot be updated right now.'
+                        'SchemaDash server persistence is unavailable. Sharing settings cannot be updated right now.'
                     );
                 }
 
@@ -2341,7 +2341,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 await ensureRemotePersistenceReady();
                 if (!remoteReadyRef.current) {
                     throw new Error(
-                        'ChartDB server persistence is unavailable. Sharing settings cannot be updated right now.'
+                        'SchemaDash server persistence is unavailable. Sharing settings cannot be updated right now.'
                     );
                 }
 
@@ -2374,7 +2374,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 await ensureRemotePersistenceReady();
                 if (!remoteReadyRef.current) {
                     throw new Error(
-                        'ChartDB server persistence is unavailable. Sharing settings cannot be updated right now.'
+                        'SchemaDash server persistence is unavailable. Sharing settings cannot be updated right now.'
                     );
                 }
 
@@ -2409,7 +2409,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 await ensureRemotePersistenceReady();
                 if (!remoteReadyRef.current) {
                     throw new Error(
-                        'ChartDB server persistence is unavailable. Sharing settings cannot be updated right now.'
+                        'SchemaDash server persistence is unavailable. Sharing settings cannot be updated right now.'
                     );
                 }
 
@@ -2618,7 +2618,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             await ensureRemotePersistenceReady();
             if (!remoteReadyRef.current) {
                 throw new Error(
-                    'Project backup export requires ChartDB server persistence.'
+                    'Project backup export requires SchemaDash server persistence.'
                 );
             }
 
@@ -2632,7 +2632,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             await ensureRemotePersistenceReady();
             if (!remoteReadyRef.current) {
                 throw new Error(
-                    'Project backup import requires ChartDB server persistence.'
+                    'Project backup import requires SchemaDash server persistence.'
                 );
             }
 
@@ -2687,7 +2687,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                     }
                 } catch (error) {
                     console.warn(
-                        'Failed to refresh diagram from ChartDB API.',
+                        'Failed to refresh diagram from SchemaDash API.',
                         {
                             id,
                             error,

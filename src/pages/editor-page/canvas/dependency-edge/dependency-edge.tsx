@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import type { Edge, EdgeProps } from '@xyflow/react';
 import { getSmoothStepPath, Position, useReactFlow } from '@xyflow/react';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { cn } from '@/lib/utils';
 import type { DBDependency } from '@/lib/domain/db-dependency';
 import { useLayout } from '@/hooks/use-layout';
@@ -26,7 +26,7 @@ export const DependencyEdge: React.FC<EdgeProps<DependencyEdgeType>> = ({
     // data,
 }) => {
     const { getInternalNode } = useReactFlow();
-    const { dependencies } = useChartDB();
+    const { dependencies } = useSchemaDash();
     const { openDependencyFromSidebar, selectSidebarSection } = useLayout();
 
     const openDependencyInEditor = useCallback(() => {

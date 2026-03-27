@@ -162,7 +162,7 @@ export const AdminPage: React.FC = () => {
                         </Badge>
                         <div className="space-y-2">
                             <h1 className="text-3xl font-semibold tracking-tight text-stone-950 dark:text-stone-50 sm:text-4xl">
-                                ChartDB admin dashboard
+                                SchemaDash admin dashboard
                             </h1>
                             <p className="max-w-3xl text-sm leading-6 text-stone-600 dark:text-stone-300 sm:text-base">
                                 Monitor authenticated users, saved workspace
@@ -241,7 +241,7 @@ export const AdminPage: React.FC = () => {
                         <MetricCard
                             title="Projects"
                             value={overview.metrics.projects}
-                            description="Saved workspaces persisted in ChartDB"
+                            description="Saved workspaces persisted in SchemaDash"
                             icon={LayoutPanelTop}
                         />
                         <MetricCard

@@ -2,22 +2,22 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/tooltip/tooltip';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
 
 vi.mock('@/hooks/use-chartdb', () => ({
-    useChartDB: vi.fn(),
+    useSchemaDash: vi.fn(),
 }));
 
-const mockedUseChartDB = vi.mocked(useChartDB);
+const mockedUseSchemaDash = vi.mocked(useSchemaDash);
 
 describe('active diagram participants', () => {
     beforeEach(() => {
-        mockedUseChartDB.mockReset();
+        mockedUseSchemaDash.mockReset();
     });
 
     it('renders live participant chips with overflow handling', () => {
-        mockedUseChartDB.mockReturnValue({
+        mockedUseSchemaDash.mockReturnValue({
             diagramSession: {
                 session: {
                     id: 'session-1',
@@ -81,7 +81,7 @@ describe('active diagram participants', () => {
     });
 
     it('renders nothing when there is no active presence', () => {
-        mockedUseChartDB.mockReturnValue({
+        mockedUseSchemaDash.mockReturnValue({
             diagramSession: {
                 session: {
                     id: 'session-1',

@@ -11,7 +11,7 @@ import {
 import { useDialog } from '@/hooks/use-dialog';
 import { FileOutput, FileMinus2, FileType2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import type { SelectBoxOption } from '@/components/select-box/select-box';
 import { SelectBox } from '@/components/select-box/select-box';
 import { useLayout } from '@/hooks/use-layout';
@@ -42,11 +42,11 @@ export const CreateRelationshipDialog: React.FC<
     >();
     const [errorMessage, setErrorMessage] = useState('');
     const { t } = useTranslation();
-    const { tables, getTable, createRelationship, getField } = useChartDB();
+    const { tables, getTable, createRelationship, getField } = useSchemaDash();
     const { openRelationshipFromSidebar } = useLayout();
     const [canCreateRelationship, setCanCreateRelationship] = useState(false);
     const { fitView, setEdges } = useReactFlow();
-    const { databaseType } = useChartDB();
+    const { databaseType } = useSchemaDash();
     const [primaryFieldSelectOpen, setPrimaryFieldSelectOpen] = useState(false);
     const [referencedTableSelectOpen, setReferencedTableSelectOpen] =
         useState(false);

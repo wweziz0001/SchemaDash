@@ -546,7 +546,7 @@ describe('dashboard shell layout', () => {
             await screen.findByRole('heading', { name: 'All Diagrams' })
         ).toBeInTheDocument();
         expect(
-            screen.queryByText('ChartDB admin dashboard')
+            screen.queryByText('SchemaDash admin dashboard')
         ).not.toBeInTheDocument();
     });
 
@@ -565,7 +565,7 @@ describe('dashboard shell layout', () => {
         );
 
         expect(
-            await screen.findByText('ChartDB admin dashboard')
+            await screen.findByText('SchemaDash admin dashboard')
         ).toBeInTheDocument();
         expect(mockedAdminClient.getOverview).toHaveBeenCalledTimes(1);
     });

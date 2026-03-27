@@ -22,7 +22,7 @@ export const AllDiagramsPage: React.FC = () => {
             emptyState={{
                 title: 'No saved diagrams yet',
                 description:
-                    'Create a new diagram or import an existing schema to turn this library into your main ChartDB workspace.',
+                    'Create a new diagram or import an existing schema to turn this library into your main SchemaDash workspace.',
             }}
             error={error}
             items={items}

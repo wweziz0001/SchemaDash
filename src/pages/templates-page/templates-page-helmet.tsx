@@ -8,7 +8,7 @@ export interface TemplatesPageHelmetProps {
     isFeatured: boolean;
 }
 
-const CHARTDB_HOST_URL = 'https://chartdb.io';
+const CHARTDB_HOST_URL = 'https://schemadash.io';
 export const TemplatesPageHelmet: React.FC<TemplatesPageHelmetProps> = ({
     tag,
     isFeatured,
@@ -41,13 +41,13 @@ export const TemplatesPageHelmet: React.FC<TemplatesPageHelmetProps> = ({
             ) : null}
 
             {tag ? (
-                <title>{`${tag} database schema diagram templates | ChartDB`}</title>
+                <title>{`${tag} database schema diagram templates | SchemaDash`}</title>
             ) : isFeatured ? (
                 <title>
-                    Featured database schema diagram templates | ChartDB
+                    Featured database schema diagram templates | SchemaDash
                 </title>
             ) : (
-                <title>Database schema diagram templates | ChartDB</title>
+                <title>Database schema diagram templates | SchemaDash</title>
             )}
 
             {tag ? (
@@ -65,17 +65,17 @@ export const TemplatesPageHelmet: React.FC<TemplatesPageHelmetProps> = ({
             {tag ? (
                 <meta
                     property="og:title"
-                    content={`${tag} database schema diagram templates | ChartDB`}
+                    content={`${tag} database schema diagram templates | SchemaDash`}
                 />
             ) : isFeatured ? (
                 <meta
                     property="og:title"
-                    content="Featured database schema diagram templates | ChartDB"
+                    content="Featured database schema diagram templates | SchemaDash"
                 />
             ) : (
                 <meta
                     property="og:title"
-                    content="Database schema diagram templates | ChartDB"
+                    content="Database schema diagram templates | SchemaDash"
                 />
             )}
 
@@ -104,19 +104,19 @@ export const TemplatesPageHelmet: React.FC<TemplatesPageHelmetProps> = ({
                     content="Discover a collection of real-world database schema diagrams, featuring example applications and popular open-source projects."
                 />
             )}
-            <meta property="og:image" content={`${HOST_URL}/chartdb.png`} />
+            <meta property="og:image" content={`${HOST_URL}/schemadash.png`} />
             <meta property="og:type" content="website" />
-            <meta property="og:site_name" content="ChartDB" />
+            <meta property="og:site_name" content="SchemaDash" />
 
             {tag ? (
                 <meta
                     name="twitter:title"
-                    content={`${tag} database schema diagram templates | ChartDB`}
+                    content={`${tag} database schema diagram templates | SchemaDash`}
                 />
             ) : (
                 <meta
                     name="twitter:title"
-                    content="Database schema diagram templates | ChartDB"
+                    content="Database schema diagram templates | SchemaDash"
                 />
             )}
 
@@ -132,10 +132,10 @@ export const TemplatesPageHelmet: React.FC<TemplatesPageHelmetProps> = ({
                 />
             )}
 
-            <meta name="twitter:image" content={`${HOST_URL}/chartdb.png`} />
+            <meta name="twitter:image" content={`${HOST_URL}/schemadash.png`} />
             <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:site" content="@ChartDB_io" />
-            <meta name="twitter:creator" content="@ChartDB_io" />
+            <meta name="twitter:site" content="@SchemaDash_io" />
+            <meta name="twitter:creator" content="@SchemaDash_io" />
         </Helmet>
     );
 };

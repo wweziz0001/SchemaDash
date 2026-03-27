@@ -368,7 +368,7 @@ export class AuthService {
                 email: user.email,
                 authMode: this.env.authMode,
             },
-            'Initialized first ChartDB administrator.'
+            'Initialized first SchemaDash administrator.'
         );
 
         this.createSession(request, reply, user.id, now);
@@ -759,7 +759,7 @@ export class AuthService {
                 adminUserId: user.id,
                 email: user.email,
             },
-            'Initialized first ChartDB administrator from environment settings.'
+            'Initialized first SchemaDash administrator from environment settings.'
         );
     }
 
@@ -1112,7 +1112,7 @@ export class AuthService {
             readStringClaim(claims, 'name') ??
             readStringClaim(claims, 'preferred_username') ??
             email.split('@')[0] ??
-            'ChartDB User'
+            'SchemaDash User'
         );
     }
 

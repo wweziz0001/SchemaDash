@@ -52,7 +52,7 @@ const envSchema = z.object({
         .min(1)
         .max(120)
         .optional()
-        .default('ChartDB Owner'),
+        .default('SchemaDash Owner'),
     CHARTDB_BOOTSTRAP_SETUP_CODE: z.string().trim().min(8).max(120).optional(),
     CHARTDB_BOOTSTRAP_SETUP_CODE_TTL_MS: z.coerce
         .number()

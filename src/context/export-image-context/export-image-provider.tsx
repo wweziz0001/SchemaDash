@@ -3,7 +3,7 @@ import type { ExportImageContext, ImageType } from './export-image-context';
 import { exportImageContext } from './export-image-context';
 import { toJpeg, toPng, toSvg } from 'html-to-image';
 import { useReactFlow } from '@xyflow/react';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-chartdb';
 import { useFullScreenLoader } from '@/hooks/use-full-screen-spinner';
 import { useTheme } from '@/hooks/use-theme';
 import logoDark from '@/assets/logo-dark.png';
@@ -16,7 +16,7 @@ export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
     const { hideLoader, showLoader } = useFullScreenLoader();
     const { setNodes, getViewport } = useReactFlow();
     const { effectiveTheme } = useTheme();
-    const { diagramName } = useChartDB();
+    const { diagramName } = useSchemaDash();
     const [logoBase64, setLogoBase64] = useState<string>('');
 
     useEffect(() => {
