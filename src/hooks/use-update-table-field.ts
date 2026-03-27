@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import { useChartDB } from './use-chartdb';
+import { useSchemaDash } from './use-schemadash';
 import { useDebounce } from './use-debounce-v2';
 import type { DatabaseType, DBField, DBTable } from '@/lib/domain';
 import type {
@@ -79,9 +79,9 @@ export const useUpdateTableField = (
     const {
         databaseType,
         customTypes,
-        updateField: chartDBUpdateField,
-        removeField: chartDBRemoveField,
-    } = useChartDB();
+        updateField: schemaDashUpdateField,
+        removeField: schemaDashRemoveField,
+    } = useSchemaDash();
 
     // Local state for responsive UI
     const [localFieldName, setLocalFieldName] = useState(field.name);
@@ -107,17 +107,17 @@ export const useUpdateTableField = (
     // This fixes any existing data where PK columns were incorrectly set as nullable
     useEffect(() => {
         if (field.primaryKey && field.nullable) {
-            chartDBUpdateField(table.id, field.id, { nullable: false });
+            schemaDashUpdateField(table.id, field.id, { nullable: false });
         }
     }, [
         field.primaryKey,
         field.nullable,
         table.id,
         field.id,
-        chartDBUpdateField,
+        schemaDashUpdateField,
     ]);
 
-    // Use custom updateField if provided, otherwise use the chartDB one
+    // Use custom updateField if provided, otherwise use the SchemaDash one
     const updateField = useMemo(
         () =>
             customUpdateField
@@ -126,8 +126,8 @@ export const useUpdateTableField = (
                       _fieldId: string,
                       attrs: Partial<DBField>
                   ) => customUpdateField(attrs)
-                : chartDBUpdateField,
-        [customUpdateField, chartDBUpdateField]
+                : schemaDashUpdateField,
+        [customUpdateField, schemaDashUpdateField]
     );
 
     // Calculate primary key fields for validation
@@ -379,8 +379,8 @@ export const useUpdateTableField = (
     );
 
     const removeField = useCallback(() => {
-        chartDBRemoveField(table.id, field.id);
-    }, [chartDBRemoveField, table.id, field.id]);
+        schemaDashRemoveField(table.id, field.id);
+    }, [schemaDashRemoveField, table.id, field.id]);
 
     return {
         dataFieldOptions,

@@ -23,7 +23,7 @@ export const TrashPage: React.FC = () => {
     return (
         <div className="space-y-6">
             <Helmet>
-                <title>ChartDB - Trash</title>
+                <title>SchemaDash - Trash</title>
             </Helmet>
 
             <section className="rounded-[28px] border border-stone-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,245,244,0.92))] p-6 shadow-sm dark:border-stone-800/80 dark:bg-[linear-gradient(135deg,rgba(28,25,23,0.94),rgba(12,10,9,0.9))]">

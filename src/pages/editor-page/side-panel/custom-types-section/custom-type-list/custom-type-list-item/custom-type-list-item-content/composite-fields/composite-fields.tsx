@@ -14,7 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/select/select';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import type { DataTypeData } from '@/lib/data/data-types/data-types';
 import { dataTypeMap } from '@/lib/data/data-types/data-types';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -43,7 +43,7 @@ export const CustomTypeCompositeFields: React.FC<
     CustomTypeCompositeFieldsProps
 > = ({ fields, addField, removeField, reorderFields }) => {
     const { t } = useTranslation();
-    const { currentDiagram, customTypes, readonly } = useChartDB();
+    const { currentDiagram, customTypes, readonly } = useSchemaDash();
     const [newFieldName, setNewFieldName] = useState('');
     const [newFieldType, setNewFieldType] = useState('');
 

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useReactFlow, useViewport } from '@xyflow/react';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 
 interface LivePresenceCursorsProps {
     containerRef: React.RefObject<HTMLDivElement | null>;
@@ -9,7 +9,7 @@ interface LivePresenceCursorsProps {
 export const LivePresenceCursors: React.FC<LivePresenceCursorsProps> = ({
     containerRef,
 }) => {
-    const { diagramSession } = useChartDB();
+    const { diagramSession } = useSchemaDash();
     const { flowToScreenPosition } = useReactFlow();
     useViewport();
 

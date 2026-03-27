@@ -16,7 +16,7 @@ import type { DBCustomType } from '@/lib/domain/db-custom-type';
 import type { Note } from '@/lib/domain/note';
 import type { DiagramSessionState } from '../storage-context/storage-context';
 
-export type ChartDBEventType =
+export type SchemaDashEventType =
     | 'add_tables'
     | 'update_table'
     | 'remove_tables'
@@ -24,42 +24,42 @@ export type ChartDBEventType =
     | 'remove_field'
     | 'load_diagram';
 
-export type ChartDBEventBase<T extends ChartDBEventType, D> = {
+export type SchemaDashEventBase<T extends SchemaDashEventType, D> = {
     action: T;
     data: D;
 };
 
-export type CreateTableEvent = ChartDBEventBase<
+export type CreateTableEvent = SchemaDashEventBase<
     'add_tables',
     { tables: DBTable[] }
 >;
 
-export type UpdateTableEvent = ChartDBEventBase<
+export type UpdateTableEvent = SchemaDashEventBase<
     'update_table',
     { id: string; table: Partial<DBTable> }
 >;
 
-export type RemoveTableEvent = ChartDBEventBase<
+export type RemoveTableEvent = SchemaDashEventBase<
     'remove_tables',
     { tableIds: string[] }
 >;
 
-export type AddFieldEvent = ChartDBEventBase<
+export type AddFieldEvent = SchemaDashEventBase<
     'add_field',
     { tableId: string; field: DBField; fields: DBField[] }
 >;
 
-export type RemoveFieldEvent = ChartDBEventBase<
+export type RemoveFieldEvent = SchemaDashEventBase<
     'remove_field',
     { tableId: string; fieldId: string; fields: DBField[] }
 >;
 
-export type LoadDiagramEvent = ChartDBEventBase<
+export type LoadDiagramEvent = SchemaDashEventBase<
     'load_diagram',
     { diagram: Diagram }
 >;
 
-export type ChartDBEvent =
+export type SchemaDashEvent =
     | CreateTableEvent
     | UpdateTableEvent
     | RemoveTableEvent
@@ -67,7 +67,7 @@ export type ChartDBEvent =
     | RemoveFieldEvent
     | LoadDiagramEvent;
 
-export interface ChartDBContext {
+export interface SchemaDashContext {
     diagramId: string;
     diagramName: string;
     databaseType: DatabaseType;
@@ -80,7 +80,7 @@ export interface ChartDBContext {
     notes: Note[];
     currentDiagram: Diagram;
     diagramSession?: DiagramSessionState;
-    events: EventEmitter<ChartDBEvent>;
+    events: EventEmitter<SchemaDashEvent>;
     readonly?: boolean;
 
     highlightedCustomType?: DBCustomType;
@@ -339,7 +339,7 @@ export interface ChartDBContext {
     ) => Promise<void>;
 }
 
-export const chartDBContext = createContext<ChartDBContext>({
+export const schemaDashContext = createContext<SchemaDashContext>({
     databaseType: DatabaseType.GENERIC,
     diagramName: '',
     diagramId: '',

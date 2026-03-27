@@ -21,7 +21,7 @@ import {
     Pencil,
 } from 'lucide-react';
 import { generateDBFieldSuffix, type DBField } from '@/lib/domain/db-field';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { cn } from '@/lib/utils';
 import {
     Tooltip,
@@ -79,7 +79,7 @@ const arePropsEqual = (
 export const TableNodeField: React.FC<TableNodeFieldProps> = React.memo(
     ({ field, focused, tableNodeId, highlighted, visible, isConnectable }) => {
         const { relationships, readonly, highlightedCustomType, databaseType } =
-            useChartDB();
+            useSchemaDash();
 
         const updateNodeInternals = useUpdateNodeInternals();
         const connection = useConnection();

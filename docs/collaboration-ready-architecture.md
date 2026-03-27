@@ -6,7 +6,7 @@ For the currently shipped realtime behavior, setup steps, and limitations, see [
 
 ## Scope
 
-This change prepares ChartDB for future collaborative editing without turning on full multiplayer yet.
+This change prepares SchemaDash for future collaborative editing without turning on full multiplayer yet.
 
 What is included now:
 
@@ -44,7 +44,7 @@ Each persisted diagram now carries collaboration-aware document metadata:
 
 This metadata is stored alongside the existing `document_json` payload in `app_diagrams`.
 
-ChartDB also now stores edit-session records in `app_diagram_sessions`:
+SchemaDash also now stores edit-session records in `app_diagram_sessions`:
 
 - `id`
 - `diagramId`
@@ -87,7 +87,7 @@ When `baseVersion` is stale, the API rejects the write with `DIAGRAM_VERSION_CON
 
 `StorageProvider` now owns the active diagram session map and uses it to enrich the existing auto-sync path.
 
-`ChartDBProvider` now:
+`SchemaDashProvider` now:
 
 - activates an edit session when a diagram loads
 - heartbeats the active session while the editor stays open
@@ -105,7 +105,7 @@ Today, conflict protection is optimistic and save-based:
 - the server increments the version when the document changes
 - stale saves are rejected instead of silently overwriting newer work
 
-This gives ChartDB a safe foundation for later work such as:
+This gives SchemaDash a safe foundation for later work such as:
 
 - websocket subscriptions per diagram session
 - server-authoritative presence

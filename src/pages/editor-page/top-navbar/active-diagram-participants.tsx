@@ -6,7 +6,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/tooltip/tooltip';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { cn } from '@/lib/utils';
 
 const MAX_VISIBLE_PARTICIPANTS = 4;
@@ -15,7 +15,7 @@ const getParticipantLabel = (displayName: string, isCurrentUser: boolean) =>
     isCurrentUser ? `${displayName} (You)` : displayName;
 
 export const ActiveDiagramParticipants: React.FC = () => {
-    const { diagramSession } = useChartDB();
+    const { diagramSession } = useSchemaDash();
 
     const participants = useMemo(
         () => diagramSession?.collaboration.presence.participants ?? [],

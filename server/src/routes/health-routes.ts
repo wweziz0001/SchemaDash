@@ -32,7 +32,7 @@ export const registerHealthRoutes = (
     app.get('/api/livez', async (_, reply) => {
         return sendWithStatus(reply, 200, {
             ok: true,
-            service: 'chartdb-api',
+            service: 'schemadash-api',
             environment: context.env.nodeEnv,
             timestamp: new Date().toISOString(),
             uptimeSeconds: Math.round(process.uptime()),
@@ -44,7 +44,7 @@ export const registerHealthRoutes = (
 
         return sendWithStatus(reply, readiness.ok ? 200 : 503, {
             ok: readiness.ok,
-            service: 'chartdb-api',
+            service: 'schemadash-api',
             checks: readiness.checks,
             timestamp: new Date().toISOString(),
         });
@@ -56,7 +56,7 @@ export const registerHealthRoutes = (
 
         return sendWithStatus(reply, readiness.ok ? 200 : 503, {
             ok: readiness.ok,
-            service: 'chartdb-api',
+            service: 'schemadash-api',
             environment: context.env.nodeEnv,
             persistence: {
                 app: {

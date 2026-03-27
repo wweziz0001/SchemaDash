@@ -29,6 +29,9 @@ import {
     updateProjectSchema,
 } from '../schemas/persistence.js';
 import {
+    SCHEMADASH_BACKUP_FORMAT,
+    SCHEMADASH_BACKUP_FORMAT_VERSION,
+    LEGACY_CHARTDB_BACKUP_FORMAT,
     chartDbBackupArchiveSchema,
     chartDbBackupEnvelopeSchema,
     exportBackupRequestSchema,
@@ -152,8 +155,6 @@ const PRESENCE_COLORS = [
 const DEFAULT_USER_CONFIG_KEY = 'default_user_id';
 const DEFAULT_PROJECT_CONFIG_KEY = 'default_project_id';
 const DEFAULT_PROJECT_CONFIG_PREFIX = 'default_project_id:';
-const CHARTDB_BACKUP_FORMAT = 'chartdb-backup';
-const CHARTDB_BACKUP_FORMAT_VERSION = 1;
 const DEFAULT_SHARING_SCOPE = 'private';
 const DEFAULT_SHARING_ACCESS = 'view';
 const SHARE_TOKEN_BYTES = 24;
@@ -234,7 +235,7 @@ export class PersistenceService {
             defaultProject = {
                 id: projectId,
                 name: this.defaults.defaultProjectName,
-                description: 'Default self-hosted ChartDB project',
+                description: 'Default self-hosted SchemaDash project',
                 collectionId: null,
                 ownerUserId: user.id,
                 visibility: 'private',
@@ -276,7 +277,7 @@ export class PersistenceService {
             defaultProject = {
                 id: projectId,
                 name: this.defaults.defaultProjectName,
-                description: 'Default self-hosted ChartDB project',
+                description: 'Default self-hosted SchemaDash project',
                 collectionId: null,
                 ownerUserId: user.id,
                 visibility: 'private',
@@ -1481,8 +1482,8 @@ export class PersistenceService {
         });
 
         return {
-            format: CHARTDB_BACKUP_FORMAT,
-            formatVersion: CHARTDB_BACKUP_FORMAT_VERSION,
+            format: SCHEMADASH_BACKUP_FORMAT,
+            formatVersion: SCHEMADASH_BACKUP_FORMAT_VERSION,
             exportedAt: new Date().toISOString(),
             scope: request.scope,
             counts: {
@@ -1533,7 +1534,10 @@ export class PersistenceService {
     importBackup(input: unknown, actor?: AppUserRecord | null) {
         const envelope = chartDbBackupEnvelopeSchema.parse(input);
 
-        if (envelope.format !== CHARTDB_BACKUP_FORMAT) {
+        if (
+            envelope.format !== SCHEMADASH_BACKUP_FORMAT &&
+            envelope.format !== LEGACY_CHARTDB_BACKUP_FORMAT
+        ) {
             throw new AppError(
                 `Unsupported backup format "${envelope.format}".`,
                 400,
@@ -1541,9 +1545,9 @@ export class PersistenceService {
             );
         }
 
-        if (envelope.formatVersion !== CHARTDB_BACKUP_FORMAT_VERSION) {
+        if (envelope.formatVersion !== SCHEMADASH_BACKUP_FORMAT_VERSION) {
             throw new AppError(
-                `Unsupported backup format version ${envelope.formatVersion}. Supported versions: ${CHARTDB_BACKUP_FORMAT_VERSION}.`,
+                `Unsupported backup format version ${envelope.formatVersion}. Supported versions: ${SCHEMADASH_BACKUP_FORMAT_VERSION}.`,
                 400,
                 'BACKUP_VERSION_UNSUPPORTED'
             );

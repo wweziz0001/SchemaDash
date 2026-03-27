@@ -20,7 +20,7 @@ app.log.info(
         metadataDbPath: serverEnv.metadataDbPath,
         trustProxy: serverEnv.trustProxy ?? false,
     },
-    'Starting ChartDB API'
+    'Starting SchemaDash API'
 );
 
 app.listen({ host: serverEnv.host, port: serverEnv.port }).catch((error) => {

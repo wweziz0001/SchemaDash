@@ -1,5 +1,5 @@
 {
-    "name": "@chartdb/schema-sync-core",
+    "name": "@schemadash/schema-sync-core",
     "version": "0.1.0",
     "private": true,
     "type": "module",

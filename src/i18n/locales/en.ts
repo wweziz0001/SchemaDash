@@ -589,7 +589,7 @@ export const en = {
             error: {
                 title: 'Error exporting diagram',
                 description:
-                    'Something went wrong. Need help? support@chartdb.io',
+                    'Something went wrong. Need help? support@schemadash.io',
             },
         },
 
@@ -601,14 +601,14 @@ export const en = {
             error: {
                 title: 'Error importing diagram',
                 description:
-                    'The diagram JSON is invalid. Please check the JSON and try again. Need help? support@chartdb.io',
+                    'The diagram JSON is invalid. Please check the JSON and try again. Need help? support@schemadash.io',
             },
         },
 
         backup_export_dialog: {
             title: 'Export Project Backup',
             description:
-                'Export saved ChartDB projects and diagrams in the versioned ChartDB backup format.',
+                'Export saved SchemaDash projects and diagrams in the versioned SchemaDash backup format.',
             cancel: 'Cancel',
             export: 'Export Backup',
             scope: {
@@ -619,7 +619,7 @@ export const en = {
             warning: {
                 title: 'Saved project required',
                 description:
-                    'This scope only works for diagrams that are already saved to the ChartDB project library.',
+                    'This scope only works for diagrams that are already saved to the SchemaDash project library.',
             },
             success: {
                 title: 'Backup exported',
@@ -631,18 +631,18 @@ export const en = {
             },
             errors: {
                 generic:
-                    'Something went wrong while exporting the backup. Need help? support@chartdb.io',
+                    'Something went wrong while exporting the backup. Need help? support@schemadash.io',
                 unsaved_diagram:
-                    'The current diagram is not saved to a ChartDB project yet.',
+                    'The current diagram is not saved to a SchemaDash project yet.',
                 unsaved_project:
-                    'The current diagram is not attached to a saved ChartDB project yet.',
+                    'The current diagram is not attached to a saved SchemaDash project yet.',
             },
         },
 
         backup_import_dialog: {
             title: 'Import Project Backup',
             description:
-                'Import a previously exported ChartDB backup JSON file.',
+                'Import a previously exported SchemaDash backup JSON file.',
             cancel: 'Cancel',
             import: 'Import Backup',
             success: {
@@ -653,7 +653,7 @@ export const en = {
             error: {
                 title: 'Error importing backup',
                 description:
-                    'The backup file is invalid or unsupported. Need help? support@chartdb.io',
+                    'The backup file is invalid or unsupported. Need help? support@schemadash.io',
             },
             errors: {
                 invalid_json: 'The selected file is not valid JSON.',

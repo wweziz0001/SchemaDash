@@ -22,7 +22,9 @@ import { generateId } from '../utils/id.js';
 
 const PASSWORD_HASH_PREFIX = 'scrypt';
 const SESSION_TOUCH_INTERVAL_MS = 5 * 60 * 1000;
-const OIDC_FLOW_COOKIE_NAME = 'chartdb_oidc_flow';
+const OIDC_FLOW_COOKIE_NAME = 'schemadash_oidc_flow';
+const LEGACY_OIDC_FLOW_COOKIE_NAME = 'chartdb_oidc_flow';
+const LEGACY_SESSION_COOKIE_NAME = 'chartdb_session';
 const OIDC_FLOW_TTL_MS = 10 * 60 * 1000;
 const BOOTSTRAP_STATE_CONFIG_KEY = 'auth_bootstrap_state';
 const BOOTSTRAP_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -222,7 +224,9 @@ export class AuthService {
 
         this.prepareBootstrap(request);
 
-        const token = request.cookies[this.env.sessionCookieName];
+        const token =
+            request.cookies[this.env.sessionCookieName] ??
+            request.cookies[LEGACY_SESSION_COOKIE_NAME];
         if (!token) {
             return this.getUnauthenticatedState(this.env.authMode);
         }
@@ -368,7 +372,7 @@ export class AuthService {
                 email: user.email,
                 authMode: this.env.authMode,
             },
-            'Initialized first ChartDB administrator.'
+            'Initialized first SchemaDash administrator.'
         );
 
         this.createSession(request, reply, user.id, now);
@@ -759,7 +763,7 @@ export class AuthService {
                 adminUserId: user.id,
                 email: user.email,
             },
-            'Initialized first ChartDB administrator from environment settings.'
+            'Initialized first SchemaDash administrator from environment settings.'
         );
     }
 
@@ -956,7 +960,7 @@ export class AuthService {
         if (bootstrap.required) {
             if (!this.env.bootstrapAdminEmail) {
                 throw new AppError(
-                    'Initial OIDC administrator bootstrap is pending. Configure CHARTDB_BOOTSTRAP_ADMIN_EMAIL before signing in.',
+                    'Initial OIDC administrator bootstrap is pending. Configure SCHEMADASH_BOOTSTRAP_ADMIN_EMAIL before signing in.',
                     403,
                     'AUTH_BOOTSTRAP_REQUIRED'
                 );
@@ -1112,7 +1116,7 @@ export class AuthService {
             readStringClaim(claims, 'name') ??
             readStringClaim(claims, 'preferred_username') ??
             email.split('@')[0] ??
-            'ChartDB User'
+            'SchemaDash User'
         );
     }
 
@@ -1165,18 +1169,28 @@ export class AuthService {
         const encoded = `${encodedPayload}.${this.signOidcFlowPayload(
             encodedPayload
         )}`;
-
-        reply.setCookie(OIDC_FLOW_COOKIE_NAME, encoded, {
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: 'lax',
+            sameSite: 'lax' as const,
             secure: this.env.sessionCookieSecure,
             path: '/',
             maxAge: Math.floor(OIDC_FLOW_TTL_MS / 1000),
-        });
+        };
+
+        reply.setCookie(OIDC_FLOW_COOKIE_NAME, encoded, cookieOptions);
+        if (OIDC_FLOW_COOKIE_NAME !== LEGACY_OIDC_FLOW_COOKIE_NAME) {
+            reply.setCookie(
+                LEGACY_OIDC_FLOW_COOKIE_NAME,
+                encoded,
+                cookieOptions
+            );
+        }
     }
 
     private readOidcFlowCookie(request: FastifyRequest) {
-        const cookieValue = request.cookies[OIDC_FLOW_COOKIE_NAME];
+        const cookieValue =
+            request.cookies[OIDC_FLOW_COOKIE_NAME] ??
+            request.cookies[LEGACY_OIDC_FLOW_COOKIE_NAME];
         if (!cookieValue) {
             return null;
         }
@@ -1230,12 +1244,17 @@ export class AuthService {
     }
 
     private clearOidcFlowCookie(reply: FastifyReply) {
-        reply.clearCookie(OIDC_FLOW_COOKIE_NAME, {
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: 'lax',
+            sameSite: 'lax' as const,
             secure: this.env.sessionCookieSecure,
             path: '/',
-        });
+        };
+
+        reply.clearCookie(OIDC_FLOW_COOKIE_NAME, cookieOptions);
+        if (OIDC_FLOW_COOKIE_NAME !== LEGACY_OIDC_FLOW_COOKIE_NAME) {
+            reply.clearCookie(LEGACY_OIDC_FLOW_COOKIE_NAME, cookieOptions);
+        }
     }
 
     private redirectToOidcError(
@@ -1243,7 +1262,10 @@ export class AuthService {
         errorCode: string,
         returnTo = '/'
     ) {
-        const url = new URL(sanitizeReturnTo(returnTo), 'http://chartdb.local');
+        const url = new URL(
+            sanitizeReturnTo(returnTo),
+            'http://schemadash.local'
+        );
         url.searchParams.set('authError', errorCode);
         url.searchParams.set(
             'authErrorMessage',
@@ -1268,21 +1290,31 @@ export class AuthService {
     }
 
     private setSessionCookie(reply: FastifyReply, value: string) {
-        reply.setCookie(this.env.sessionCookieName, value, {
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: 'lax',
+            sameSite: 'lax' as const,
             secure: this.env.sessionCookieSecure,
             path: '/',
             maxAge: this.env.sessionTtlHours * 60 * 60,
-        });
+        };
+
+        reply.setCookie(this.env.sessionCookieName, value, cookieOptions);
+        if (this.env.sessionCookieName !== LEGACY_SESSION_COOKIE_NAME) {
+            reply.setCookie(LEGACY_SESSION_COOKIE_NAME, value, cookieOptions);
+        }
     }
 
     private clearSessionCookie(reply: FastifyReply) {
-        reply.clearCookie(this.env.sessionCookieName, {
+        const cookieOptions = {
             httpOnly: true,
-            sameSite: 'lax',
+            sameSite: 'lax' as const,
             secure: this.env.sessionCookieSecure,
             path: '/',
-        });
+        };
+
+        reply.clearCookie(this.env.sessionCookieName, cookieOptions);
+        if (this.env.sessionCookieName !== LEGACY_SESSION_COOKIE_NAME) {
+            reply.clearCookie(LEGACY_SESSION_COOKIE_NAME, cookieOptions);
+        }
     }
 }

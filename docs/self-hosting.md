@@ -1,8 +1,8 @@
-# Self-Hosting ChartDB
+# Self-Hosting SchemaDash
 
-ChartDB can run as a lightweight self-hosted stack with a static web container, a Fastify API, and local SQLite persistence for application metadata.
+SchemaDash can run as a lightweight self-hosted stack with a static web container, a Fastify API, and local SQLite persistence for application metadata.
 
-The optional PostgreSQL container in `docker-compose.yml` is a convenience service for local schema-sync testing. ChartDB's own application state still persists in SQLite unless you are connecting the schema-sync workflow to an external live PostgreSQL database.
+The optional PostgreSQL container in `docker-compose.yml` is a convenience service for local schema-sync testing. SchemaDash's own application state still persists in SQLite unless you are connecting the schema-sync workflow to an external live PostgreSQL database.
 
 ## Local run
 
@@ -15,8 +15,8 @@ cp .env.example .env
 At minimum, set:
 
 ```dotenv
-CHARTDB_SECRET_KEY=replace-with-a-long-random-secret
-CHARTDB_POSTGRES_PASSWORD=replace-with-a-local-dev-password
+SCHEMADASH_SECRET_KEY=replace-with-a-long-random-secret
+SCHEMADASH_POSTGRES_PASSWORD=replace-with-a-local-dev-password
 ```
 
 Run the app without Docker:
@@ -27,7 +27,7 @@ npm run dev:server
 npm run dev:web
 ```
 
-Vite serves the frontend on `http://localhost:5173` and proxies `/api` to `CHARTDB_API_PROXY`, which defaults to `http://localhost:4010`.
+Vite serves the frontend on `http://localhost:5173` and proxies `/api` to `SCHEMADASH_API_PROXY`, which defaults to `http://localhost:4010`.
 
 ## Build and test
 
@@ -75,70 +75,70 @@ Frontend runtime variables:
 - `VITE_OPENAI_API_KEY`: optional browser-side OpenAI key for AI export flows
 - `VITE_OPENAI_API_ENDPOINT`: optional OpenAI-compatible endpoint override
 - `VITE_LLM_MODEL_NAME`: optional default model name for AI export flows
-- `VITE_HIDE_CHARTDB_CLOUD`: hides cloud upsell entry points when `true`
+- `VITE_HIDE_SCHEMADASH_CLOUD`: hides cloud upsell entry points when `true`
 - `VITE_DISABLE_ANALYTICS`: disables Fathom analytics when `true`
 
 Backend runtime variables:
 
-- `CHARTDB_API_HOST`: backend bind host, defaults to `0.0.0.0`
-- `CHARTDB_API_PORT`: backend listen port, defaults to `4010`
-- `CHARTDB_CORS_ORIGIN`: allowed browser origin for API access
-- `CHARTDB_TRUST_PROXY`: `false`, `true`, or a positive hop count such as `1`
-- `CHARTDB_SECRET_KEY`: required production secret used for encrypted PostgreSQL connection storage and signed auth flow state
-- `CHARTDB_DATA_DIR`: directory for local SQLite files
-- `CHARTDB_APP_DB_PATH`: optional explicit path for the app persistence SQLite database
-- `CHARTDB_METADATA_DB_PATH`: optional explicit path for the schema-sync metadata SQLite database
-- `CHARTDB_LOG_LEVEL`: Fastify/Pino level
-- `CHARTDB_DEFAULT_PROJECT_NAME`: bootstrap default project name
-- `CHARTDB_DEFAULT_OWNER_NAME`: bootstrap default owner display name
+- `SCHEMADASH_API_HOST`: backend bind host, defaults to `0.0.0.0`
+- `SCHEMADASH_API_PORT`: backend listen port, defaults to `4010`
+- `SCHEMADASH_CORS_ORIGIN`: allowed browser origin for API access
+- `SCHEMADASH_TRUST_PROXY`: `false`, `true`, or a positive hop count such as `1`
+- `SCHEMADASH_SECRET_KEY`: required production secret used for encrypted PostgreSQL connection storage and signed auth flow state
+- `SCHEMADASH_DATA_DIR`: directory for local SQLite files
+- `SCHEMADASH_APP_DB_PATH`: optional explicit path for the app persistence SQLite database
+- `SCHEMADASH_METADATA_DB_PATH`: optional explicit path for the schema-sync metadata SQLite database
+- `SCHEMADASH_LOG_LEVEL`: Fastify/Pino level
+- `SCHEMADASH_DEFAULT_PROJECT_NAME`: bootstrap default project name
+- `SCHEMADASH_DEFAULT_OWNER_NAME`: bootstrap default owner display name
 
 Authentication variables:
 
-- `CHARTDB_AUTH_MODE`: `disabled`, `password`, or `oidc`
-- `CHARTDB_AUTH_EMAIL`: optional environment-assisted first admin email for password mode
-- `CHARTDB_AUTH_PASSWORD`: optional environment-assisted first admin password for password mode
-- `CHARTDB_AUTH_DISPLAY_NAME`: display name for environment-assisted bootstrap
-- `CHARTDB_BOOTSTRAP_SETUP_CODE`: optional operator-managed interactive bootstrap code
-- `CHARTDB_BOOTSTRAP_ADMIN_EMAIL`: required first admin email for OIDC bootstrap
-- `CHARTDB_SESSION_TTL_HOURS`: session lifetime
-- `CHARTDB_SESSION_COOKIE_NAME`: session cookie name
-- `CHARTDB_SESSION_COOKIE_SECURE`: optional cookie `Secure` override
-- `CHARTDB_OIDC_ISSUER`: OIDC issuer URL
-- `CHARTDB_OIDC_CLIENT_ID`: OIDC client id
-- `CHARTDB_OIDC_CLIENT_SECRET`: optional OIDC client secret
-- `CHARTDB_OIDC_REDIRECT_URL`: registered OIDC callback URL
-- `CHARTDB_OIDC_LOGOUT_URL`: optional provider logout continuation URL
-- `CHARTDB_OIDC_SCOPES`: optional OIDC scopes, defaults to `openid profile email`
+- `SCHEMADASH_AUTH_MODE`: `disabled`, `password`, or `oidc`
+- `SCHEMADASH_AUTH_EMAIL`: optional environment-assisted first admin email for password mode
+- `SCHEMADASH_AUTH_PASSWORD`: optional environment-assisted first admin password for password mode
+- `SCHEMADASH_AUTH_DISPLAY_NAME`: display name for environment-assisted bootstrap
+- `SCHEMADASH_BOOTSTRAP_SETUP_CODE`: optional operator-managed interactive bootstrap code
+- `SCHEMADASH_BOOTSTRAP_ADMIN_EMAIL`: required first admin email for OIDC bootstrap
+- `SCHEMADASH_SESSION_TTL_HOURS`: session lifetime
+- `SCHEMADASH_SESSION_COOKIE_NAME`: session cookie name
+- `SCHEMADASH_SESSION_COOKIE_SECURE`: optional cookie `Secure` override
+- `SCHEMADASH_OIDC_ISSUER`: OIDC issuer URL
+- `SCHEMADASH_OIDC_CLIENT_ID`: OIDC client id
+- `SCHEMADASH_OIDC_CLIENT_SECRET`: optional OIDC client secret
+- `SCHEMADASH_OIDC_REDIRECT_URL`: registered OIDC callback URL
+- `SCHEMADASH_OIDC_LOGOUT_URL`: optional provider logout continuation URL
+- `SCHEMADASH_OIDC_SCOPES`: optional OIDC scopes, defaults to `openid profile email`
 
 Operational note:
 
-- when `CHARTDB_AUTH_MODE` is `password` or `oidc`, live PostgreSQL connection management plus schema import/diff/apply routes are restricted to authenticated admins
+- when `SCHEMADASH_AUTH_MODE` is `password` or `oidc`, live PostgreSQL connection management plus schema import/diff/apply routes are restricted to authenticated admins
 - when auth is disabled, those routes remain available as part of the single-user/local-owner deployment model
 
 Compose helper variables:
 
-- `CHARTDB_WEB_PORT`: published web port, defaults to `8080`
-- `CHARTDB_POSTGRES_PORT`: published PostgreSQL port, defaults to `5432`
-- `CHARTDB_POSTGRES_DB`: local compose database name
-- `CHARTDB_POSTGRES_USER`: local compose database user
-- `CHARTDB_POSTGRES_PASSWORD`: local compose database password
+- `SCHEMADASH_WEB_PORT`: published web port, defaults to `8080`
+- `SCHEMADASH_POSTGRES_PORT`: published PostgreSQL port, defaults to `5432`
+- `SCHEMADASH_POSTGRES_DB`: local compose database name
+- `SCHEMADASH_POSTGRES_USER`: local compose database user
+- `SCHEMADASH_POSTGRES_PASSWORD`: local compose database password
 
 ## Reverse proxy notes
 
 - Prefer serving the frontend and API from the same external origin and let the web container proxy `/api` internally.
-- Set `CHARTDB_CORS_ORIGIN` to the exact public frontend origin when browsers call the API.
-- Set `CHARTDB_TRUST_PROXY=1` only when ChartDB is always behind one trusted reverse-proxy hop that sanitizes forwarded headers.
+- Set `SCHEMADASH_CORS_ORIGIN` to the exact public frontend origin when browsers call the API.
+- Set `SCHEMADASH_TRUST_PROXY=1` only when SchemaDash is always behind one trusted reverse-proxy hop that sanitizes forwarded headers.
 - Forward `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`, and optionally `X-Request-Id`.
-- Disable buffering for `/api/` when proxying because ChartDB uses server-sent events for collaboration updates.
+- Disable buffering for `/api/` when proxying because SchemaDash uses server-sent events for collaboration updates.
 - When the frontend and API are split across origins, set `VITE_API_BASE_URL=https://api.example.com`.
-- Keep `CHARTDB_OIDC_REDIRECT_URL` aligned with the externally visible callback URL when OIDC is enabled.
+- Keep `SCHEMADASH_OIDC_REDIRECT_URL` aligned with the externally visible callback URL when OIDC is enabled.
 
 ## Deployment basics
 
 - Run the API with `NODE_ENV=production`.
 - Mount `/app/data` on persistent storage when using the API container.
-- Back up the SQLite files in `CHARTDB_DATA_DIR` regularly.
-- Keep API replicas at `1` today. ChartDB currently uses SQLite plus in-memory collaboration state, so multi-replica API deployments need extra coordination work before they are safe.
+- Back up the SQLite files in `SCHEMADASH_DATA_DIR` regularly.
+- Keep API replicas at `1` today. SchemaDash currently uses SQLite plus in-memory collaboration state, so multi-replica API deployments need extra coordination work before they are safe.
 - The web container is stateless and is compatible with future Kubernetes ingress or service-based routing.
 - For Kubernetes, map probes to `/healthz`, `/api/livez`, and `/api/readyz`, and back the API pod with a persistent volume claim.
 - Review [Schema Sync Architecture](./schema-sync-architecture.md) before exposing live PostgreSQL apply in production, especially around enum/custom type limitations and destructive-change confirmations.

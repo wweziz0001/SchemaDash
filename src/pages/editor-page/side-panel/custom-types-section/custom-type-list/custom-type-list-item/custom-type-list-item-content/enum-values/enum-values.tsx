@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/input/input';
 import { Button } from '@/components/button/button';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 
 export interface EnumValuesProps {
     values: string[];
@@ -18,7 +18,7 @@ export const CustomTypeEnumValues: React.FC<EnumValuesProps> = ({
 }) => {
     const { t } = useTranslation();
     const [newValue, setNewValue] = useState('');
-    const { readonly } = useChartDB();
+    const { readonly } = useSchemaDash();
 
     const handleAddValue = useCallback(() => {
         if (newValue.trim() && !values.includes(newValue.trim())) {

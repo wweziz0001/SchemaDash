@@ -4,7 +4,7 @@ Date: 2026-03-25
 
 ## Summary
 
-ChartDB already has a functional sharing model with:
+SchemaDash already has a functional sharing model with:
 
 - direct per-user project and diagram sharing
 - general link access
@@ -44,7 +44,7 @@ The main gaps for this task are in presence and header integration, not the core
    - document version refresh
    - active session count updates
    - stale-session handling
-   - File: `src/context/chartdb-context/chartdb-provider.tsx`
+   - File: `src/context/schemadash-context/chartdb-provider.tsx`
    - Gap: active participant identity and cursor presence are not modeled anywhere in client state.
 
 5. Cursor handling inside the canvas is currently local-only.

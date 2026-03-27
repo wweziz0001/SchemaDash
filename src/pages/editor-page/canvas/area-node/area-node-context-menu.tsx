@@ -5,7 +5,7 @@ import {
     ContextMenuTrigger,
 } from '@/components/context-menu/context-menu';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import type { Area } from '@/lib/domain/area';
 import { Pencil, Trash2 } from 'lucide-react';
 import React, { useCallback } from 'react';
@@ -18,7 +18,7 @@ export interface AreaNodeContextMenuProps {
 export const AreaNodeContextMenu: React.FC<
     React.PropsWithChildren<AreaNodeContextMenuProps>
 > = ({ children, area, onEditName }) => {
-    const { removeArea, readonly } = useChartDB();
+    const { removeArea, readonly } = useSchemaDash();
     const { isMd: isDesktop } = useBreakpoint('md');
 
     const removeAreaHandler = useCallback(() => {

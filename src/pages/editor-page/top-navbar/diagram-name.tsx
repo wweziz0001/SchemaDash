@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/button/button';
 import { Check, Pencil } from 'lucide-react';
 import { Input } from '@/components/input/input';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useClickAway, useKeyPressEvent } from 'react-use';
 import { DiagramIcon } from '@/components/diagram-icon/diagram-icon';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +25,7 @@ export const DiagramName: React.FC<DiagramNameProps> = () => {
         currentDiagram,
         diagramSession,
         readonly,
-    } = useChartDB();
+    } = useSchemaDash();
 
     const { t } = useTranslation();
     const [editMode, setEditMode] = useState(false);

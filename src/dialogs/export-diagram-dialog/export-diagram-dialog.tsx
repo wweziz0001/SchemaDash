@@ -14,7 +14,7 @@ import type { SelectBoxOption } from '@/components/select-box/select-box';
 import { SelectBox } from '@/components/select-box/select-box';
 import type { BaseDialogProps } from '../common/base-dialog-props';
 import { useTranslation } from 'react-i18next';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { Spinner } from '@/components/spinner/spinner';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/alert/alert';
@@ -26,7 +26,7 @@ export const ExportDiagramDialog: React.FC<ExportDiagramDialogProps> = ({
     dialog,
 }) => {
     const { t } = useTranslation();
-    const { currentDiagram } = useChartDB();
+    const { currentDiagram } = useSchemaDash();
     const { closeExportDiagramDialog } = useDialog();
     const [error, setError] = useState(false);
 

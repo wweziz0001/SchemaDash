@@ -6,7 +6,7 @@ import {
     ContextMenuTrigger,
 } from '@/components/context-menu/context-menu';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useDialog } from '@/hooks/use-dialog';
 import { useReactFlow } from '@xyflow/react';
 import React, { useCallback } from 'react';
@@ -21,7 +21,7 @@ export const CanvasContextMenu: React.FC<React.PropsWithChildren> = ({
     children,
 }) => {
     const { createTable, readonly, createArea, databaseType, createNote } =
-        useChartDB();
+        useSchemaDash();
     const { schemasDisplayed } = useDiagramFilter();
     const { openCreateRelationshipDialog, openImportDatabaseDialog } =
         useDialog();

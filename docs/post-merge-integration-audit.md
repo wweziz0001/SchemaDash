@@ -5,7 +5,7 @@ Branch: `feature/post-merge-integration-audit-and-hardening`
 
 ## Scope
 
-This audit reviewed the merged ChartDB codebase across backend foundation, persistence, collections, search, import/export, authentication, OIDC, admin bootstrap, admin dashboard, sharing, collaboration, real-time updates, self-hosting, and the PostgreSQL live schema import/diff/apply workflow.
+This audit reviewed the merged SchemaDash codebase across backend foundation, persistence, collections, search, import/export, authentication, OIDC, admin bootstrap, admin dashboard, sharing, collaboration, real-time updates, self-hosting, and the PostgreSQL live schema import/diff/apply workflow.
 
 The goal of this document is to record the post-merge state before corrective hardening work, highlight the highest-risk integration gaps, and track which issues are being corrected on this branch.
 

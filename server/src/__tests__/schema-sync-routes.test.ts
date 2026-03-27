@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { CanonicalSchema } from '@chartdb/schema-sync-core';
+import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 import { buildApp } from '../app.js';
 import type { ServerEnv } from '../config/env.js';
 import { AppRepository } from '../repositories/app-repository.js';

@@ -1,6 +1,7 @@
 import type { FastifyRequest } from 'fastify';
 
-export const SHARE_TOKEN_HEADER = 'x-chartdb-share-token';
+export const SHARE_TOKEN_HEADER = 'x-schemadash-share-token';
+export const LEGACY_SHARE_TOKEN_HEADER = 'x-chartdb-share-token';
 
 const readShareToken = (value: string | string[] | undefined) => {
     const token = Array.isArray(value) ? value[0] : value;
@@ -12,6 +13,13 @@ export const resolveRequestShareToken = (request: FastifyRequest) => {
     const fromHeader = readShareToken(request.headers[SHARE_TOKEN_HEADER]);
     if (fromHeader) {
         return fromHeader;
+    }
+
+    const legacyHeader = readShareToken(
+        request.headers[LEGACY_SHARE_TOKEN_HEADER]
+    );
+    if (legacyHeader) {
+        return legacyHeader;
     }
 
     const query = request.query as

@@ -4,7 +4,7 @@ Date: 2026-03-25
 
 ## Purpose
 
-ChartDB keeps live collaboration presence separate from:
+SchemaDash keeps live collaboration presence separate from:
 
 - access control and sharing permissions
 - persisted diagram document state
@@ -39,7 +39,7 @@ This prevents refreshes from stacking duplicate participant avatars or cursors.
 
 ## Multiple Tabs Policy
 
-ChartDB treats multiple tabs from the same logical participant as one presence
+SchemaDash treats multiple tabs from the same logical participant as one presence
 identity per diagram.
 
 - authenticated users are collapsed per account

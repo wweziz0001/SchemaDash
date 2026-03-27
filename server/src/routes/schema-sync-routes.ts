@@ -5,7 +5,7 @@ import {
     connectionUpsertSchema,
     diffSchemaRequestSchema,
     importLiveSchemaRequestSchema,
-} from '@chartdb/schema-sync-core';
+} from '@schemadash/schema-sync-core';
 import type { AppContext } from '../context/app-context.js';
 import {
     requireOperationalAccess,

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { ListItemHeaderButton } from '@/pages/editor-page/side-panel/list-item-header-button/list-item-header-button';
 import { Input } from '@/components/input/input';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useClickAway, useKeyPressEvent } from 'react-use';
 import { useSortable } from '@dnd-kit/sortable';
 import {
@@ -52,7 +52,7 @@ export const CustomTypeListItemHeader: React.FC<
         tables,
         databaseType,
         readonly,
-    } = useChartDB();
+    } = useSchemaDash();
     const { schemasDisplayed } = useDiagramFilter();
     const { t } = useTranslation();
     const [editMode, setEditMode] = React.useState(false);

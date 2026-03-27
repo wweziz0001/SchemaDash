@@ -3,8 +3,8 @@ import type {
     AuditRecord,
     ChangePlan,
     ConnectionSummary,
-} from '@chartdb/schema-sync-core';
-import type { CanonicalSchema } from '@chartdb/schema-sync-core';
+} from '@schemadash/schema-sync-core';
+import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 
 export interface StoredConnection extends ConnectionSummary {
     secretCiphertext: string;

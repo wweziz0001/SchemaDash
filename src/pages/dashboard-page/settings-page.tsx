@@ -39,7 +39,7 @@ export const SettingsPage: React.FC = () => {
     return (
         <div className="space-y-6">
             <Helmet>
-                <title>ChartDB - Settings</title>
+                <title>SchemaDash - Settings</title>
             </Helmet>
 
             <section className="rounded-[28px] border border-stone-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,245,244,0.92))] p-6 shadow-sm dark:border-stone-800/80 dark:bg-[linear-gradient(135deg,rgba(28,25,23,0.94),rgba(12,10,9,0.9))]">
@@ -55,8 +55,8 @@ export const SettingsPage: React.FC = () => {
                     </h1>
                     <p className="max-w-3xl text-sm leading-6 text-stone-600 dark:text-stone-300 sm:text-base">
                         Configure the saved workspace defaults and the local UI
-                        preferences that shape how ChartDB behaves after you log
-                        in.
+                        preferences that shape how SchemaDash behaves after you
+                        log in.
                     </p>
                 </div>
             </section>
@@ -67,7 +67,7 @@ export const SettingsPage: React.FC = () => {
                         <CardTitle>Appearance and canvas preferences</CardTitle>
                         <CardDescription>
                             These settings are stored locally in the browser and
-                            affect the current ChartDB user experience.
+                            affect the current SchemaDash user experience.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-5">
@@ -172,7 +172,7 @@ export const SettingsPage: React.FC = () => {
                         <CardTitle>Deployment and saved config</CardTitle>
                         <CardDescription>
                             Current values resolved from the authenticated
-                            session and persistent ChartDB config store.
+                            session and persistent SchemaDash config store.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4 text-sm text-stone-600 dark:text-stone-300">

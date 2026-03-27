@@ -3,7 +3,7 @@ import { Button } from '@/components/button/button';
 import { Group, X } from 'lucide-react';
 import { Input } from '@/components/input/input';
 import type { Area } from '@/lib/domain/area';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useLayout } from '@/hooks/use-layout';
 import { EmptyState } from '@/components/empty-state/empty-state';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
@@ -14,7 +14,7 @@ import { AreaList } from './areas-list/areas-list';
 export interface AreasTabProps {}
 
 export const AreasTab: React.FC<AreasTabProps> = () => {
-    const { createArea, areas, readonly } = useChartDB();
+    const { createArea, areas, readonly } = useSchemaDash();
     const viewport = useViewport();
     const { t } = useTranslation();
     const { openAreaFromSidebar } = useLayout();

@@ -5,13 +5,13 @@ import type {
     ConnectionSummary,
     ConnectionTestResponse,
     ConnectionUpsert,
-} from '@chartdb/schema-sync-core';
+} from '@schemadash/schema-sync-core';
 import { schemaSyncClient } from '../api/schema-sync-client';
 import {
     canonicalSchemaToDiagram,
     diagramToCanonicalSchema,
 } from '../lib/canonical-adapters';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useStorage } from '@/hooks/use-storage';
 import { useNavigate } from 'react-router-dom';
 import { generateDiagramId } from '@/lib/utils';
@@ -37,7 +37,7 @@ export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
     const [applyResult, setApplyResult] = useState<ApplySchemaResponse>();
     const [lastConnectionTest, setLastConnectionTest] =
         useState<ConnectionTestResponse>();
-    const { currentDiagram, updateDiagramData } = useChartDB();
+    const { currentDiagram, updateDiagramData } = useSchemaDash();
     const storage = useStorage();
     const navigate = useNavigate();
     const { toast } = useToast();

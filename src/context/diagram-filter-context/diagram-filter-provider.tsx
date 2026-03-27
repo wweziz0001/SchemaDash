@@ -16,16 +16,17 @@ import {
     spreadFilterTables,
 } from '@/lib/domain/diagram-filter/diagram-filter';
 import { useStorage } from '@/hooks/use-storage';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { filterTable } from '@/lib/domain/diagram-filter/filter';
 import { databasesWithSchemas, schemaNameToSchemaId } from '@/lib/domain';
 import { defaultSchemas } from '@/lib/data/default-schemas';
-import type { ChartDBEvent } from '../chartdb-context/chartdb-context';
+import type { SchemaDashEvent } from '../schemadash-context/schemadash-context';
 
 export const DiagramFilterProvider: React.FC<React.PropsWithChildren> = ({
     children,
 }) => {
-    const { diagramId, tables, schemas, databaseType, events } = useChartDB();
+    const { diagramId, tables, schemas, databaseType, events } =
+        useSchemaDash();
     const { getDiagramFilter, updateDiagramFilter } = useStorage();
     const [filter, setFilter] = useState<DiagramFilter>({});
     const [loading, setLoading] = useState<boolean>(true);
@@ -519,7 +520,7 @@ export const DiagramFilterProvider: React.FC<React.PropsWithChildren> = ({
         );
 
     const eventConsumer = useCallback(
-        (event: ChartDBEvent) => {
+        (event: SchemaDashEvent) => {
             if (!hasActiveFilter) {
                 return;
             }

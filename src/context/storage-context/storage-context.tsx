@@ -3,7 +3,7 @@ import type { Diagram } from '@/lib/domain/diagram';
 import { emptyFn } from '@/lib/utils';
 import type { DBRelationship } from '@/lib/domain/db-relationship';
 import type { DBTable } from '@/lib/domain/db-table';
-import type { ChartDBConfig } from '@/lib/domain/config';
+import type { SchemaDashConfig } from '@/lib/domain/config';
 import type { DBDependency } from '@/lib/domain/db-dependency';
 import type { Area } from '@/lib/domain/area';
 import type { DBCustomType } from '@/lib/domain/db-custom-type';
@@ -79,8 +79,8 @@ export interface DiagramSessionState {
 
 export interface StorageContext {
     // Config operations
-    getConfig: () => Promise<ChartDBConfig | undefined>;
-    updateConfig: (config: Partial<ChartDBConfig>) => Promise<void>;
+    getConfig: () => Promise<SchemaDashConfig | undefined>;
+    updateConfig: (config: Partial<SchemaDashConfig>) => Promise<void>;
 
     // Saved project operations
     listCollections: () => Promise<SavedCollection[]>;

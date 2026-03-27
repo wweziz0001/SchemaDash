@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { Button } from '@/components/button/button';
 import { ColorPicker } from '@/components/color-picker/color-picker';
 import { Separator } from '@/components/separator/separator';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useUpdateTable } from '@/hooks/use-update-table';
 import { useTranslation } from 'react-i18next';
 import { useLayout } from '@/hooks/use-layout';
@@ -41,7 +41,7 @@ export const TableEditMode: React.FC<TableEditModeProps> = React.memo(
         const fieldRefs = useRef<Map<string, HTMLDivElement>>(new Map());
         const [isVisible, setIsVisible] = useState(false);
         const { createField, updateTable, schemas, databaseType } =
-            useChartDB();
+            useSchemaDash();
         const { t } = useTranslation();
         const { openTableFromSidebar, selectSidebarSection } = useLayout();
         const { tableName, handleTableNameChange } = useUpdateTable(table);

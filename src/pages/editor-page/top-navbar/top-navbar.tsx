@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
-import ChartDBLogo from '@/assets/logo-light.png';
-import ChartDBDarkLogo from '@/assets/logo-dark.png';
+import SchemaDashLogo from '@/assets/logo-light.png';
+import SchemaDashDarkLogo from '@/assets/logo-dark.png';
 import { useTheme } from '@/hooks/use-theme';
 import { DiagramName } from './diagram-name';
 import { LastSaved } from './last-saved';
@@ -23,7 +23,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
     const renderStars = useCallback(() => {
         return (
             <iframe
-                src={`https://ghbtns.com/github-btn.html?user=chartdb&repo=chartdb&type=star&size=large&text=false`}
+                src={`https://ghbtns.com/github-btn.html?user=wweziz0001&repo=SchemaDash&type=star&size=large&text=false`}
                 width="40"
                 height="30"
                 title="GitHub"
@@ -34,20 +34,20 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
     return (
         <nav className="flex flex-col justify-between border-b px-3 md:h-12 md:flex-row md:items-center md:px-4">
             <div className="flex flex-1 flex-col justify-between gap-x-1 md:flex-row md:justify-normal">
-                <div className="flex items-center justify-between pt-[8px] font-primary md:py-[10px]">
+                <div className="flex items-center justify-between pt-[8px] font-primary md:py-0">
                     <a
-                        href="https://chartdb.io"
+                        href="https://schemadash.io"
                         className="cursor-pointer"
                         rel="noreferrer"
                     >
                         <img
                             src={
                                 effectiveTheme === 'light'
-                                    ? ChartDBLogo
-                                    : ChartDBDarkLogo
+                                    ? SchemaDashLogo
+                                    : SchemaDashDarkLogo
                             }
-                            alt="chartDB"
-                            className="h-4 max-w-fit"
+                            alt="SchemaDash"
+                            className="h-8 max-w-fit"
                         />
                     </a>
                 </div>

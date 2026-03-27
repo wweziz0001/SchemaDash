@@ -1,6 +1,6 @@
 # Sharing And Access Model
 
-ChartDB now uses a single enforced sharing model across projects, diagrams, and collaborative editing.
+SchemaDash now uses a single enforced sharing model across projects, diagrams, and collaborative editing.
 
 ## Roles
 
@@ -20,7 +20,7 @@ ChartDB now uses a single enforced sharing model across projects, diagrams, and 
 
 ## People With Access
 
-Owners can grant direct access to specific existing ChartDB users.
+Owners can grant direct access to specific existing SchemaDash users.
 
 - Direct shares are persisted server-side.
 - Direct shares can be granted at the project level or diagram level.
@@ -42,7 +42,7 @@ Owners can also configure link-based general access.
 ### Expiration
 
 - Link expiration is enforced on the server.
-- When a link expires, ChartDB automatically disables that link share.
+- When a link expires, SchemaDash automatically disables that link share.
 - Expired links stop granting access immediately.
 - Fetching the sharing settings after expiration returns the resource to restricted mode.
 
@@ -57,7 +57,7 @@ All access control is enforced in backend persistence logic, not only in the fro
 
 ## Shared Editing Persistence
 
-ChartDB keeps one authoritative persisted diagram document on the server.
+SchemaDash keeps one authoritative persisted diagram document on the server.
 
 - Local editor changes are synchronized into that canonical persisted document.
 - Diagram sessions still use optimistic document versions and realtime events.

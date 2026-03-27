@@ -2,7 +2,7 @@
 
 ## Overview
 
-ChartDB shared diagrams use one authoritative persisted document state.
+SchemaDash shared diagrams use one authoritative persisted document state.
 
 - Owners and editors can update that persisted state.
 - Viewers can open the same shared document in read-only mode.

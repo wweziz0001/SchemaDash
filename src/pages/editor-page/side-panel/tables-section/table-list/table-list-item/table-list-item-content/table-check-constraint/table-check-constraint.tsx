@@ -11,7 +11,7 @@ import { Separator } from '@/components/separator/separator';
 import { Label } from '@/components/label/label';
 import { Textarea } from '@/components/textarea/textarea';
 import { useTranslation } from 'react-i18next';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { validateCheckConstraintWithDetails } from '@/lib/check-constraints/check-constraints-validator';
 
 export interface TableCheckConstraintProps {
@@ -26,7 +26,7 @@ export const TableCheckConstraint: React.FC<TableCheckConstraintProps> = ({
     removeConstraint,
 }) => {
     const { t } = useTranslation();
-    const { readonly } = useChartDB();
+    const { readonly } = useSchemaDash();
 
     // Validate the expression and memoize the result
     const validationResult = useMemo(() => {

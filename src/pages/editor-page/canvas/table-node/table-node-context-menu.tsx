@@ -5,7 +5,7 @@ import {
     ContextMenuTrigger,
 } from '@/components/context-menu/context-menu';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useLayout } from '@/hooks/use-layout';
 import { cloneTable } from '@/lib/clone';
 import type { DBTable } from '@/lib/domain/db-table';
@@ -21,7 +21,7 @@ export interface TableNodeContextMenuProps {
 export const TableNodeContextMenu: React.FC<
     React.PropsWithChildren<TableNodeContextMenuProps>
 > = ({ children, table }) => {
-    const { removeTable, readonly, createTable } = useChartDB();
+    const { removeTable, readonly, createTable } = useSchemaDash();
     const { closeAllTablesInSidebar } = useLayout();
     const { t } = useTranslation();
     const { isMd: isDesktop } = useBreakpoint('md');

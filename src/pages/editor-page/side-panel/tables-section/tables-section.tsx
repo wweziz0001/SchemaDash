@@ -4,7 +4,7 @@ import { Button } from '@/components/button/button';
 import { Table, View, X, EyeOff } from 'lucide-react';
 import { Input } from '@/components/input/input';
 import type { DBTable } from '@/lib/domain/db-table';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useLayout } from '@/hooks/use-layout';
 import { EmptyState } from '@/components/empty-state/empty-state';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
@@ -21,7 +21,7 @@ import { useLocalConfig } from '@/hooks/use-local-config';
 export interface TablesSectionProps {}
 
 export const TablesSection: React.FC<TablesSectionProps> = () => {
-    const { createTable, tables, databaseType, readonly } = useChartDB();
+    const { createTable, tables, databaseType, readonly } = useSchemaDash();
     const { filter, schemasDisplayed, hasActiveFilter, resetFilter } =
         useDiagramFilter();
     const { openTableSchemaDialog } = useDialog();

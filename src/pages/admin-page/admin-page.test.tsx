@@ -191,7 +191,9 @@ describe('admin page', () => {
         );
 
         expect(await screen.findByText('Grace Hopper')).toBeInTheDocument();
-        expect(screen.getByText('ChartDB admin dashboard')).toBeInTheDocument();
+        expect(
+            screen.getByText('SchemaDash admin dashboard')
+        ).toBeInTheDocument();
         expect(screen.getByText('Platform health')).toBeInTheDocument();
         expect(screen.getByText('Project inventory')).toBeInTheDocument();
         expect(

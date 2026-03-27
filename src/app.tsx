@@ -20,7 +20,7 @@ const AppContent = () => {
         return (
             <main className="flex min-h-screen items-center justify-center bg-stone-950 text-stone-100">
                 <div className="text-sm uppercase tracking-[0.3em] text-stone-400">
-                    Loading ChartDB
+                    Loading SchemaDash
                 </div>
             </main>
         );

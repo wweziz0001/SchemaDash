@@ -3,7 +3,7 @@ import {
     canonicalSchemaToDiagram,
     diagramToCanonicalSchema,
 } from '../canonical-adapters';
-import type { CanonicalSchema } from '@chartdb/schema-sync-core';
+import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 import { DatabaseType } from '@/lib/domain/database-type';
 
 describe('canonical adapters', () => {

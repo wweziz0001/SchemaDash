@@ -4,7 +4,7 @@ import { Button } from '@/components/button/button';
 import type { DBCustomTypeField } from '@/lib/domain/db-custom-type';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 
 export interface CompositeFieldProps {
     field: DBCustomTypeField;
@@ -23,7 +23,7 @@ export const CompositeField: React.FC<{
         transition,
         isDragging,
     } = useSortable({ id: field.field });
-    const { readonly } = useChartDB();
+    const { readonly } = useSchemaDash();
 
     const style = {
         transform: CSS.Transform.toString(transform),

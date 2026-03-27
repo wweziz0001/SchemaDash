@@ -14,7 +14,7 @@ import {
 import { ListItemHeaderButton } from '@/pages/editor-page/side-panel/list-item-header-button/list-item-header-button';
 import type { DBTable } from '@/lib/domain/db-table';
 import { Input } from '@/components/input/input';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useClickAway, useKeyPressEvent } from 'react-use';
 import { useSortable } from '@dnd-kit/sortable';
 import {
@@ -56,7 +56,7 @@ export const TableListItemHeader: React.FC<TableListItemHeaderProps> = ({
         schemas,
         databaseType,
         readonly,
-    } = useChartDB();
+    } = useSchemaDash();
     const { schemasDisplayed } = useDiagramFilter();
     const { openTableSchemaDialog } = useDialog();
     const { t } = useTranslation();

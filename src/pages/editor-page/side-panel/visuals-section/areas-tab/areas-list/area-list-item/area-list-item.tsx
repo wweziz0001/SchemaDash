@@ -11,7 +11,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Area } from '@/lib/domain/area';
 import { Input } from '@/components/input/input';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useClickAway, useKeyPressEvent } from 'react-use';
 import { useTranslation } from 'react-i18next';
 import {
@@ -39,7 +39,7 @@ export interface AreaListItemProps {
 
 export const AreaListItem = React.forwardRef<HTMLDivElement, AreaListItemProps>(
     ({ area }, forwardedRef) => {
-        const { updateArea, removeArea, readonly } = useChartDB();
+        const { updateArea, removeArea, readonly } = useSchemaDash();
         const { t } = useTranslation();
         const { focusOnArea } = useFocusOn();
         const [editMode, setEditMode] = React.useState(false);

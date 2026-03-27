@@ -1,5 +1,5 @@
 {
-    "name": "@chartdb/server",
+    "name": "@schemadash/server",
     "version": "0.1.0",
     "private": true,
     "type": "module",
@@ -12,7 +12,7 @@
         "test:ci": "vitest run --reporter=verbose --bail=1"
     },
     "dependencies": {
-        "@chartdb/schema-sync-core": "file:../packages/schema-sync-core",
+        "@schemadash/schema-sync-core": "file:../packages/schema-sync-core",
         "@fastify/cookie": "^11.0.2",
         "@fastify/cors": "^11.1.0",
         "better-sqlite3": "^11.10.0",

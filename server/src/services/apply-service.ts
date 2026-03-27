@@ -5,14 +5,14 @@ import type {
     DatabaseConnectionSecret,
     RiskWarning,
     SchemaChange,
-} from '@chartdb/schema-sync-core';
+} from '@schemadash/schema-sync-core';
 import { generateId } from '../utils/id.js';
 import type { MetadataRepository } from '../repositories/metadata-repository.js';
 import type { ConnectionsService } from './connections-service.js';
 import type { SchemaSyncService } from './schema-sync-service.js';
 import { introspectPostgresSchema } from '../postgres/introspection.js';
 import { Client } from 'pg';
-import { hashCanonicalSchema } from '@chartdb/schema-sync-core';
+import { hashCanonicalSchema } from '@schemadash/schema-sync-core';
 import { AppError } from '../utils/app-error.js';
 
 const quoteIdent = (value: string) => `"${value.replace(/"/g, '""')}"`;

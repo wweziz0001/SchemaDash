@@ -1,20 +1,20 @@
-# ChartDB Project Backup Format
+# SchemaDash Project Backup Format
 
-ChartDB project backup import/export uses a JSON archive with an explicit
+SchemaDash project backup import/export uses a JSON archive with an explicit
 format name and version.
 
 ## File format
 
-- Recommended extension: `.chartdb-backup.json`
+- Recommended extension: `.schemadash-backup.json`
 - MIME type when downloaded: `application/json`
-- Top-level format marker: `chartdb-backup`
+- Top-level format marker: `schemadash-backup`
 - Current supported `formatVersion`: `1`
 
 ## Archive shape
 
 ```json
 {
-  "format": "chartdb-backup",
+  "format": "schemadash-backup",
   "formatVersion": 1,
   "exportedAt": "2026-03-22T17:00:00.000Z",
   "scope": "all-projects",
@@ -64,7 +64,7 @@ format name and version.
 - `updatedAt`
 - `diagram`
 
-The nested `diagram` document contains the saved ChartDB diagram payload,
+The nested `diagram` document contains the saved SchemaDash diagram payload,
 including tables, relationships, dependencies, areas, custom types, notes,
 and schema-sync metadata when present.
 
@@ -74,7 +74,7 @@ and schema-sync metadata when present.
   metadata and referenced collection metadata.
 - `Current saved project` exports that project and all of its saved diagrams.
 - `All saved projects` exports every saved project, diagram, and referenced
-  collection in the ChartDB library.
+  collection in the SchemaDash library.
 - Existing SQL export behavior is separate and unchanged.
 
 ## Import behavior
@@ -82,7 +82,7 @@ and schema-sync metadata when present.
 - Imports validate `format` and `formatVersion` before restore.
 - Imports reject malformed JSON, duplicate ids inside the archive, broken
   project-to-collection references, and broken diagram-to-project references.
-- Imports create new ChartDB ids on restore to avoid overwriting existing saved
+- Imports create new SchemaDash ids on restore to avoid overwriting existing saved
   content.
 - Diagram, project, and collection names are preserved where possible.
 - Imported diagrams are restored into the saved project library and can be
@@ -90,16 +90,16 @@ and schema-sync metadata when present.
 
 ## Compatibility rules
 
-- `format` must be exactly `chartdb-backup`.
+- `format` must be exactly `schemadash-backup`.
 - `formatVersion` must currently be exactly `1`.
 - Unsupported versions fail with an explicit error instead of attempting a
   partial import.
 
 ## Limitations
 
-- Backup import/export targets saved ChartDB library content, not unsaved local
+- Backup import/export targets saved SchemaDash library content, not unsaved local
   browser-only diagrams.
 - Restores are additive. Existing projects and diagrams are not updated in
   place.
 - Ownership metadata in the archive is preserved in the file, but restored
-  records are assigned to the current ChartDB application owner.
+  records are assigned to the current SchemaDash application owner.

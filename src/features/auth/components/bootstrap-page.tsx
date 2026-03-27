@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ChartDBLogo from '@/assets/logo-light.png';
+import SchemaDashLogo from '@/assets/logo-light.png';
 import { Button } from '@/components/button/button';
 import {
     Card,
@@ -14,7 +14,7 @@ import { useAuth } from '../hooks/use-auth';
 
 export const BootstrapPage: React.FC = () => {
     const { bootstrap, bootstrapAdmin, mode, startOidcLogin } = useAuth();
-    const [displayName, setDisplayName] = useState('ChartDB Admin');
+    const [displayName, setDisplayName] = useState('SchemaDash Admin');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [setupCode, setSetupCode] = useState('');
@@ -57,8 +57,8 @@ export const BootstrapPage: React.FC = () => {
             <div className="relative z-10 w-full max-w-md">
                 <div className="mb-6 flex items-center justify-center gap-3">
                     <img
-                        src={ChartDBLogo}
-                        alt="ChartDB"
+                        src={SchemaDashLogo}
+                        alt="SchemaDash"
                         className="h-5 w-auto"
                     />
                     <span className="text-sm uppercase tracking-[0.3em] text-stone-400">

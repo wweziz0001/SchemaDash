@@ -5,7 +5,7 @@ import type {
     ConnectionSummary,
     ConnectionTestResponse,
     ConnectionUpsert,
-} from '@chartdb/schema-sync-core';
+} from '@schemadash/schema-sync-core';
 
 type ImportMode = 'replace' | 'new';
 

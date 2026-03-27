@@ -12,7 +12,7 @@ import {
     MenubarSubTrigger,
     MenubarTrigger,
 } from '@/components/menubar/menubar';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useDialog } from '@/hooks/use-dialog';
 import { useExportImage } from '@/hooks/use-export-image';
 import { databaseTypeToLabelMap } from '@/lib/databases';
@@ -38,7 +38,7 @@ export const Menu: React.FC<MenuProps> = () => {
         saveDiagram,
         databaseType,
         readonly,
-    } = useChartDB();
+    } = useSchemaDash();
     const {
         openCreateDiagramDialog,
         openOpenDiagramDialog,
@@ -104,8 +104,8 @@ export const Menu: React.FC<MenuProps> = () => {
         });
     }, [openExportImageDialog]);
 
-    const openChartDBDocs = useCallback(() => {
-        window.open('https://docs.chartdb.io', '_blank');
+    const openSchemaDashDocs = useCallback(() => {
+        window.open('https://docs.schemadash.io', '_blank');
     }, []);
 
     const openJoinDiscord = useCallback(() => {
@@ -506,7 +506,7 @@ export const Menu: React.FC<MenuProps> = () => {
             <MenubarMenu>
                 <MenubarTrigger>{t('menu.help.help')}</MenubarTrigger>
                 <MenubarContent>
-                    <MenubarItem onClick={openChartDBDocs}>
+                    <MenubarItem onClick={openSchemaDashDocs}>
                         {t('menu.help.docs_website')}
                     </MenubarItem>
                     <MenubarItem onClick={openJoinDiscord}>

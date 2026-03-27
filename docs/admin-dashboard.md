@@ -1,6 +1,6 @@
 # Admin Dashboard
 
-ChartDB now includes a basic admin dashboard for self-hosted deployments that enable authentication.
+SchemaDash now includes a basic admin dashboard for self-hosted deployments that enable authentication.
 
 ## What It Includes
 

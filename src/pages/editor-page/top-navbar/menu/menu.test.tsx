@@ -3,10 +3,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Menu } from './menu';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 
-vi.mock('@/hooks/use-chartdb', () => ({
-    useChartDB: vi.fn(),
+vi.mock('@/hooks/use-schemadash', () => ({
+    useSchemaDash: vi.fn(),
 }));
 
 vi.mock('@/hooks/use-dialog', () => ({
@@ -85,17 +85,17 @@ vi.mock('@/context/alert-context/alert-context', () => ({
     }),
 }));
 
-const mockedUseChartDB = vi.mocked(useChartDB);
+const mockedUseSchemaDash = vi.mocked(useSchemaDash);
 
 describe('editor menu readonly behavior', () => {
     beforeEach(() => {
-        mockedUseChartDB.mockReset();
+        mockedUseSchemaDash.mockReset();
     });
 
     it('disables save and mutation menu items for viewers', async () => {
         const user = userEvent.setup();
 
-        mockedUseChartDB.mockReturnValue({
+        mockedUseSchemaDash.mockReturnValue({
             clearDiagramData: vi.fn(),
             deleteDiagram: vi.fn(),
             saveDiagram: vi.fn(),

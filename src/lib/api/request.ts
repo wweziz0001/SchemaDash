@@ -1,6 +1,9 @@
 import { API_BASE_URL } from '@/lib/env';
 import { getCurrentShareToken } from '@/features/persistence/share-token';
 
+const SHARE_TOKEN_HEADER = 'x-schemadash-share-token';
+const LEGACY_SHARE_TOKEN_HEADER = 'x-chartdb-share-token';
+
 export const apiPath = (path: string) =>
     `${API_BASE_URL}${path.startsWith('/api') ? path : `/api${path}`}`;
 
@@ -30,8 +33,14 @@ export const requestJson = async <T>(
     }
 
     const shareToken = getCurrentShareToken();
-    if (shareToken && !headers.has('x-chartdb-share-token')) {
-        headers.set('x-chartdb-share-token', shareToken);
+    if (shareToken) {
+        if (!headers.has(SHARE_TOKEN_HEADER)) {
+            headers.set(SHARE_TOKEN_HEADER, shareToken);
+        }
+
+        if (!headers.has(LEGACY_SHARE_TOKEN_HEADER)) {
+            headers.set(LEGACY_SHARE_TOKEN_HEADER, shareToken);
+        }
     }
 
     const response = await fetch(apiPath(path), {
@@ -62,7 +71,9 @@ export const requestJson = async <T>(
                   }`
                 : `Request to ${path} failed`;
         if (response.status === 401) {
-            window.dispatchEvent(new CustomEvent('chartdb:auth-unauthorized'));
+            window.dispatchEvent(
+                new CustomEvent('schemadash:auth-unauthorized')
+            );
         }
         throw new RequestError(error, response.status);
     }

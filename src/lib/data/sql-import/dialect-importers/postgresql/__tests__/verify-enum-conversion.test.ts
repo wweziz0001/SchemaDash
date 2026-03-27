@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { fromPostgres } from '../postgresql';
-import { convertToChartDBDiagram } from '../../../common';
+import { convertToSchemaDashDiagram } from '../../../common';
 import { DatabaseType } from '@/lib/domain/database-type';
 import { DBCustomTypeKind } from '@/lib/domain/db-custom-type';
 
@@ -26,7 +26,7 @@ CREATE TABLE spellbooks (
         const parserResult = await fromPostgres(sql);
 
         // Convert to diagram
-        const diagram = convertToChartDBDiagram(
+        const diagram = convertToSchemaDashDiagram(
             parserResult,
             DatabaseType.POSTGRESQL,
             DatabaseType.POSTGRESQL
@@ -115,7 +115,7 @@ CREATE TABLE dragons (
 );`;
 
         const parserResult = await fromPostgres(sql);
-        const diagram = convertToChartDBDiagram(
+        const diagram = convertToSchemaDashDiagram(
             parserResult,
             DatabaseType.POSTGRESQL,
             DatabaseType.POSTGRESQL

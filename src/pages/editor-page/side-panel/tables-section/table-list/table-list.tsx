@@ -16,14 +16,14 @@ import {
     SortableContext,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useChartDB } from '@/hooks/use-chartdb.ts';
+import { useSchemaDash } from '@/hooks/use-schemadash.ts';
 
 export interface TableListProps {
     tables: DBTable[];
 }
 
 export const TableList: React.FC<TableListProps> = ({ tables }) => {
-    const { updateTablesState } = useChartDB();
+    const { updateTablesState } = useSchemaDash();
 
     const { openTableFromSidebar, openedTableInSidebar } = useLayout();
     const lastOpenedTable = React.useRef<string | null>(null);

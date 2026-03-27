@@ -17,7 +17,7 @@ import { Separator } from '@/components/separator/separator';
 import type { DBTable } from '@/lib/domain/db-table';
 import type { DBField } from '@/lib/domain/db-field';
 import type { DBCheckConstraint } from '@/lib/domain/db-check-constraint';
-import { useChartDB } from '@/hooks/use-chartdb';
+import { useSchemaDash } from '@/hooks/use-schemadash';
 import { TableField } from './table-field/table-field';
 import { TableIndex } from './table-index/table-index';
 import { TableCheckConstraint } from './table-check-constraint/table-check-constraint';
@@ -61,7 +61,7 @@ export const TableListItemContent: React.FC<TableListItemContentProps> = ({
         updateTable,
         readonly,
         databaseType,
-    } = useChartDB();
+    } = useSchemaDash();
     const { t } = useTranslation();
     const { color } = table;
     const [selectedItems, setSelectedItems] = React.useState<
