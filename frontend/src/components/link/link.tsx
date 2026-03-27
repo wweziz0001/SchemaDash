@@ -7,7 +7,7 @@ export const Link = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
     <a
         ref={ref}
-        className={cn('text-pink-600 hover:underline', className)}
+        className={cn('text-teal-600 hover:underline', className)}
         {...props}
     >
         {children}

@@ -51,7 +51,7 @@ describe('active diagram participants', () => {
                                 displayName: 'Dana Dunn',
                                 initials: 'DD',
                                 email: 'dana@example.com',
-                                color: '#ec4899',
+                                color: '#24a69a',
                             },
                             {
                                 sessionId: 'session-5',

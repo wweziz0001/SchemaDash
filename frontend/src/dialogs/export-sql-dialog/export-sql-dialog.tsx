@@ -206,7 +206,7 @@ export const ExportSQLDialog: React.FC<ExportSQLDialogProps> = ({
                                     key={0}
                                     href="mailto:support@schemadash.io"
                                     target="_blank"
-                                    className="text-pink-600 hover:underline"
+                                    className="text-teal-600 hover:underline"
                                     rel="noreferrer"
                                 />,
                             ]}
@@ -221,7 +221,7 @@ export const ExportSQLDialog: React.FC<ExportSQLDialogProps> = ({
                                     href="https://github.com/wweziz0001/SchemaDash"
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-pink-600 hover:underline"
+                                    className="text-teal-600 hover:underline"
                                 />,
                             ]}
                         />
