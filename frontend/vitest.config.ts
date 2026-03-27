@@ -8,10 +8,10 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'happy-dom',
-        setupFiles: './src/test/setup.ts',
+        setupFiles: './test/setup.ts',
         coverage: {
             reporter: ['text', 'json', 'html'],
-            exclude: ['node_modules/', 'src/test/setup.ts'],
+            exclude: ['node_modules/', 'test/setup.ts'],
         },
     },
     resolve: {

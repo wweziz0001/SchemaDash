@@ -22,8 +22,8 @@ import { generateId } from '../utils/id.js';
 
 const PASSWORD_HASH_PREFIX = 'scrypt';
 const SESSION_TOUCH_INTERVAL_MS = 5 * 60 * 1000;
-const OIDC_FLOW_COOKIE_NAME = 'schemadash_oidc_flow';
-const LEGACY_OIDC_FLOW_COOKIE_NAME = 'chartdb_oidc_flow';
+const OIDC_FLOW_COOKIE_NAME: string = 'schemadash_oidc_flow';
+const LEGACY_OIDC_FLOW_COOKIE_NAME: string = 'chartdb_oidc_flow';
 const LEGACY_SESSION_COOKIE_NAME = 'chartdb_session';
 const OIDC_FLOW_TTL_MS = 10 * 60 * 1000;
 const BOOTSTRAP_STATE_CONFIG_KEY = 'auth_bootstrap_state';

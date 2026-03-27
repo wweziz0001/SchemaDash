@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizePostgresStringArray } from '../postgres/introspection.js';
+import { normalizePostgresStringArray } from '../src/postgres/introspection.js';
 
 describe('normalizePostgresStringArray', () => {
     it('returns arrays unchanged', () => {

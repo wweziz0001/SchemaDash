@@ -2,9 +2,9 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { AppRepository } from '../repositories/app-repository.js';
-import { diagramDocumentSchema } from '../schemas/persistence.js';
-import { PersistenceService } from '../services/persistence-service.js';
+import { AppRepository } from '../src/repositories/app-repository.js';
+import { diagramDocumentSchema } from '../src/schemas/persistence.js';
+import { PersistenceService } from '../src/services/persistence-service.js';
 
 const tempDirs: string[] = [];
 
@@ -480,7 +480,7 @@ describe('persistence foundation', () => {
             projectIds: [project.id],
         });
 
-        expect(archive.format).toBe('chartdb-backup');
+        expect(archive.format).toBe('schemadash-backup');
         expect(archive.formatVersion).toBe(1);
         expect(archive.scope).toBe('projects');
         expect(archive.counts).toEqual({

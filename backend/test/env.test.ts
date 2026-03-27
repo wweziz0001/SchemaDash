@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { parseServerEnv } from '../config/env.js';
+import { parseServerEnv } from '../src/config/env.js';
 
 const tempDirs: string[] = [];
 
@@ -40,7 +40,7 @@ describe('parseServerEnv', () => {
     it('resolves persistence paths inside the data directory by default', () => {
         const env = parseServerEnv(createEnvInput());
 
-        expect(env.appDbPath.endsWith('chartdb-app.sqlite')).toBe(true);
+        expect(env.appDbPath.endsWith('schemadash-app.sqlite')).toBe(true);
         expect(env.metadataDbPath.endsWith('schema-sync.sqlite')).toBe(true);
     });
 
@@ -68,7 +68,7 @@ describe('parseServerEnv', () => {
                 })
             )
         ).toThrow(
-            /CHARTDB_AUTH_EMAIL and CHARTDB_AUTH_PASSWORD must be set together/
+            /SCHEMADASH_AUTH_EMAIL and SCHEMADASH_AUTH_PASSWORD must be set together/
         );
     });
 
@@ -80,7 +80,7 @@ describe('parseServerEnv', () => {
                 })
             )
         ).toThrow(
-            /CHARTDB_AUTH_MODE=oidc requires OIDC configuration\. Missing: CHARTDB_OIDC_ISSUER, CHARTDB_OIDC_CLIENT_ID, CHARTDB_OIDC_REDIRECT_URL/
+            /SCHEMADASH_AUTH_MODE=oidc requires OIDC configuration\. Missing: SCHEMADASH_OIDC_ISSUER, SCHEMADASH_OIDC_CLIENT_ID, SCHEMADASH_OIDC_REDIRECT_URL/
         );
     });
 
@@ -100,7 +100,7 @@ describe('parseServerEnv', () => {
                         'http://chartdb.example.com/api/auth/oidc/callback',
                 })
             )
-        ).toThrow(/CHARTDB_OIDC_REDIRECT_URL must use HTTPS in production/);
+        ).toThrow(/SCHEMADASH_OIDC_REDIRECT_URL must use HTTPS in production/);
     });
 
     it('treats blank optional env values as unset', () => {
@@ -149,7 +149,7 @@ describe('parseServerEnv', () => {
         );
 
         expect(env.runtimeWarnings).toContain(
-            'CHARTDB_SECRET_KEY is not configured. Using an ephemeral development key.'
+            'SCHEMADASH_SECRET_KEY is not configured. Using an ephemeral development key.'
         );
     });
 });

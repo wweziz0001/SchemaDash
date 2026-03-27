@@ -8,7 +8,7 @@ import type {
     ChangePlan,
 } from '@schemadash/schema-sync-core';
 import { hashCanonicalSchema } from '@schemadash/schema-sync-core';
-import { MetadataRepository } from '../repositories/metadata-repository.js';
+import { MetadataRepository } from '../src/repositories/metadata-repository.js';
 
 const introspectPostgresSchemaMock = vi.fn();
 const connectMock = vi.fn();
@@ -27,7 +27,7 @@ vi.mock('pg', () => ({
     })),
 }));
 
-const { ApplyService } = await import('../services/apply-service.js');
+const { ApplyService } = await import('../src/services/apply-service.js');
 
 const tempDirs: string[] = [];
 

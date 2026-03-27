@@ -3,12 +3,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { scryptSync } from 'node:crypto';
 import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../app.js';
-import type { ServerEnv } from '../config/env.js';
+import { buildApp } from '../src/app.js';
+import type { ServerEnv } from '../src/config/env.js';
 import {
     AppRepository,
     type AppUserAuthRecord,
-} from '../repositories/app-repository.js';
+} from '../src/repositories/app-repository.js';
 
 const tempDirs: string[] = [];
 
