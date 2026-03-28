@@ -49,7 +49,7 @@ export const ActiveDiagramParticipants: React.FC = () => {
                                 >
                                     <Avatar
                                         className={cn(
-                                            'size-8 border-2 border-background shadow-sm',
+                                            'size-8 border-2 border-background shadow-sm shadow-black/10',
                                             isCurrentUser &&
                                                 'ring-2 ring-primary/40'
                                         )}
@@ -90,7 +90,10 @@ export const ActiveDiagramParticipants: React.FC = () => {
             {overflowCount > 0 ? (
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Badge variant="secondary" className="h-8 px-2">
+                        <Badge
+                            variant="secondary"
+                            className="h-8 px-2.5 text-[11px]"
+                        >
                             +{overflowCount}
                         </Badge>
                     </TooltipTrigger>
@@ -122,7 +125,7 @@ export const ActiveDiagramParticipants: React.FC = () => {
 
             <Badge
                 variant="outline"
-                className="hidden px-2 py-0 text-[10px] uppercase tracking-[0.16em] md:inline-flex"
+                className="hidden px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] md:inline-flex"
             >
                 {participants.length} live
             </Badge>

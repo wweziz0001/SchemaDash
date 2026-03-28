@@ -43,7 +43,7 @@ export default defineConfig({
                         assetInfo.names &&
                         assetInfo.originalFileNames.some((name) =>
                             /(^|\/)src\/assets\/templates\//.test(
-                                name.replaceAll('\\', '/')
+                                name.replace(/\\/g, '/')
                             )
                         )
                     ) {

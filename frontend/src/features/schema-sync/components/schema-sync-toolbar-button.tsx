@@ -10,11 +10,11 @@ export const SchemaSyncToolbarButton: React.FC = () => {
         <Button
             variant="outline"
             size="sm"
-            className="h-8 gap-2 text-xs"
+            className="h-9 gap-2 rounded-xl px-3 text-xs font-semibold"
             onClick={() => setOpen(true)}
         >
             <DatabaseZap className="size-4" />
-            Schema Sync
+            Sync schema
         </Button>
     );
 };

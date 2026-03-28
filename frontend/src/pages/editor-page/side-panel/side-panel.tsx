@@ -30,16 +30,16 @@ export const SidePanel: React.FC<SidePanelProps> = () => {
         supportsCustomTypes(databaseType) || customTypes.length > 0;
 
     return (
-        <aside className="flex h-full flex-col overflow-hidden">
+        <aside className="flex h-full flex-col overflow-hidden border-r border-border/70 bg-card/55 backdrop-blur-sm">
             {!isDesktop ? (
-                <div className="flex justify-center border-b pt-0.5">
+                <div className="flex justify-center border-b border-border/70 px-3 py-2">
                     <Select
                         value={selectedSidebarSection}
                         onValueChange={(value) =>
                             selectSidebarSection(value as SidebarSection)
                         }
                     >
-                        <SelectTrigger className="rounded-none border-none font-semibold shadow-none hover:bg-secondary hover:underline focus:border-transparent focus:ring-0">
+                        <SelectTrigger className="border-none bg-transparent font-semibold shadow-none hover:bg-secondary focus:ring-0">
                             <SelectValue />
                             <div className="flex flex-1 justify-end px-2 text-xs font-normal text-muted-foreground">
                                 {t('side_panel.view_all_options')}

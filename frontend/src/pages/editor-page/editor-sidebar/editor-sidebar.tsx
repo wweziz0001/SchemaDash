@@ -171,12 +171,15 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
         []
     );
 
+    const sidebarButtonClassName =
+        'justify-center rounded-2xl border border-transparent px-1.5 py-2.5 text-[11px] font-medium leading-[1.05] text-sidebar-foreground/75 transition-all duration-150 hover:border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-foreground data-[active=true]:border-primary/20 data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:shadow-sm group-data-[collapsible=icon-extended]:gap-1 group-data-[collapsible=icon-extended]:py-3 dark:data-[active=true]:text-primary';
+
     return (
         <Sidebar
             side="left"
             collapsible="icon-extended"
             variant="sidebar"
-            className="relative h-full"
+            className="relative h-full border-r border-sidebar-border/70 bg-sidebar/95 backdrop-blur-sm"
         >
             {!isDesktop ? (
                 <SidebarHeader>
@@ -199,13 +202,12 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
             ) : null}
             <SidebarContent>
                 <SidebarGroup>
-                    {/* <SidebarGroupLabel /> */}
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {diagramItems.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton
-                                        className="justify-center space-y-0.5 !px-0 hover:bg-gray-200 data-[active=true]:bg-gray-100 data-[active=true]:text-teal-600 data-[active=true]:hover:bg-teal-100 dark:hover:bg-gray-800 dark:data-[active=true]:bg-gray-900 dark:data-[active=true]:text-teal-400 dark:data-[active=true]:hover:bg-teal-950"
+                                        className={sidebarButtonClassName}
                                         isActive={item.active}
                                         asChild
                                     >
@@ -230,7 +232,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
                             {baseItems.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton
-                                        className="justify-center space-y-0.5 !px-0 hover:bg-gray-200 data-[active=true]:bg-gray-100 data-[active=true]:text-teal-600 data-[active=true]:hover:bg-teal-100 dark:hover:bg-gray-800 dark:data-[active=true]:bg-gray-900 dark:data-[active=true]:text-teal-400 dark:data-[active=true]:hover:bg-teal-950"
+                                        className={sidebarButtonClassName}
                                         isActive={item.active}
                                         asChild
                                     >
@@ -254,7 +256,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
                 </SidebarGroup>
             </SidebarContent>
 
-            <SidebarFooter>
+            <SidebarFooter className="border-t border-sidebar-border/70 pt-3">
                 <SidebarMenu>
                     {footerItems.map((item) => (
                         <SidebarMenuItem key={item.title}>
@@ -264,7 +266,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
                                 </span>
                             )}
                             <SidebarMenuButton
-                                className="justify-center space-y-0.5 !px-0 hover:bg-gray-200 data-[active=true]:bg-gray-100 data-[active=true]:text-teal-600 data-[active=true]:hover:bg-teal-100 dark:hover:bg-gray-800 dark:data-[active=true]:bg-gray-900 dark:data-[active=true]:text-teal-400 dark:data-[active=true]:hover:bg-teal-950"
+                                className={sidebarButtonClassName}
                                 isActive={item.active}
                                 asChild
                             >
