@@ -58,10 +58,11 @@ export const CurrentDiagramShareButton: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="gap-2"
                 onClick={() => setOpen(true)}
                 disabled={!canShare}
             >
-                <Share2 className="mr-2 size-4" />
+                <Share2 className="size-4" />
                 Share
             </Button>
 

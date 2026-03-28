@@ -20,13 +20,13 @@ export interface TemplateCardProps {
 export const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
     const { effectiveTheme } = useTheme();
     return (
-        <a href={`/templates/${template.slug}`}>
-            <div className="flex h-80 w-full cursor-pointer flex-col rounded-lg border-2 border-slate-500 bg-slate-50 shadow-sm transition duration-300 ease-in-out hover:scale-[102%] hover:border-teal-600 dark:border-slate-700 dark:bg-slate-950">
+        <a href={`/templates/${template.slug}`} className="block h-full">
+            <div className="group flex h-80 w-full cursor-pointer flex-col overflow-hidden rounded-[28px] border border-border/80 bg-card/90 shadow-[0_20px_50px_-35px_rgba(15,23,42,0.4)] transition duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_26px_60px_-34px_rgba(8,47,73,0.35)]">
                 <div
-                    className="h-2 rounded-t-[6px]"
+                    className="h-2.5"
                     style={{ backgroundColor: randomColor() }}
-                ></div>
-                <div className="overflow-hidden p-1">
+                />
+                <div className="overflow-hidden border-b border-border/70 bg-muted/30 p-2">
                     <img
                         src={
                             effectiveTheme === 'dark'
@@ -34,50 +34,56 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
                                 : template.image
                         }
                         alt={template.name}
-                        className="size-full rounded object-fill"
+                        className="size-full rounded-2xl object-fill transition duration-200 group-hover:scale-[1.01]"
                     />
                 </div>
-                <div className="mt-2 flex items-center justify-between px-2">
-                    <div className="flex items-center gap-1">
-                        <h3 className="cursor-pointer text-base font-semibold">
-                            {template.name}
-                        </h3>
-                    </div>
-                    <div className="flex h-full flex-col justify-start pt-1">
-                        <Tooltip>
-                            <TooltipTrigger className="mr-1">
-                                <img
-                                    src={
-                                        databaseSecondaryLogoMap[
+                <div className="flex flex-1 flex-col p-4">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                            <h3 className="text-lg font-semibold tracking-tight text-foreground">
+                                {template.name}
+                            </h3>
+                            <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
+                                {template.shortDescription}
+                            </p>
+                        </div>
+                        <div className="mt-1 flex h-full flex-col justify-start">
+                            <Tooltip>
+                                <TooltipTrigger className="rounded-xl border border-border/70 bg-background/80 p-2 shadow-sm">
+                                    <img
+                                        src={
+                                            databaseSecondaryLogoMap[
+                                                template.diagram.databaseType
+                                            ]
+                                        }
+                                        className="h-5 max-w-fit"
+                                        alt="database"
+                                    />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {
+                                        databaseTypeToLabelMap[
                                             template.diagram.databaseType
                                         ]
                                     }
-                                    className="h-5 max-w-fit"
-                                    alt="database"
-                                />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {
-                                    databaseTypeToLabelMap[
-                                        template.diagram.databaseType
-                                    ]
-                                }
-                            </TooltipContent>
-                        </Tooltip>
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
                     </div>
-                </div>
-                <div className="flex p-2 text-sm">
-                    {template.shortDescription}
-                </div>
-                <div className="flex flex-wrap gap-1 p-2">
-                    {template.tags.map((tag) => (
-                        <Badge
-                            variant="outline"
-                            key={`${template.slug}_${tag}`}
-                        >
-                            {tag}
-                        </Badge>
-                    ))}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                        {template.tags.map((tag) => (
+                            <Badge
+                                variant="outline"
+                                key={`${template.slug}_${tag}`}
+                                className="bg-background/80"
+                            >
+                                {tag}
+                            </Badge>
+                        ))}
+                    </div>
+                    <div className="mt-auto pt-4 text-sm font-medium text-primary">
+                        Open template
+                    </div>
                 </div>
             </div>
         </a>

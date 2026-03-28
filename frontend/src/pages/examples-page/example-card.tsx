@@ -33,16 +33,13 @@ export const ExampleCard: React.FC<ExampleCardProps> = ({
     return (
         <div
             onClick={utilizeExample}
-            className="flex h-96 w-full cursor-pointer flex-col rounded-xl border-2 border-slate-500 bg-slate-50 shadow-sm transition duration-300 ease-in-out hover:scale-[102%] hover:border-teal-600 dark:border-slate-700 dark:bg-slate-950"
+            className="group flex h-96 w-full cursor-pointer flex-col overflow-hidden rounded-[28px] border border-border/80 bg-card/90 shadow-[0_20px_50px_-35px_rgba(15,23,42,0.4)] transition duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_26px_60px_-34px_rgba(8,47,73,0.35)]"
         >
-            <div
-                className="h-4 rounded-t-[10px]"
-                style={{ backgroundColor: color.current }}
-            ></div>
-            <div className="flex h-12 items-center justify-between bg-slate-200 px-2 dark:bg-slate-900">
+            <div className="h-3" style={{ backgroundColor: color.current }} />
+            <div className="flex h-14 items-center justify-between border-b border-border/70 bg-muted/30 px-4">
                 <div className="flex items-center gap-2">
                     <Tooltip>
-                        <TooltipTrigger className="mr-1">
+                        <TooltipTrigger className="rounded-xl border border-border/70 bg-background/80 p-2 shadow-sm">
                             <img
                                 src={
                                     databaseSecondaryLogoMap[
@@ -61,7 +58,7 @@ export const ExampleCard: React.FC<ExampleCardProps> = ({
                             }
                         </TooltipContent>
                     </Tooltip>
-                    <Label className="cursor-pointer text-base font-bold">
+                    <Label className="cursor-pointer text-base font-bold tracking-tight">
                         {example.name}
                     </Label>
                 </div>
@@ -71,14 +68,14 @@ export const ExampleCard: React.FC<ExampleCardProps> = ({
                     ) : (
                         <Button
                             variant="ghost"
-                            className="size-9 p-0 text-slate-500 hover:bg-primary-foreground hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                            className="size-10 rounded-xl p-0"
                         >
                             <Import className="size-5" />
                         </Button>
                     )}
                 </div>
             </div>
-            <div className="grow overflow-hidden">
+            <div className="grow overflow-hidden border-b border-border/70 bg-background/80 p-2">
                 <img
                     src={
                         effectiveTheme === 'dark'
@@ -86,10 +83,12 @@ export const ExampleCard: React.FC<ExampleCardProps> = ({
                             : example.image
                     }
                     alt={example.name}
-                    className="w-fit object-cover"
+                    className="size-full rounded-2xl object-cover transition duration-200 group-hover:scale-[1.01]"
                 />
             </div>
-            <div className="flex p-2 text-base">{example.description}</div>
+            <div className="flex p-4 text-sm leading-6 text-muted-foreground">
+                {example.description}
+            </div>
         </div>
     );
 };

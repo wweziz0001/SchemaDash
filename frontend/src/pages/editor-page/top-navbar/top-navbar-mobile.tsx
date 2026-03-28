@@ -31,60 +31,62 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
     const { toggleSidebar } = useSidebar();
 
     return (
-        <nav className="flex flex-col justify-between border-b px-3 md:h-12 md:flex-row md:items-center md:px-4">
-            <div className="flex flex-1 flex-col justify-between gap-x-1 md:flex-row md:justify-normal">
-                <div className="flex items-center justify-between pt-[8px] font-primary md:py-0">
-                    <div className="flex items-center gap-2">
-                        <Button
-                            size={'icon'}
-                            variant="ghost"
-                            onClick={toggleSidebar}
-                        >
-                            <MenuIcon className="size-5" />
-                        </Button>
-                        <a
-                            href="https://schemadash.io"
-                            className="cursor-pointer"
-                            rel="noreferrer"
-                        >
-                            <img
-                                src={SchemaDashLogo}
-                                alt="SchemaDash"
-                                className="h-8 max-w-fit"
-                            />
-                        </a>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <SchemaSyncToolbarButton />
-                        <ActiveDiagramParticipants />
-                        <CurrentDiagramShareButton />
-                        <Button asChild size="sm" variant="outline">
-                            <Link to="/">Library</Link>
-                        </Button>
-                        {isAdmin ? (
-                            <Button asChild size="sm" variant="outline">
-                                <Link to="/admin">Admin</Link>
-                            </Button>
-                        ) : null}
-                        {enabled ? (
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => void logout()}
-                            >
-                                Log out
-                            </Button>
-                        ) : null}
-                        {renderStars()}
-                        <LanguageNav />
-                    </div>
+        <nav className="border-b border-border/70 bg-background/90 px-3 py-2 backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <Button size="icon" variant="ghost" onClick={toggleSidebar}>
+                        <MenuIcon className="size-5" />
+                    </Button>
+                    <a
+                        href="https://schemadash.io"
+                        className="cursor-pointer"
+                        rel="noreferrer"
+                    >
+                        <img
+                            src={SchemaDashLogo}
+                            alt="SchemaDash"
+                            className="h-8 max-w-fit"
+                        />
+                    </a>
                 </div>
-                <Menu />
+
+                <div className="flex items-center gap-2">
+                    <SchemaSyncToolbarButton />
+                    <LanguageNav />
+                </div>
             </div>
 
-            <div className="flex flex-1 justify-center pb-2 pt-1">
-                <DiagramName />
+            <div className="mt-3 flex justify-center">
+                <div className="max-w-full rounded-2xl border border-border/70 bg-card/70 px-4 py-2 shadow-sm">
+                    <DiagramName />
+                </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                <ActiveDiagramParticipants />
+                <CurrentDiagramShareButton />
+                <Button asChild size="sm" variant="outline">
+                    <Link to="/">Library</Link>
+                </Button>
+                {isAdmin ? (
+                    <Button asChild size="sm" variant="outline">
+                        <Link to="/admin">Admin</Link>
+                    </Button>
+                ) : null}
+                {enabled ? (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void logout()}
+                    >
+                        Log out
+                    </Button>
+                ) : null}
+                {renderStars()}
+            </div>
+
+            <div className="mt-3">
+                <Menu />
             </div>
         </nav>
     );
