@@ -13,6 +13,7 @@ import { CurrentDiagramShareButton } from './current-diagram-share-button';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { WorkflowModeSwitcher } from '@/features/diagram-workflow/components/workflow-mode-switcher';
 import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
+import { LiveStatusChip } from '@/features/diagram-workflow/components/live-status-chip';
 
 export interface TopNavbarMobileProps {}
 
@@ -93,6 +94,9 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
             </div>
             <div className="flex justify-center pb-2">
                 <WorkflowModeSwitcher />
+            </div>
+            <div className="flex justify-center px-2 pb-2">
+                <LiveStatusChip />
             </div>
         </nav>
     );
