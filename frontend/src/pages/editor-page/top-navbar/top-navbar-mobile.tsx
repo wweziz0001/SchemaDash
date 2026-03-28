@@ -11,11 +11,14 @@ import { useAuth } from '@/features/auth/hooks/use-auth';
 import { Link } from 'react-router-dom';
 import { CurrentDiagramShareButton } from './current-diagram-share-button';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
+import { WorkflowModeSwitcher } from '@/features/diagram-workflow/components/workflow-mode-switcher';
+import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
 
 export interface TopNavbarMobileProps {}
 
 export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
     const { enabled, user, logout } = useAuth();
+    const workflow = useOptionalDiagramWorkflow();
     const isAdmin = enabled && user?.role === 'admin';
     const renderStars = useCallback(() => {
         return (
@@ -56,7 +59,9 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <SchemaSyncToolbarButton />
+                        {workflow?.activeMode !== 'live' ? (
+                            <SchemaSyncToolbarButton />
+                        ) : null}
                         <ActiveDiagramParticipants />
                         <CurrentDiagramShareButton />
                         <Button asChild size="sm" variant="outline">
@@ -85,6 +90,9 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
 
             <div className="flex flex-1 justify-center pb-2 pt-1">
                 <DiagramName />
+            </div>
+            <div className="flex justify-center pb-2">
+                <WorkflowModeSwitcher />
             </div>
         </nav>
     );

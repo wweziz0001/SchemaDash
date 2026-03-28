@@ -15,6 +15,7 @@ import {
     type SchemaSyncContextValue,
 } from './schema-sync-context-object';
 import { diagramWorkflowClient } from '@/features/diagram-workflow/api/diagram-workflow-client';
+import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
 
 export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
     children,
@@ -31,6 +32,7 @@ export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
         useState<ConnectionTestResponse>();
     const { currentDiagram, updateDiagramData } = useSchemaDash();
     const { toast } = useToast();
+    const workflow = useOptionalDiagramWorkflow();
 
     const refreshConnections = useCallback(async () => {
         setConnectionsLoading(true);
@@ -173,13 +175,14 @@ export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
             setSelectedConnectionIdState(connectionId);
             setPreviewPlan(undefined);
             setApplyResult(undefined);
+            await workflow?.refreshWorkflow();
             toast({
                 title: 'Live database synced',
                 description:
                     'Development stayed editable while Live Database updated separately.',
             });
         },
-        [currentDiagram.id, toast, updateDiagramSyncMetadata]
+        [currentDiagram.id, toast, updateDiagramSyncMetadata, workflow]
     );
 
     const refreshFromDatabase = useCallback(async () => {

@@ -53,6 +53,7 @@ import { getCurrentShareToken } from '@/features/persistence/share-token';
 export interface SchemaDashProviderProps {
     diagram?: Diagram;
     readonly?: boolean;
+    authoritativeSync?: boolean;
 }
 
 const FULL_DIAGRAM_LOAD_OPTIONS = {
@@ -66,7 +67,12 @@ const FULL_DIAGRAM_LOAD_OPTIONS = {
 
 export const SchemaDashProvider: React.FC<
     React.PropsWithChildren<SchemaDashProviderProps>
-> = ({ children, diagram, readonly: readonlyProp }) => {
+> = ({
+    children,
+    diagram,
+    readonly: readonlyProp,
+    authoritativeSync = true,
+}) => {
     const { hasDiff } = useDiff();
     const storageDB = useStorage();
     const events = useEventEmitter<SchemaDashEvent>();
@@ -214,6 +220,11 @@ export const SchemaDashProvider: React.FC<
     );
 
     useEffect(() => {
+        if (!authoritativeSync) {
+            setDiagramSession(undefined);
+            return;
+        }
+
         if (!diagramId) {
             setDiagramSession(undefined);
             return;
@@ -223,7 +234,7 @@ export const SchemaDashProvider: React.FC<
             diagramId,
             setDiagramSession
         );
-    }, [diagramId, storageDB]);
+    }, [authoritativeSync, diagramId, storageDB]);
 
     useEffect(() => {
         return () => {
@@ -265,6 +276,10 @@ export const SchemaDashProvider: React.FC<
     }, [diagramId, diagramSession, readonly, storageDB]);
 
     useEffect(() => {
+        if (!authoritativeSync) {
+            return;
+        }
+
         return () => {
             if (!diagramId) {
                 return;
@@ -272,7 +287,7 @@ export const SchemaDashProvider: React.FC<
 
             void storageDB.releaseDiagramSession(diagramId);
         };
-    }, [diagramId, storageDB]);
+    }, [authoritativeSync, diagramId, storageDB]);
 
     const clearDiagramData: SchemaDashContext['clearDiagramData'] =
         useCallback(async () => {
@@ -2204,13 +2219,16 @@ export const SchemaDashProvider: React.FC<
 
         initialDiagramLoadRef.current = diagram.id;
         loadDiagramFromData(diagram);
+        if (!authoritativeSync) {
+            return;
+        }
         void loadDiagram(diagram.id).catch((error) => {
             console.warn('Failed to initialize shared diagram session.', {
                 diagramId: diagram.id,
                 error,
             });
         });
-    }, [diagram, loadDiagram, loadDiagramFromData]);
+    }, [authoritativeSync, diagram, loadDiagram, loadDiagramFromData]);
 
     const refreshDiagramFromRemote = useCallback(async () => {
         if (!diagramId || applyingRemoteRefreshRef.current) {
@@ -2234,6 +2252,10 @@ export const SchemaDashProvider: React.FC<
         diagramSession?.collaboration.document.version ?? 0;
 
     useEffect(() => {
+        if (!authoritativeSync) {
+            return;
+        }
+
         if (!diagramId || !diagramSessionId || !diagramEventsEndpoint) {
             return;
         }
@@ -2340,12 +2362,14 @@ export const SchemaDashProvider: React.FC<
         diagramId,
         diagramSessionId,
         diagramSessionStatus,
+        authoritativeSync,
         refreshDiagramFromRemote,
         storageDB,
     ]);
 
     useEffect(() => {
         if (
+            !authoritativeSync ||
             diagramSession?.session.status !== 'stale' ||
             readonly ||
             !diagramId
@@ -2392,6 +2416,7 @@ export const SchemaDashProvider: React.FC<
         diagramSession?.session.status,
         dismiss,
         loadDiagram,
+        authoritativeSync,
         readonly,
         toast,
     ]);
