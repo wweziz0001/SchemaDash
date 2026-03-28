@@ -7,22 +7,14 @@ import type {
     ConnectionUpsert,
 } from '@schemadash/schema-sync-core';
 import { schemaSyncClient } from '../api/schema-sync-client';
-import {
-    canonicalSchemaToDiagram,
-    diagramToCanonicalSchema,
-} from '../lib/canonical-adapters';
+import { diagramToCanonicalSchema } from '../lib/canonical-adapters';
 import { useSchemaDash } from '@/hooks/use-schemadash';
-import { useStorage } from '@/hooks/use-storage';
-import { useNavigate } from 'react-router-dom';
-import { generateDiagramId } from '@/lib/utils';
 import { useToast } from '@/components/toast/use-toast';
-import { useConfig } from '@/hooks/use-config';
 import {
     SchemaSyncContext,
     type SchemaSyncContextValue,
 } from './schema-sync-context-object';
-
-type ImportMode = 'replace' | 'new';
+import { diagramWorkflowClient } from '@/features/diagram-workflow/api/diagram-workflow-client';
 
 export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
     children,
@@ -38,10 +30,7 @@ export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
     const [lastConnectionTest, setLastConnectionTest] =
         useState<ConnectionTestResponse>();
     const { currentDiagram, updateDiagramData } = useSchemaDash();
-    const storage = useStorage();
-    const navigate = useNavigate();
     const { toast } = useToast();
-    const { updateConfig } = useConfig();
 
     const refreshConnections = useCallback(async () => {
         setConnectionsLoading(true);
@@ -145,73 +134,52 @@ export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
         []
     );
 
-    const importLiveSchema = useCallback(
+    const syncLiveDatabase = useCallback(
         async ({
             connectionId,
             schemas,
-            mode,
         }: {
             connectionId: string;
             schemas: string[];
-            mode: ImportMode;
         }) => {
-            const response = await schemaSyncClient.importLiveSchema({
+            if (!currentDiagram.id) {
+                throw new Error('Open a diagram before syncing live state.');
+            }
+
+            const normalizedSchemas = schemas.length > 0 ? schemas : ['public'];
+
+            await diagramWorkflowClient.bindConnection(currentDiagram.id, {
                 connectionId,
-                schemas,
+                importedSchemas: normalizedSchemas,
             });
-            const nextSchemaSync = {
-                connectionId: response.connection.id,
-                baselineSnapshotId: response.snapshotId,
-                baselineFingerprint: response.fingerprint,
-                importedSchemas: schemas,
-                lastImportedAt: new Date().toISOString(),
+            const response = await diagramWorkflowClient.refreshLiveSnapshot(
+                currentDiagram.id
+            );
+
+            await updateDiagramSyncMetadata({
+                connectionId: response.compatibilitySync.connectionId,
+                baselineSnapshotId:
+                    response.compatibilitySync.baselineSnapshotId,
+                baselineFingerprint:
+                    response.compatibilitySync.baselineFingerprint,
+                importedSchemas: response.compatibilitySync.importedSchemas,
+                lastImportedAt: response.compatibilitySync.lastImportedAt,
                 lastPreviewPlanId: null,
                 lastPreviewedAt: null,
                 lastAuditId: null,
                 lastPostApplySnapshotId: null,
-            };
-
-            if (mode === 'replace') {
-                const diagram = canonicalSchemaToDiagram({
-                    canonicalSchema: response.canonicalSchema,
-                    diagramId: currentDiagram.id,
-                    diagramName:
-                        currentDiagram.name || response.connection.database,
-                    schemaSync: nextSchemaSync,
-                });
-                await updateDiagramData(diagram, { forceUpdateStorage: true });
-            } else {
-                const diagram = canonicalSchemaToDiagram({
-                    canonicalSchema: response.canonicalSchema,
-                    diagramId: generateDiagramId(),
-                    diagramName: response.connection.database,
-                    schemaSync: nextSchemaSync,
-                });
-                await storage.addDiagram({ diagram });
-                await updateConfig({
-                    config: { defaultDiagramId: diagram.id },
-                });
-                navigate(`/diagrams/${diagram.id}`);
-            }
+            });
 
             setSelectedConnectionIdState(connectionId);
             setPreviewPlan(undefined);
             setApplyResult(undefined);
             toast({
-                title: 'Live schema imported',
+                title: 'Live database synced',
                 description:
-                    'The canvas is now backed by a fresh baseline snapshot.',
+                    'Development stayed editable while Live Database updated separately.',
             });
         },
-        [
-            currentDiagram.id,
-            currentDiagram.name,
-            navigate,
-            storage,
-            toast,
-            updateConfig,
-            updateDiagramData,
-        ]
+        [currentDiagram.id, toast, updateDiagramSyncMetadata]
     );
 
     const refreshFromDatabase = useCallback(async () => {
@@ -220,12 +188,11 @@ export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
         if (!connectionId) {
             throw new Error('Choose a connection before refreshing.');
         }
-        await importLiveSchema({
+        await syncLiveDatabase({
             connectionId,
             schemas: currentDiagram.schemaSync?.importedSchemas ?? ['public'],
-            mode: 'replace',
         });
-    }, [currentDiagram.schemaSync, importLiveSchema, selectedConnectionId]);
+    }, [currentDiagram.schemaSync, selectedConnectionId, syncLiveDatabase]);
 
     const previewChanges = useCallback(async () => {
         if (!currentDiagram.schemaSync?.baselineSnapshotId) {
@@ -314,7 +281,7 @@ export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
             saveConnection,
             deleteConnection,
             testConnectionDraft,
-            importLiveSchema,
+            syncLiveDatabase,
             refreshFromDatabase,
             previewChanges,
             applyChanges,
@@ -331,7 +298,7 @@ export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
             saveConnection,
             deleteConnection,
             testConnectionDraft,
-            importLiveSchema,
+            syncLiveDatabase,
             refreshFromDatabase,
             previewChanges,
             applyChanges,
