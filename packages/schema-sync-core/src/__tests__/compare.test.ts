@@ -261,4 +261,42 @@ describe('compare canonical schemas', () => {
         expect(result.summary.relationships.changed).toBe(1);
         expect(result.hasChanges).toBe(true);
     });
+
+    it('falls back to field-name matching when development sync metadata is missing', () => {
+        const result = compareCanonicalSchemas({
+            baseline,
+            target: {
+                ...baseline,
+                tables: [
+                    {
+                        ...baseline.tables[0],
+                        columns: baseline.tables[0].columns.map((column) => ({
+                            ...column,
+                            sync:
+                                column.name === 'id' ? undefined : column.sync,
+                        })),
+                    },
+                    ...baseline.tables.slice(1),
+                ],
+            },
+        });
+
+        const usersTable = result.tables.find(
+            (table) => table.matchKey === 'users'
+        );
+        const idFields = usersTable?.fields.filter(
+            (field) =>
+                field.baseline?.name === 'id' || field.target?.name === 'id'
+        );
+
+        expect(usersTable?.status).toBe('unchanged');
+        expect(idFields).toHaveLength(1);
+        expect(idFields?.[0]?.status).toBe('unchanged');
+        expect(
+            usersTable?.fields.some((field) => field.status === 'added')
+        ).toBe(false);
+        expect(
+            usersTable?.fields.some((field) => field.status === 'removed')
+        ).toBe(false);
+    });
 });
