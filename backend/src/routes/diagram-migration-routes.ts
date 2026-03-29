@@ -13,16 +13,67 @@ import {
 const migrationPreviewRequestSchema = z.object({
     targetSchema: canonicalSchemaSchema,
     expectedLiveSnapshotId: z.string().nullable().optional(),
+    workflowFallback: z
+        .object({
+            connectionId: z.string().nullable(),
+            connectionName: z.string().nullable(),
+            connectionEngine: z.string().nullable(),
+            importedSchemas: z.array(z.string()),
+            liveSnapshot: z
+                .object({
+                    id: z.string(),
+                    fingerprint: z.string().nullable(),
+                    createdAt: z.string(),
+                    canonicalSchema: canonicalSchemaSchema,
+                })
+                .nullable(),
+        })
+        .nullable()
+        .optional(),
 });
 
 const migrationValidationRequestSchema = z.object({
     targetSchema: canonicalSchemaSchema,
     expectedLiveSnapshotId: z.string().nullable().optional(),
+    workflowFallback: z
+        .object({
+            connectionId: z.string().nullable(),
+            connectionName: z.string().nullable(),
+            connectionEngine: z.string().nullable(),
+            importedSchemas: z.array(z.string()),
+            liveSnapshot: z
+                .object({
+                    id: z.string(),
+                    fingerprint: z.string().nullable(),
+                    createdAt: z.string(),
+                    canonicalSchema: canonicalSchemaSchema,
+                })
+                .nullable(),
+        })
+        .nullable()
+        .optional(),
 });
 
 const migrationApplyRequestSchema = z.object({
     targetSchema: canonicalSchemaSchema,
     expectedLiveSnapshotId: z.string().nullable().optional(),
+    workflowFallback: z
+        .object({
+            connectionId: z.string().nullable(),
+            connectionName: z.string().nullable(),
+            connectionEngine: z.string().nullable(),
+            importedSchemas: z.array(z.string()),
+            liveSnapshot: z
+                .object({
+                    id: z.string(),
+                    fingerprint: z.string().nullable(),
+                    createdAt: z.string(),
+                    canonicalSchema: canonicalSchemaSchema,
+                })
+                .nullable(),
+        })
+        .nullable()
+        .optional(),
     destructiveApproval: applySchemaRequestSchema.shape.destructiveApproval,
 });
 

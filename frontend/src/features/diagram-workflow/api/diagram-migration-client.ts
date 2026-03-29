@@ -18,6 +18,19 @@ export interface DiagramMigrationCheck {
     detail: string;
 }
 
+export interface DiagramMigrationWorkflowFallback {
+    connectionId: string | null;
+    connectionName: string | null;
+    connectionEngine: string | null;
+    importedSchemas: string[];
+    liveSnapshot: {
+        id: string;
+        fingerprint: string | null;
+        createdAt: string;
+        canonicalSchema: CanonicalSchema;
+    } | null;
+}
+
 export interface DiagramMigrationPreview {
     diagramId: string;
     connectionId: string | null;
@@ -61,6 +74,7 @@ export const diagramMigrationClient = {
         payload: {
             targetSchema: CanonicalSchema;
             expectedLiveSnapshotId?: string | null;
+            workflowFallback?: DiagramMigrationWorkflowFallback | null;
         }
     ) =>
         requestJson<{ preview: DiagramMigrationPreview }>(
@@ -75,6 +89,7 @@ export const diagramMigrationClient = {
         payload: {
             targetSchema: CanonicalSchema;
             expectedLiveSnapshotId?: string | null;
+            workflowFallback?: DiagramMigrationWorkflowFallback | null;
         }
     ) =>
         requestJson<{ validation: DiagramMigrationValidation }>(
@@ -89,6 +104,7 @@ export const diagramMigrationClient = {
         payload: {
             targetSchema: CanonicalSchema;
             expectedLiveSnapshotId?: string | null;
+            workflowFallback?: DiagramMigrationWorkflowFallback | null;
             destructiveApproval: {
                 confirmed: boolean;
                 confirmationText: string;

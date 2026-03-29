@@ -47,6 +47,19 @@ export interface DiagramMigrationPreview {
     canValidate: boolean;
 }
 
+export interface DiagramMigrationWorkflowFallback {
+    connectionId: string | null;
+    connectionName: string | null;
+    connectionEngine: string | null;
+    importedSchemas: string[];
+    liveSnapshot: {
+        id: string;
+        fingerprint: string | null;
+        createdAt: string;
+        canonicalSchema: CanonicalSchema;
+    } | null;
+}
+
 export interface DiagramMigrationValidation extends DiagramMigrationPreview {
     plan: ChangePlan;
     validatedAt: string;
@@ -96,6 +109,7 @@ export class DiagramMigrationService {
         input: {
             targetSchema: CanonicalSchema;
             expectedLiveSnapshotId?: string | null;
+            workflowFallback?: DiagramMigrationWorkflowFallback | null;
         },
         actor?: AppUserRecord | null
     ): DiagramMigrationPreview {
@@ -103,11 +117,10 @@ export class DiagramMigrationService {
 
         const targetSchema = canonicalSchemaSchema.parse(input.targetSchema);
         const generatedAt = new Date().toISOString();
-        const state = this.workflowRepository.getState(diagramId);
-        const liveSnapshot = state?.liveSnapshotId
-            ? (this.workflowRepository.getSnapshot(state.liveSnapshotId) ??
-              null)
-            : null;
+        const { state, liveSnapshot } = this.ensureWorkflowStateFromFallback({
+            diagramId,
+            fallback: input.workflowFallback ?? null,
+        });
         const issues: DiagramMigrationIssue[] = [];
 
         if (!state?.connectionId) {
@@ -219,6 +232,7 @@ export class DiagramMigrationService {
         input: {
             targetSchema: CanonicalSchema;
             expectedLiveSnapshotId?: string | null;
+            workflowFallback?: DiagramMigrationWorkflowFallback | null;
         },
         actor?: AppUserRecord | null
     ): Promise<DiagramMigrationValidation> {
@@ -227,6 +241,7 @@ export class DiagramMigrationService {
             {
                 targetSchema: input.targetSchema,
                 expectedLiveSnapshotId: input.expectedLiveSnapshotId,
+                workflowFallback: input.workflowFallback ?? null,
             },
             actor
         );
@@ -349,6 +364,7 @@ export class DiagramMigrationService {
         input: {
             targetSchema: CanonicalSchema;
             expectedLiveSnapshotId?: string | null;
+            workflowFallback?: DiagramMigrationWorkflowFallback | null;
             destructiveApproval: {
                 confirmed: boolean;
                 confirmationText: string;
@@ -362,6 +378,7 @@ export class DiagramMigrationService {
             {
                 targetSchema: input.targetSchema,
                 expectedLiveSnapshotId: input.expectedLiveSnapshotId,
+                workflowFallback: input.workflowFallback ?? null,
             },
             actor
         );
@@ -492,6 +509,121 @@ export class DiagramMigrationService {
         });
 
         return liveSnapshotId;
+    }
+
+    private ensureWorkflowStateFromFallback({
+        diagramId,
+        fallback,
+    }: {
+        diagramId: string;
+        fallback?: DiagramMigrationWorkflowFallback | null;
+    }) {
+        let state = this.workflowRepository.getState(diagramId);
+        let liveSnapshot = state?.liveSnapshotId
+            ? (this.workflowRepository.getSnapshot(state.liveSnapshotId) ??
+              null)
+            : null;
+
+        if (
+            (!fallback?.connectionId && !fallback?.liveSnapshot) ||
+            (state?.connectionId && state?.liveSnapshotId && liveSnapshot)
+        ) {
+            return { state, liveSnapshot };
+        }
+
+        const now = new Date().toISOString();
+        const fallbackSnapshot = fallback?.liveSnapshot ?? null;
+        if (
+            fallbackSnapshot &&
+            !this.workflowRepository.getSnapshot(fallbackSnapshot.id)
+        ) {
+            this.workflowRepository.putSnapshot({
+                id: fallbackSnapshot.id,
+                diagramId,
+                snapshotKind: 'live',
+                sourceKind: 'introspection',
+                connectionId: fallback?.connectionId ?? null,
+                fingerprint:
+                    fallbackSnapshot.fingerprint ??
+                    hashCanonicalSchema(fallbackSnapshot.canonicalSchema),
+                canonicalSchema: fallbackSnapshot.canonicalSchema,
+                diagramDocument: null,
+                layoutSource: 'derived',
+                basedOnSnapshotId: state?.liveSnapshotId ?? null,
+                createdByUserId: null,
+                createdAt: fallbackSnapshot.createdAt,
+            });
+        }
+
+        const existingCreatedAt = state?.createdAt ?? now;
+        if (
+            !state?.connectionId ||
+            !state.liveSnapshotId ||
+            !liveSnapshot ||
+            (fallback?.connectionId &&
+                state.connectionId !== fallback.connectionId) ||
+            (fallbackSnapshot &&
+                state.liveSnapshotId !== fallbackSnapshot.id &&
+                !liveSnapshot)
+        ) {
+            const nextLiveSnapshotId =
+                state?.liveSnapshotId ?? fallbackSnapshot?.id ?? null;
+            const nextFingerprint =
+                state?.liveFingerprint ??
+                fallbackSnapshot?.fingerprint ??
+                (fallbackSnapshot
+                    ? hashCanonicalSchema(fallbackSnapshot.canonicalSchema)
+                    : null);
+            this.workflowRepository.putState({
+                diagramId,
+                connectionId:
+                    state?.connectionId ?? fallback?.connectionId ?? null,
+                connectionNameCache:
+                    state?.connectionNameCache ??
+                    fallback?.connectionName ??
+                    null,
+                connectionEngine:
+                    state?.connectionEngine ??
+                    fallback?.connectionEngine ??
+                    null,
+                importedSchemas: state?.importedSchemas?.length
+                    ? state.importedSchemas
+                    : (fallback?.importedSchemas ?? []),
+                liveSnapshotId: nextLiveSnapshotId,
+                liveFingerprint: nextFingerprint,
+                syncStatus:
+                    nextLiveSnapshotId &&
+                    (fallback?.connectionId ?? state?.connectionId)
+                        ? 'in_sync'
+                        : (state?.syncStatus ?? 'disconnected'),
+                connectionStatus:
+                    fallback?.connectionId || state?.connectionId
+                        ? 'ok'
+                        : (state?.connectionStatus ?? 'unknown'),
+                lastConnectedAt:
+                    state?.lastConnectedAt ??
+                    fallbackSnapshot?.createdAt ??
+                    now,
+                lastSyncedAt:
+                    state?.lastSyncedAt ?? fallbackSnapshot?.createdAt ?? now,
+                lastSyncError: null,
+                defaultCompareSourceKind: nextLiveSnapshotId
+                    ? 'live'
+                    : (state?.defaultCompareSourceKind ?? null),
+                defaultCompareSourceId:
+                    nextLiveSnapshotId ?? state?.defaultCompareSourceId ?? null,
+                createdAt: existingCreatedAt,
+                updatedAt: now,
+            });
+        }
+
+        state = this.workflowRepository.getState(diagramId);
+        liveSnapshot = state?.liveSnapshotId
+            ? (this.workflowRepository.getSnapshot(state.liveSnapshotId) ??
+              null)
+            : null;
+
+        return { state, liveSnapshot };
     }
 
     private requireEditableDiagram(

@@ -74,7 +74,7 @@ const targetSchema: CanonicalSchema = {
     ],
 };
 
-const createHarness = () => {
+const createHarness = (options?: { includeWorkflowState?: boolean }) => {
     const dataDir = mkdtempSync(
         path.join(os.tmpdir(), 'schemadash-migration-service-')
     );
@@ -117,38 +117,40 @@ const createHarness = () => {
         updatedAt: '2026-03-28T09:00:00.000Z',
     });
 
-    workflowRepository.putSnapshot({
-        id: 'workflow-live-1',
-        diagramId: 'diagram-1',
-        snapshotKind: 'live',
-        sourceKind: 'introspection',
-        connectionId: 'connection-1',
-        fingerprint: hashCanonicalSchema(baselineSchema),
-        canonicalSchema: baselineSchema,
-        diagramDocument: null,
-        layoutSource: 'derived',
-        basedOnSnapshotId: null,
-        createdByUserId: bootstrap.user.id,
-        createdAt: '2026-03-28T11:00:00.000Z',
-    });
-    workflowRepository.putState({
-        diagramId: 'diagram-1',
-        connectionId: 'connection-1',
-        connectionNameCache: 'Warehouse',
-        connectionEngine: 'postgresql',
-        importedSchemas: ['public'],
-        liveSnapshotId: 'workflow-live-1',
-        liveFingerprint: hashCanonicalSchema(baselineSchema),
-        syncStatus: 'in_sync',
-        connectionStatus: 'ok',
-        lastConnectedAt: '2026-03-28T11:00:00.000Z',
-        lastSyncedAt: '2026-03-28T11:00:00.000Z',
-        lastSyncError: null,
-        defaultCompareSourceKind: 'live',
-        defaultCompareSourceId: 'workflow-live-1',
-        createdAt: '2026-03-28T11:00:00.000Z',
-        updatedAt: '2026-03-28T11:00:00.000Z',
-    });
+    if (options?.includeWorkflowState !== false) {
+        workflowRepository.putSnapshot({
+            id: 'workflow-live-1',
+            diagramId: 'diagram-1',
+            snapshotKind: 'live',
+            sourceKind: 'introspection',
+            connectionId: 'connection-1',
+            fingerprint: hashCanonicalSchema(baselineSchema),
+            canonicalSchema: baselineSchema,
+            diagramDocument: null,
+            layoutSource: 'derived',
+            basedOnSnapshotId: null,
+            createdByUserId: bootstrap.user.id,
+            createdAt: '2026-03-28T11:00:00.000Z',
+        });
+        workflowRepository.putState({
+            diagramId: 'diagram-1',
+            connectionId: 'connection-1',
+            connectionNameCache: 'Warehouse',
+            connectionEngine: 'postgresql',
+            importedSchemas: ['public'],
+            liveSnapshotId: 'workflow-live-1',
+            liveFingerprint: hashCanonicalSchema(baselineSchema),
+            syncStatus: 'in_sync',
+            connectionStatus: 'ok',
+            lastConnectedAt: '2026-03-28T11:00:00.000Z',
+            lastSyncedAt: '2026-03-28T11:00:00.000Z',
+            lastSyncError: null,
+            defaultCompareSourceKind: 'live',
+            defaultCompareSourceId: 'workflow-live-1',
+            createdAt: '2026-03-28T11:00:00.000Z',
+            updatedAt: '2026-03-28T11:00:00.000Z',
+        });
+    }
 
     const connectionsService = {
         testConnection: vi.fn().mockResolvedValue({
@@ -199,6 +201,47 @@ afterEach(() => {
 });
 
 describe('diagram migration service', () => {
+    it('hydrates missing workflow state from the migration fallback payload', () => {
+        const { workflowRepository, migrationService } = createHarness({
+            includeWorkflowState: false,
+        });
+
+        const preview = migrationService.previewMigration('diagram-1', {
+            targetSchema,
+            expectedLiveSnapshotId: 'workflow-live-1',
+            workflowFallback: {
+                connectionId: 'connection-1',
+                connectionName: 'Warehouse',
+                connectionEngine: 'postgresql',
+                importedSchemas: ['public'],
+                liveSnapshot: {
+                    id: 'workflow-live-1',
+                    fingerprint: hashCanonicalSchema(baselineSchema),
+                    createdAt: '2026-03-28T11:00:00.000Z',
+                    canonicalSchema: baselineSchema,
+                },
+            },
+        });
+
+        expect(preview.plan).not.toBeNull();
+        expect(preview.issues).not.toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'migration_connection_missing',
+                }),
+                expect.objectContaining({
+                    code: 'migration_live_snapshot_missing',
+                }),
+            ])
+        );
+        expect(workflowRepository.getState('diagram-1')?.connectionId).toBe(
+            'connection-1'
+        );
+        expect(workflowRepository.getState('diagram-1')?.liveSnapshotId).toBe(
+            'workflow-live-1'
+        );
+    });
+
     it('updates the workflow live snapshot after a successful apply', async () => {
         const {
             workflowRepository,

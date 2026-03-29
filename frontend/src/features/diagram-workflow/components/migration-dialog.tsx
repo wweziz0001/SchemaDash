@@ -20,6 +20,7 @@ import {
     type DiagramMigrationApplyResponse,
     type DiagramMigrationPreview,
     type DiagramMigrationValidation,
+    type DiagramMigrationWorkflowFallback,
 } from '../api/diagram-migration-client';
 import { MigrationSummary } from './migration-summary';
 import { MigrationWarningList } from './migration-warning-list';
@@ -55,6 +56,34 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                 : null,
         [workflow?.developmentDiagram]
     );
+    const workflowFallback = useMemo<DiagramMigrationWorkflowFallback | null>(
+        () =>
+            workflow?.workflow?.liveSnapshot || workflow?.workflow?.connectionId
+                ? {
+                      connectionId: workflow?.workflow?.connectionId ?? null,
+                      connectionName:
+                          workflow?.workflow?.connectionName ?? null,
+                      connectionEngine:
+                          workflow?.workflow?.connectionEngine ?? null,
+                      importedSchemas:
+                          workflow?.workflow?.importedSchemas ?? [],
+                      liveSnapshot: workflow?.workflow?.liveSnapshot
+                          ? {
+                                id: workflow.workflow.liveSnapshot.id,
+                                fingerprint:
+                                    workflow.workflow.liveSnapshot
+                                        .fingerprint ?? null,
+                                createdAt:
+                                    workflow.workflow.liveSnapshot.createdAt,
+                                canonicalSchema:
+                                    workflow.workflow.liveSnapshot
+                                        .canonicalSchema,
+                            }
+                          : null,
+                  }
+                : null,
+        [workflow?.workflow]
+    );
 
     const loadPreview = useCallback(async () => {
         if (!workflow?.diagramId || !targetSchema) {
@@ -73,6 +102,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                     targetSchema,
                     expectedLiveSnapshotId:
                         workflow.workflow?.liveSnapshotId ?? null,
+                    workflowFallback,
                 }
             );
             setPreview(response.preview);
@@ -90,7 +120,12 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
         } finally {
             setLoadingPreview(false);
         }
-    }, [targetSchema, workflow?.diagramId, workflow?.workflow?.liveSnapshotId]);
+    }, [
+        targetSchema,
+        workflow?.diagramId,
+        workflow?.workflow?.liveSnapshotId,
+        workflowFallback,
+    ]);
 
     useEffect(() => {
         if (!open) {
@@ -125,6 +160,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                     targetSchema,
                     expectedLiveSnapshotId:
                         workflow.workflow?.liveSnapshotId ?? null,
+                    workflowFallback,
                 }
             );
             setPreview(response.validation);
@@ -172,6 +208,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                     targetSchema,
                     expectedLiveSnapshotId:
                         workflow.workflow?.liveSnapshotId ?? null,
+                    workflowFallback,
                     destructiveApproval: {
                         confirmed: !requiresDestructiveConfirmation
                             ? true
