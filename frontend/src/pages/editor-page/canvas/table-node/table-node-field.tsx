@@ -36,6 +36,7 @@ import {
 } from './table-node-dependency-indicator';
 import { useCanvas } from '@/hooks/use-canvas';
 import { useLayout } from '@/hooks/use-layout';
+import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
 
 export const LEFT_HANDLE_ID_PREFIX = 'left_rel_';
 export const RIGHT_HANDLE_ID_PREFIX = 'right_rel_';
@@ -80,6 +81,7 @@ export const TableNodeField: React.FC<TableNodeFieldProps> = React.memo(
     ({ field, focused, tableNodeId, highlighted, visible, isConnectable }) => {
         const { relationships, readonly, highlightedCustomType, databaseType } =
             useSchemaDash();
+        const workflow = useOptionalDiagramWorkflow();
 
         const updateNodeInternals = useUpdateNodeInternals();
         const connection = useConnection();
@@ -283,6 +285,41 @@ export const TableNodeField: React.FC<TableNodeFieldProps> = React.memo(
             fieldDiffChangedPrecision,
             fieldDiffChangedIsArray,
         } = diffState;
+        const compareField =
+            workflow?.activeMode === 'compare'
+                ? workflow.compareRenderModel?.fieldsById.get(field.id)
+                : undefined;
+        const compareNameChange = compareField?.changedProperties.find(
+            (change) => change.property === 'name'
+        );
+        const compareTypeChange = compareField?.changedProperties.find(
+            (change) => change.property === 'type'
+        );
+        const compareNullableChange = compareField?.changedProperties.find(
+            (change) => change.property === 'nullable'
+        );
+        const comparePrimaryKeyChange = compareField?.changedProperties.find(
+            (change) => change.property === 'primaryKey'
+        );
+        const isVisualFieldRemoved =
+            compareField?.status !== undefined
+                ? compareField.status === 'removed'
+                : isDiffFieldRemoved;
+        const isVisualNewField =
+            compareField?.status !== undefined
+                ? compareField.status === 'added'
+                : isDiffNewField;
+        const isVisualFieldChanged =
+            compareField?.status !== undefined
+                ? compareField.status === 'changed'
+                : isDiffFieldChanged;
+        const compareTitle =
+            compareField?.changedProperties.length &&
+            workflow?.activeMode === 'compare'
+                ? `Changed: ${compareField.changedProperties
+                      .map((change) => change.property)
+                      .join(', ')}`
+                : undefined;
 
         const isFieldAttributeChanged = useMemo(() => {
             return (
@@ -337,16 +374,17 @@ export const TableNodeField: React.FC<TableNodeFieldProps> = React.memo(
                         'max-h-8 opacity-100': visible,
                         'z-0 max-h-0 overflow-hidden opacity-0': !visible,
                         'bg-sky-200 dark:bg-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900 border-sky-300 dark:border-sky-700':
-                            isDiffFieldChanged &&
+                            isVisualFieldChanged &&
                             !isSummaryOnly &&
-                            !isDiffFieldRemoved &&
-                            !isDiffNewField,
+                            !isVisualFieldRemoved &&
+                            !isVisualNewField,
                         'bg-red-200 dark:bg-red-800 hover:bg-red-100 dark:hover:bg-red-900 border-red-300 dark:border-red-700':
-                            isDiffFieldRemoved,
+                            isVisualFieldRemoved,
                         'bg-green-200 dark:bg-green-800 hover:bg-green-100 dark:hover:bg-green-900 border-green-300 dark:border-green-700':
-                            isDiffNewField,
+                            isVisualNewField,
                     }
                 )}
+                title={compareTitle}
             >
                 {isConnectable ? (
                     <>
@@ -395,33 +433,39 @@ export const TableNodeField: React.FC<TableNodeFieldProps> = React.memo(
                         'font-semibold': field.primaryKey || field.unique,
                     })}
                 >
-                    {isDiffFieldRemoved ? (
+                    {isVisualFieldRemoved ? (
                         <SquareMinus className="size-3.5 shrink-0 text-red-800 dark:text-red-200" />
-                    ) : isDiffNewField ? (
+                    ) : isVisualNewField ? (
                         <SquarePlus className="size-3.5 shrink-0 text-green-800 dark:text-green-200" />
-                    ) : isDiffFieldChanged && !isSummaryOnly ? (
+                    ) : isVisualFieldChanged && !isSummaryOnly ? (
                         <SquareDot className="size-3.5 shrink-0 text-sky-800 dark:text-sky-200" />
                     ) : null}
 
                     <span
                         className={cn('truncate min-w-0', {
                             'text-red-800 font-normal dark:text-red-200':
-                                isDiffFieldRemoved,
+                                isVisualFieldRemoved,
                             'text-green-800 font-normal dark:text-green-200':
-                                isDiffNewField,
+                                isVisualNewField,
                             'text-sky-800 font-normal dark:text-sky-200':
-                                isDiffFieldChanged &&
+                                isVisualFieldChanged &&
                                 !isSummaryOnly &&
-                                !isDiffFieldRemoved &&
-                                !isDiffNewField,
+                                !isVisualFieldRemoved &&
+                                !isVisualNewField,
                             'text-blue-600 dark:text-blue-400':
                                 isForeignKey &&
-                                !isDiffFieldRemoved &&
-                                !isDiffNewField &&
-                                !isDiffFieldChanged,
+                                !isVisualFieldRemoved &&
+                                !isVisualNewField &&
+                                !isVisualFieldChanged,
                         })}
                     >
-                        {fieldDiffChangedName ? (
+                        {compareNameChange ? (
+                            <>
+                                {String(compareNameChange.baseline ?? '')}{' '}
+                                <span className="font-medium">→</span>{' '}
+                                {String(compareNameChange.target ?? '')}
+                            </>
+                        ) : fieldDiffChangedName ? (
                             <>
                                 {fieldDiffChangedName.old}{' '}
                                 <span className="font-medium">→</span>{' '}
@@ -451,21 +495,24 @@ export const TableNodeField: React.FC<TableNodeFieldProps> = React.memo(
                         !readonly ? 'group-hover:hidden' : ''
                     )}
                 >
-                    {(field.primaryKey && !fieldDiffChangedPrimaryKey?.old) ||
-                    fieldDiffChangedPrimaryKey?.new ? (
+                    {(field.primaryKey &&
+                        !fieldDiffChangedPrimaryKey?.old &&
+                        comparePrimaryKeyChange?.baseline !== true) ||
+                    fieldDiffChangedPrimaryKey?.new ||
+                    comparePrimaryKeyChange?.target === true ? (
                         <div
                             className={cn(
                                 'text-muted-foreground shrink-0',
-                                isDiffFieldRemoved
+                                isVisualFieldRemoved
                                     ? 'text-red-800 dark:text-red-200'
                                     : '',
-                                isDiffNewField
+                                isVisualNewField
                                     ? 'text-green-800 dark:text-green-200'
                                     : '',
-                                isDiffFieldChanged &&
+                                isVisualFieldChanged &&
                                     !isSummaryOnly &&
-                                    !isDiffFieldRemoved &&
-                                    !isDiffNewField
+                                    !isVisualFieldRemoved &&
+                                    !isVisualNewField
                                     ? 'text-sky-800 dark:text-sky-200'
                                     : ''
                             )}
@@ -476,28 +523,38 @@ export const TableNodeField: React.FC<TableNodeFieldProps> = React.memo(
                     <div
                         className={cn(
                             'text-right text-xs text-muted-foreground overflow-hidden min-w-0',
-                            isDiffFieldRemoved
+                            isVisualFieldRemoved
                                 ? 'text-red-800 dark:text-red-200'
                                 : '',
-                            isDiffNewField
+                            isVisualNewField
                                 ? 'text-green-800 dark:text-green-200'
                                 : '',
-                            isDiffFieldChanged &&
-                                !isDiffFieldRemoved &&
+                            isVisualFieldChanged &&
+                                !isVisualFieldRemoved &&
                                 !isSummaryOnly &&
-                                !isDiffNewField
+                                !isVisualNewField
                                 ? 'text-sky-800 dark:text-sky-200'
                                 : '',
                             isForeignKey &&
-                                !isDiffFieldRemoved &&
-                                !isDiffNewField &&
-                                !isDiffFieldChanged
+                                !isVisualFieldRemoved &&
+                                !isVisualNewField &&
+                                !isVisualFieldChanged
                                 ? 'text-blue-600 dark:text-blue-400'
                                 : ''
                         )}
                     >
                         <span className="block truncate">
-                            {isFieldAttributeChanged || fieldDiffChangedType ? (
+                            {compareTypeChange ? (
+                                <>
+                                    <span className="line-through">
+                                        {String(
+                                            compareTypeChange.baseline ?? ''
+                                        )}
+                                    </span>{' '}
+                                    {String(compareTypeChange.target ?? '')}
+                                </>
+                            ) : isFieldAttributeChanged ||
+                              fieldDiffChangedType ? (
                                 <>
                                     <span className="line-through">
                                         {
@@ -578,7 +635,13 @@ export const TableNodeField: React.FC<TableNodeFieldProps> = React.memo(
                                           : ''
                                 }`
                             )}
-                            {fieldDiffChangedNullable ? (
+                            {compareNullableChange ? (
+                                compareNullableChange.target ? (
+                                    <span className="font-semibold">?</span>
+                                ) : (
+                                    <span className="line-through">?</span>
+                                )
+                            ) : fieldDiffChangedNullable ? (
                                 fieldDiffChangedNullable.new ? (
                                     <span className="font-semibold">?</span>
                                 ) : (
