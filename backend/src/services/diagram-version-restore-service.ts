@@ -109,7 +109,6 @@ export class DiagramVersionRestoreService {
                 projectId: diagram.projectId,
                 ownerUserId: diagram.ownerUserId ?? undefined,
                 description: diagram.description,
-                sessionId: payload.sessionId,
                 baseVersion: payload.baseVersion,
                 diagram: {
                     ...snapshot.diagramDocument,
