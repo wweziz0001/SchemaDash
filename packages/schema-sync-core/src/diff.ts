@@ -166,8 +166,13 @@ const mapBy = <T>(items: T[], keyFn: (item: T) => string): Map<string, T> =>
 const getTableMatchKey = (table: CanonicalTable): string =>
     table.sync?.sourceId ?? qualifyTable(table.schemaName, table.name);
 
-const getColumnMatchKey = (column: CanonicalColumn): string =>
-    column.sync?.sourceId ?? normalizeName(column.name);
+const getColumnMatchKeys = (column: CanonicalColumn): string[] =>
+    uniqueBy(
+        [column.sync?.sourceId, normalizeName(column.name)].filter(
+            Boolean
+        ) as string[],
+        (value) => value
+    );
 
 const getConstraintKey = <
     T extends {
@@ -204,6 +209,20 @@ const similarity = (
     const shared = [...left].filter((value) => right.has(value)).length;
     const total = new Set([...left, ...right]).size;
     return total === 0 ? 0 : shared / total;
+};
+
+const mapColumnsByMatchKeys = (columns: CanonicalColumn[]) => {
+    const columnMap = new Map<string, CanonicalColumn>();
+
+    for (const column of columns) {
+        for (const key of getColumnMatchKeys(column)) {
+            if (!columnMap.has(key)) {
+                columnMap.set(key, column);
+            }
+        }
+    }
+
+    return columnMap;
 };
 
 const comparePrimaryKeys = (
@@ -590,11 +609,16 @@ export const createChangePlan = ({
             });
         }
 
-        const baselineColumns = mapBy(baselineTable.columns, getColumnMatchKey);
-        const targetColumns = mapBy(targetTable.columns, getColumnMatchKey);
+        const targetColumns = mapColumnsByMatchKeys(targetTable.columns);
+        const matchedTargetColumnIds = new Set<string>();
 
-        for (const [columnKey, baselineColumn] of baselineColumns) {
-            const targetColumn = targetColumns.get(columnKey);
+        for (const baselineColumn of baselineTable.columns) {
+            const targetColumn = getColumnMatchKeys(baselineColumn)
+                .map((columnKey) => targetColumns.get(columnKey))
+                .find(
+                    (candidate) =>
+                        !!candidate && !matchedTargetColumnIds.has(candidate.id)
+                );
             if (!targetColumn) {
                 changes.push({
                     id: `drop-column:${baselineTable.id}:${baselineColumn.id}`,
@@ -606,6 +630,7 @@ export const createChangePlan = ({
                 });
                 continue;
             }
+            matchedTargetColumnIds.add(targetColumn.id);
 
             if (baselineColumn.name !== targetColumn.name) {
                 changes.push({
@@ -666,8 +691,8 @@ export const createChangePlan = ({
             }
         }
 
-        for (const [columnKey, targetColumn] of targetColumns) {
-            if (!baselineColumns.has(columnKey)) {
+        for (const targetColumn of targetTable.columns) {
+            if (!matchedTargetColumnIds.has(targetColumn.id)) {
                 changes.push({
                     id: `add-column:${targetTable.id}:${targetColumn.id}`,
                     kind: 'add_column',
