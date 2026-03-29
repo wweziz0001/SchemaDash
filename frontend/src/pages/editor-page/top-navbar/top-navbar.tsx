@@ -15,6 +15,7 @@ import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { WorkflowModeSwitcher } from '@/features/diagram-workflow/components/workflow-mode-switcher';
 import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
 import { LiveStatusChip } from '@/features/diagram-workflow/components/live-status-chip';
+import { CompareSummaryChip } from '@/features/diagram-workflow/components/compare-summary-chip';
 
 export interface TopNavbarProps {}
 
@@ -60,8 +61,9 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
             <DiagramName />
             <div className="hidden flex-1 items-center justify-end gap-2 sm:flex">
                 <WorkflowModeSwitcher />
+                <CompareSummaryChip />
                 <LiveStatusChip />
-                {workflow?.activeMode !== 'live' ? (
+                {workflow?.activeMode === 'development' ? (
                     <SchemaSyncToolbarButton />
                 ) : null}
                 <LastSaved />

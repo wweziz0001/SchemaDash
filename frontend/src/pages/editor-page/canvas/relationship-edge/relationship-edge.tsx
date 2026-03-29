@@ -41,8 +41,12 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
             const { showCardinality } = useLocalConfig();
             const workflow = useOptionalDiagramWorkflow();
 
-            const { relationships, updateRelationship, removeRelationship } =
-                useSchemaDash();
+            const {
+                relationships,
+                updateRelationship,
+                removeRelationship,
+                readonly,
+            } = useSchemaDash();
             const {
                 editRelationshipPopover,
                 openRelationshipPopover,
@@ -58,6 +62,10 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
 
             const handleEdgeClick = useCallback(
                 (e: React.MouseEvent) => {
+                    if (readonly) {
+                        return;
+                    }
+
                     if (e.detail === 2) {
                         // Double click - open popover
                         openRelationshipPopover({
@@ -67,11 +75,15 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
                     }
                     // Single click just selects the edge, doesn't open popover
                 },
-                [openRelationshipPopover, id]
+                [openRelationshipPopover, id, readonly]
             );
 
             const handleContextMenu = useCallback(
                 (e: React.MouseEvent) => {
+                    if (readonly) {
+                        return;
+                    }
+
                     e.preventDefault();
                     e.stopPropagation();
                     openRelationshipPopover({
@@ -79,18 +91,22 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
                         position: { x: e.clientX, y: e.clientY },
                     });
                 },
-                [id, openRelationshipPopover]
+                [id, openRelationshipPopover, readonly]
             );
 
             const handleIndicatorClick = useCallback(
                 (e: React.MouseEvent) => {
+                    if (readonly) {
+                        return;
+                    }
+
                     e.stopPropagation();
                     openRelationshipPopover({
                         relationshipId: id,
                         position: { x: e.clientX, y: e.clientY },
                     });
                 },
-                [id, openRelationshipPopover]
+                [id, openRelationshipPopover, readonly]
             );
 
             const handleSwitchTables = useCallback(async () => {
@@ -424,7 +440,7 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
                         onClick={handleEdgeClick}
                         onContextMenu={handleContextMenu}
                     />
-                    {selected && (
+                    {selected && !readonly && (
                         <foreignObject
                             width={24}
                             height={24}

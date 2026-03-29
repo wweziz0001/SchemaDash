@@ -480,7 +480,7 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                     }}
                 >
                     <NodeResizer
-                        isVisible={focused}
+                        isVisible={focused && !readonly}
                         lineClassName="!border-none !w-2"
                         minWidth={MIN_TABLE_SIZE}
                         maxWidth={MAX_TABLE_SIZE}
@@ -630,21 +630,23 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                                     <CircleDotDashed className="size-4" />
                                 </Button>
                             )}
-                            <Button
-                                variant="ghost"
-                                className="size-6 p-0 text-slate-500 hover:bg-primary-foreground hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                                onClick={
-                                    table.width !== MAX_TABLE_SIZE
-                                        ? expandTable
-                                        : shrinkTable
-                                }
-                            >
-                                {table.width !== MAX_TABLE_SIZE ? (
-                                    <ChevronsLeftRight className="size-4" />
-                                ) : (
-                                    <ChevronsRightLeft className="size-4" />
-                                )}
-                            </Button>
+                            {readonly ? null : (
+                                <Button
+                                    variant="ghost"
+                                    className="size-6 p-0 text-slate-500 hover:bg-primary-foreground hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                                    onClick={
+                                        table.width !== MAX_TABLE_SIZE
+                                            ? expandTable
+                                            : shrinkTable
+                                    }
+                                >
+                                    {table.width !== MAX_TABLE_SIZE ? (
+                                        <ChevronsLeftRight className="size-4" />
+                                    ) : (
+                                        <ChevronsRightLeft className="size-4" />
+                                    )}
+                                </Button>
+                            )}
                         </div>
                     </div>
                     <div
@@ -667,26 +669,27 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                             />
                         ))}
                     </div>
-                    {(editTableMode && editModeInitialFieldCount !== null
-                        ? editModeInitialFieldCount
-                        : fields.length) > TABLE_MINIMIZED_FIELDS && (
-                        <div
-                            className="z-10 flex h-8 cursor-pointer items-center justify-center rounded-b-md border-t text-xs text-muted-foreground transition-colors duration-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-                            onClick={toggleExpand}
-                        >
-                            {expanded ? (
-                                <>
-                                    <ChevronUp className="mr-1 size-3.5" />
-                                    {t('show_less')}
-                                </>
-                            ) : (
-                                <>
-                                    <ChevronDown className="mr-1 size-3.5" />
-                                    {t('show_more')}
-                                </>
-                            )}
-                        </div>
-                    )}
+                    {!readonly &&
+                        (editTableMode && editModeInitialFieldCount !== null
+                            ? editModeInitialFieldCount
+                            : fields.length) > TABLE_MINIMIZED_FIELDS && (
+                            <div
+                                className="z-10 flex h-8 cursor-pointer items-center justify-center rounded-b-md border-t text-xs text-muted-foreground transition-colors duration-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                onClick={toggleExpand}
+                            >
+                                {expanded ? (
+                                    <>
+                                        <ChevronUp className="mr-1 size-3.5" />
+                                        {t('show_less')}
+                                    </>
+                                ) : (
+                                    <>
+                                        <ChevronDown className="mr-1 size-3.5" />
+                                        {t('show_more')}
+                                    </>
+                                )}
+                            </div>
+                        )}
                 </div>
             </TableNodeContextMenu>
         );
