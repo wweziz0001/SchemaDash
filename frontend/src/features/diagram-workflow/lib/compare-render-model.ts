@@ -58,10 +58,22 @@ const getDiagramTableMatchKey = (table: DBTable) =>
         table.syncMetadata?.sourceId ?? qualifyTable(table.schema, table.name)
     ).toLowerCase();
 
+const getDiagramTableMatchKeys = (table: DBTable) =>
+    [
+        table.syncMetadata?.sourceId?.toLowerCase(),
+        qualifyTable(table.schema, table.name).toLowerCase(),
+    ].filter(Boolean) as string[];
+
 const getDiagramFieldMatchKey = (field: DBField) =>
     (field.syncMetadata?.sourceId ?? normalizeName(field.name)).toLowerCase();
 
-const getDiagramRelationshipMatchKey = ({
+const getDiagramFieldMatchKeys = (field: DBField) =>
+    [
+        field.syncMetadata?.sourceId?.toLowerCase(),
+        normalizeName(field.name),
+    ].filter(Boolean) as string[];
+
+const getDiagramRelationshipSignature = ({
     relationship,
     tablesById,
 }: {
@@ -93,6 +105,24 @@ const getDiagramRelationshipMatchKey = ({
     ]
         .join('|')
         .toLowerCase();
+};
+
+const getDiagramRelationshipMatchKeys = ({
+    relationship,
+    tablesById,
+}: {
+    relationship: DBRelationship;
+    tablesById: Map<string, DBTable>;
+}) => {
+    const signature = getDiagramRelationshipSignature({
+        relationship,
+        tablesById,
+    });
+
+    return [
+        relationship.syncMetadata?.sourceId?.toLowerCase(),
+        signature,
+    ].filter(Boolean) as string[];
 };
 
 const cloneField = (field: DBField): DBField => ({ ...field });
@@ -222,18 +252,18 @@ export const buildCompareRenderModel = ({
     const compareTablesByResult = new Map(
         compareResult.tables.map((table) => [table.matchKey, table])
     );
-    const developmentTablesByKey = new Map(
-        (developmentDiagram.tables ?? []).map((table) => [
-            getDiagramTableMatchKey(table),
-            table,
-        ])
-    );
-    const liveTablesByKey = new Map(
-        (liveDiagram.tables ?? []).map((table) => [
-            getDiagramTableMatchKey(table),
-            table,
-        ])
-    );
+    const developmentTablesByKey = new Map<string, DBTable>();
+    for (const table of developmentDiagram.tables ?? []) {
+        for (const key of getDiagramTableMatchKeys(table)) {
+            developmentTablesByKey.set(key, table);
+        }
+    }
+    const liveTablesByKey = new Map<string, DBTable>();
+    for (const table of liveDiagram.tables ?? []) {
+        for (const key of getDiagramTableMatchKeys(table)) {
+            liveTablesByKey.set(key, table);
+        }
+    }
 
     const developmentBounds = getDiagramBounds(developmentDiagram.tables ?? []);
     const liveBounds = getDiagramBounds(liveDiagram.tables ?? []);
@@ -280,18 +310,18 @@ export const buildCompareRenderModel = ({
             tableResult,
             developmentTable,
         });
-        const developmentFieldsByKey = new Map(
-            (developmentTable?.fields ?? []).map((field) => [
-                getDiagramFieldMatchKey(field),
-                field,
-            ])
-        );
-        const liveFieldsByKey = new Map(
-            (liveTable?.fields ?? []).map((field) => [
-                getDiagramFieldMatchKey(field),
-                field,
-            ])
-        );
+        const developmentFieldsByKey = new Map<string, DBField>();
+        for (const field of developmentTable?.fields ?? []) {
+            for (const key of getDiagramFieldMatchKeys(field)) {
+                developmentFieldsByKey.set(key, field);
+            }
+        }
+        const liveFieldsByKey = new Map<string, DBField>();
+        for (const field of liveTable?.fields ?? []) {
+            for (const key of getDiagramFieldMatchKeys(field)) {
+                liveFieldsByKey.set(key, field);
+            }
+        }
         const tableFieldsByResult = new Map(
             tableResult.fields.map((field) => [field.matchKey, field])
         );
@@ -354,24 +384,24 @@ export const buildCompareRenderModel = ({
     const liveTablesById = new Map(
         (liveDiagram.tables ?? []).map((table) => [table.id, table])
     );
-    const developmentRelationshipsByKey = new Map(
-        (developmentDiagram.relationships ?? []).map((relationship) => [
-            getDiagramRelationshipMatchKey({
-                relationship,
-                tablesById: developmentTablesById,
-            }),
+    const developmentRelationshipsByKey = new Map<string, DBRelationship>();
+    for (const relationship of developmentDiagram.relationships ?? []) {
+        for (const key of getDiagramRelationshipMatchKeys({
             relationship,
-        ])
-    );
-    const liveRelationshipsByKey = new Map(
-        (liveDiagram.relationships ?? []).map((relationship) => [
-            getDiagramRelationshipMatchKey({
-                relationship,
-                tablesById: liveTablesById,
-            }),
+            tablesById: developmentTablesById,
+        })) {
+            developmentRelationshipsByKey.set(key, relationship);
+        }
+    }
+    const liveRelationshipsByKey = new Map<string, DBRelationship>();
+    for (const relationship of liveDiagram.relationships ?? []) {
+        for (const key of getDiagramRelationshipMatchKeys({
             relationship,
-        ])
-    );
+            tablesById: liveTablesById,
+        })) {
+            liveRelationshipsByKey.set(key, relationship);
+        }
+    }
 
     const compareRelationships: DBRelationship[] = [];
     for (const relationshipResult of compareResult.relationships) {
