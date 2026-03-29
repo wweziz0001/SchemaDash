@@ -14,11 +14,14 @@ import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useStorage } from '@/hooks/use-storage';
 import { persistenceClient } from '@/features/persistence/api/persistence-client';
 import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
+import { useToast } from '@/components/toast/use-toast';
 import type { DiagramWorkflowVersionSummary } from '../api/diagram-workflow-client';
 import { diagramWorkflowClient } from '../api/diagram-workflow-client';
 import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
 import {
     getRestoreConfirmationHint,
+    getRestoreFailureMessage,
+    getRestoreSuccessDescription,
     getRestoreVersionHeading,
     RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT,
 } from '../lib/restore-messages';
@@ -38,12 +41,15 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
     const workflow = useOptionalDiagramWorkflow();
     const storage = useStorage();
     const { updateDiagramData } = useSchemaDash();
+    const { toast } = useToast();
     const [confirmationText, setConfirmationText] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
         if (!open) {
             setConfirmationText('');
+            setErrorMessage(null);
         }
     }, [open]);
 
@@ -62,6 +68,7 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
         }
 
         setSubmitting(true);
+        setErrorMessage(null);
         try {
             const sessionState = await storage.getDiagramSessionState(
                 workflow.diagramId
@@ -78,18 +85,20 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
                 return;
             }
 
-            await diagramWorkflowClient.restoreVersionToDevelopment(
-                workflow.diagramId,
-                version.id,
-                {
-                    confirmationText: confirmationText.trim(),
-                    baseVersion,
-                    sessionId: sessionState?.session.id,
-                    currentDevelopmentCanonicalSchema: diagramToCanonicalSchema(
-                        workflow.developmentDiagram
-                    ),
-                }
-            );
+            const response =
+                await diagramWorkflowClient.restoreVersionToDevelopment(
+                    workflow.diagramId,
+                    version.id,
+                    {
+                        confirmationText: confirmationText.trim(),
+                        baseVersion,
+                        sessionId: sessionState?.session.id,
+                        currentDevelopmentCanonicalSchema:
+                            diagramToCanonicalSchema(
+                                workflow.developmentDiagram
+                            ),
+                    }
+                );
 
             const refreshedDiagram = await storage.getDiagram(
                 workflow.diagramId,
@@ -113,6 +122,18 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
             workflow.setActiveMode('development');
             await workflow.refreshWorkflow();
             onOpenChange(false);
+            toast({
+                title: 'Development restored',
+                description: getRestoreSuccessDescription(response.result),
+            });
+        } catch (error) {
+            const message = getRestoreFailureMessage(error);
+            setErrorMessage(message);
+            toast({
+                title: 'Restore failed',
+                description: message,
+                variant: 'destructive',
+            });
         } finally {
             setSubmitting(false);
         }
@@ -135,6 +156,12 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
 
                 <div className="space-y-4">
                     {version ? <RestoreWarningPanel version={version} /> : null}
+
+                    {errorMessage ? (
+                        <p className="text-sm text-destructive">
+                            {errorMessage}
+                        </p>
+                    ) : null}
 
                     <div className="space-y-2">
                         <Label htmlFor="restore-confirmation-text">
