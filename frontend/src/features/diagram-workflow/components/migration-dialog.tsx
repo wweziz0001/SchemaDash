@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/alert/alert';
 import { Badge } from '@/components/badge/badge';
 import { Button } from '@/components/button/button';
@@ -56,6 +56,42 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
         [workflow?.developmentDiagram]
     );
 
+    const loadPreview = useCallback(async () => {
+        if (!workflow?.diagramId || !targetSchema) {
+            setPreview(null);
+            setValidation(null);
+            setExecution(null);
+            return;
+        }
+
+        setLoadingPreview(true);
+        setLoadError(null);
+        try {
+            const response = await diagramMigrationClient.previewMigration(
+                workflow.diagramId,
+                {
+                    targetSchema,
+                    expectedLiveSnapshotId:
+                        workflow.workflow?.liveSnapshotId ?? null,
+                }
+            );
+            setPreview(response.preview);
+            setValidation(null);
+            setExecution(null);
+        } catch (error) {
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to generate the migration preview.';
+            setLoadError(message);
+            setPreview(null);
+            setValidation(null);
+            setExecution(null);
+        } finally {
+            setLoadingPreview(false);
+        }
+    }, [targetSchema, workflow?.diagramId, workflow?.workflow?.liveSnapshotId]);
+
     useEffect(() => {
         if (!open) {
             return;
@@ -67,41 +103,13 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
             return;
         }
 
-        const loadPreview = async () => {
-            setLoadingPreview(true);
-            setLoadError(null);
-            try {
-                const response = await diagramMigrationClient.previewMigration(
-                    workflow.diagramId!,
-                    {
-                        targetSchema,
-                        expectedLiveSnapshotId:
-                            workflow.workflow?.liveSnapshotId ?? null,
-                    }
-                );
-                setPreview(response.preview);
-                setValidation(null);
-                setExecution(null);
-            } catch (error) {
-                const message =
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to generate the migration preview.';
-                setLoadError(message);
-                setPreview(null);
-                setValidation(null);
-                setExecution(null);
-            } finally {
-                setLoadingPreview(false);
-            }
-        };
-
         void loadPreview();
     }, [
         open,
         targetSchema,
         workflow?.diagramId,
         workflow?.workflow?.liveSnapshotId,
+        loadPreview,
     ]);
 
     const handleValidate = async () => {
@@ -139,6 +147,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
 
     const requiresDestructiveConfirmation =
         !!preview?.plan?.requiresConfirmation;
+    const previewIssues = preview?.issues ?? [];
     const applyDisabled =
         !validation?.readyToApply ||
         applying ||
@@ -261,6 +270,87 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                     the migration workflow.
                                 </AlertDescription>
                             </Alert>
+                        ) : null}
+
+                        {!loadingPreview && !preview?.plan ? (
+                            <div className="space-y-4">
+                                <div className="rounded-lg border p-4">
+                                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                        <div>
+                                            <div className="text-sm font-medium">
+                                                Preview unavailable
+                                            </div>
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                The migration workflow could not
+                                                produce a canonical plan yet.
+                                                Review the blockers below, then
+                                                retry after the live baseline
+                                                and connection state are ready.
+                                            </p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => void loadPreview()}
+                                            disabled={!targetSchema}
+                                        >
+                                            Retry Preview
+                                        </Button>
+                                    </div>
+
+                                    <div className="mt-4 grid gap-3 md:grid-cols-4">
+                                        <div className="rounded-md border bg-muted/20 p-3">
+                                            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                Connection
+                                            </div>
+                                            <div className="mt-2 text-sm font-medium">
+                                                {preview?.connectionName ??
+                                                    'Unavailable'}
+                                            </div>
+                                        </div>
+                                        <div className="rounded-md border bg-muted/20 p-3">
+                                            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                Live snapshot
+                                            </div>
+                                            <div className="mt-2 text-sm font-medium">
+                                                {preview?.workflowLiveSnapshotId
+                                                    ? 'Available'
+                                                    : 'Missing'}
+                                            </div>
+                                        </div>
+                                        <div className="rounded-md border bg-muted/20 p-3">
+                                            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                Blocking issues
+                                            </div>
+                                            <div className="mt-2 text-sm font-medium">
+                                                {
+                                                    previewIssues.filter(
+                                                        (issue) =>
+                                                            issue.severity ===
+                                                            'blocking'
+                                                    ).length
+                                                }
+                                            </div>
+                                        </div>
+                                        <div className="rounded-md border bg-muted/20 p-3">
+                                            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                Generated
+                                            </div>
+                                            <div className="mt-2 text-sm font-medium">
+                                                {preview?.generatedAt
+                                                    ? new Date(
+                                                          preview.generatedAt
+                                                      ).toLocaleString()
+                                                    : 'Not generated'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <MigrationWarningList
+                                    title="Preview blockers and notes"
+                                    issues={previewIssues}
+                                />
+                            </div>
                         ) : null}
 
                         {preview?.plan ? (

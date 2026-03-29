@@ -357,4 +357,38 @@ describe('migration dialog', () => {
             expect(refreshWorkflow).toHaveBeenCalledTimes(1);
         });
     });
+
+    it('shows preview blockers instead of a blank page when no plan is available', async () => {
+        const user = userEvent.setup();
+        mockedPreviewMigration
+            .mockResolvedValueOnce({
+                preview: buildPreview({
+                    plan: null,
+                    canValidate: false,
+                    issues: [
+                        {
+                            code: 'migration_live_snapshot_missing',
+                            severity: 'blocking',
+                            title: 'Live baseline missing',
+                            message:
+                                'Refresh the live database snapshot before reviewing a migration plan.',
+                        },
+                    ],
+                }),
+            })
+            .mockResolvedValueOnce({
+                preview: buildPreview(),
+            });
+
+        render(<MigrationDialog open={true} onOpenChange={vi.fn()} />);
+
+        expect(
+            await screen.findByRole('button', { name: 'Retry Preview' })
+        ).toBeTruthy();
+        expect(await screen.findByText('Live baseline missing')).toBeTruthy();
+
+        await user.click(screen.getByRole('button', { name: 'Retry Preview' }));
+
+        expect(await screen.findByText('Planned changes')).toBeTruthy();
+    });
 });
