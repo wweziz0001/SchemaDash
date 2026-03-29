@@ -6,6 +6,7 @@ import { ApplyService } from '../services/apply-service.js';
 import { AdminService } from '../services/admin-service.js';
 import { AuthService } from '../services/auth-service.js';
 import { ConnectionsService } from '../services/connections-service.js';
+import { DiagramMigrationService } from '../services/diagram-migration-service.js';
 import { DiagramWorkflowService } from '../services/diagram-workflow-service.js';
 import { DiagramCollaborationBroker } from '../services/diagram-collaboration-broker.js';
 import type { OidcClientProvider } from '../services/oidc-provider.js';
@@ -22,6 +23,7 @@ export interface AppContext {
     diagramCollaborationBroker: DiagramCollaborationBroker;
     schemaSyncService: SchemaSyncService;
     applyService: ApplyService;
+    diagramMigrationService: DiagramMigrationService;
     persistenceService: PersistenceService;
     diagramWorkflowService: DiagramWorkflowService;
     close: () => void;
@@ -80,6 +82,12 @@ export const createAppContext = (
         persistenceService,
         schemaSyncService
     );
+    const diagramMigrationService = new DiagramMigrationService(
+        diagramWorkflowRepository,
+        metadataRepository,
+        persistenceService,
+        connectionsService
+    );
 
     return {
         env,
@@ -91,6 +99,7 @@ export const createAppContext = (
         diagramCollaborationBroker,
         schemaSyncService,
         applyService,
+        diagramMigrationService,
         persistenceService,
         diagramWorkflowService,
         close: () => {
