@@ -29,6 +29,7 @@ export interface DiagramWorkflowContextValue {
     diagramId?: string;
     workflow?: DiagramWorkflowRecord;
     developmentDiagram?: Diagram;
+    setDevelopmentDiagram: (diagram?: Diagram) => void;
     loading: boolean;
     requestedMode: DiagramWorkflowMode;
     activeMode: DiagramWorkflowMode;
@@ -110,6 +111,9 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
         },
         []
     );
+    const setDevelopmentDiagramRecord = useCallback((nextDiagram?: Diagram) => {
+        setDevelopmentDiagram(nextDiagram);
+    }, []);
 
     const refreshWorkflow = useCallback(async () => {
         if (!diagramId) {
@@ -183,6 +187,7 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
             diagramId,
             workflow,
             developmentDiagram,
+            setDevelopmentDiagram: setDevelopmentDiagramRecord,
             loading,
             requestedMode,
             activeMode,
@@ -206,6 +211,7 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
             refreshWorkflow,
             requestedMode,
             setActiveMode,
+            setDevelopmentDiagramRecord,
             setWorkflowRecord,
             workflow,
         ]
