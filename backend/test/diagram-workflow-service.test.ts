@@ -23,12 +23,13 @@ const createCanonicalSchema = (): CanonicalSchema => ({
     tables: [
         {
             id: 'live-users',
-            schema: 'public',
+            schemaName: 'public',
             name: 'users',
             columns: [],
             primaryKey: null,
+            uniqueConstraints: [],
             indexes: [],
-            checks: [],
+            checkConstraints: [],
             foreignKeys: [],
             comment: null,
             kind: 'table',
@@ -99,8 +100,11 @@ const createHarness = () => {
 
     return {
         appRepository,
+        actor: bootstrap.user,
+        defaultProjectId: bootstrap.defaultProject.id,
         workflowRepository,
         metadataRepository,
+        persistenceService,
         workflowService,
         importLiveSchema,
     };
@@ -196,6 +200,81 @@ describe('diagram workflow service', () => {
         );
         expect(appRepository.getDiagram('diagram-1')?.document).toEqual(
             beforeDocument
+        );
+    });
+
+    it('creates immutable version snapshots that can be listed and opened later', () => {
+        const {
+            actor,
+            appRepository,
+            defaultProjectId,
+            persistenceService,
+            workflowRepository,
+            workflowService,
+        } = createHarness();
+        const developmentDocument =
+            appRepository.getDiagram('diagram-1')?.document ?? null;
+
+        expect(developmentDocument).toBeTruthy();
+
+        const createdVersion = workflowService.createVersion(
+            'diagram-1',
+            {
+                name: null,
+                description: 'Before the rename',
+                origin: 'manual',
+                canonicalSchema: createCanonicalSchema(),
+                diagramDocument: developmentDocument,
+            },
+            actor
+        );
+
+        expect(createdVersion.versionLabel).toBe('Version 1');
+        expect(createdVersion.description).toBe('Before the rename');
+        expect(createdVersion.createdBy?.displayName).toBe('Test Owner');
+        expect(createdVersion.snapshot.diagramDocument).toEqual(
+            developmentDocument
+        );
+        expect(
+            workflowRepository.getSnapshot(createdVersion.snapshotId)
+        ).toEqual(
+            expect.objectContaining({
+                snapshotKind: 'version',
+                sourceKind: 'development',
+            })
+        );
+
+        const listedVersions = workflowService.listVersions('diagram-1', actor);
+        expect(listedVersions).toHaveLength(1);
+        expect(listedVersions[0]).toEqual(
+            expect.objectContaining({
+                id: createdVersion.id,
+                description: 'Before the rename',
+                versionLabel: 'Version 1',
+            })
+        );
+
+        persistenceService.upsertDiagram('diagram-1', {
+            projectId: defaultProjectId,
+            ownerUserId: actor.id,
+            diagram: {
+                ...developmentDocument!,
+                name: 'Renamed Development Diagram',
+                updatedAt: '2026-03-28T12:00:00.000Z',
+            },
+        });
+
+        const reopenedVersion = workflowService.getVersion(
+            'diagram-1',
+            createdVersion.id,
+            actor
+        );
+
+        expect(reopenedVersion.snapshot.diagramDocument?.name).toBe(
+            'Development Diagram'
+        );
+        expect(appRepository.getDiagram('diagram-1')?.document.name).toBe(
+            'Renamed Development Diagram'
         );
     });
 });

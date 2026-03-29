@@ -2,28 +2,25 @@
 
 ## Project Overview
 
-SchemaDash is a full-stack schema design and synchronization product with:
+SchemaDash is a full-stack schema design and schema-sync product with:
 
-- a React/Tailwind frontend for canvas-based schema editing
-- a Fastify backend for persistence, collaboration, workflow state, and operational schema-sync routes
-- a shared `packages/schema-sync-core` package for canonical schema types, diffing, risk analysis, SQL generation, compare results, and apply planning
+- a React/Tailwind frontend for canvas-based database diagram editing
+- a Fastify backend for persistence, collaboration, workflow state, and schema-sync APIs
+- a shared `packages/schema-sync-core` package for canonical schema types, hashing, diffing, compare results, and migration planning
 
 Relevant product context for this task:
 
-- `Development` is still the editable head and the authoritative mutable diagram.
-- `Live Database` is a read-only workflow snapshot attached to the diagram.
-- `Compare` is a derived read-only visualization between the live snapshot and the current development schema.
-- This task adds the next layer after Compare:
-    - a `Review` toolbar control
-    - a read-only structured review surface
-    - a migration preview / validation / explicit apply workflow based on canonical live vs development state
+- `Development` remains the only mutable diagram head.
+- `Live Database` is a read-only stored canonical snapshot for a bound connection.
+- `Compare` is a read-only derived visualization between a baseline schema and the current Development diagram.
+- `Versions / Snapshots` are immutable, per-diagram historical captures of Development.
 
-Key concepts needed for this area:
+Key concepts for this system area:
 
-- Canonical schema is the source of truth for review and migration logic.
-- The compare canvas overlay is not the source of truth for execution.
-- The workflow layer keeps live snapshot state beside the diagram instead of replacing the editable diagram document.
-- The migration path should reuse schema-sync diff/apply primitives, not invent a separate execution engine.
+- A diagram document is still the editable source for Development.
+- Canonical schema is required for safe and stable compare behavior.
+- Historical versions must never become second editable branches.
+- Collaboration/editing must stay attached to Development; version views are read-only review surfaces.
 
 ## Current Architectural Context
 
@@ -33,44 +30,37 @@ Read these first:
 2. `docs/live-db-compare-feature-map.md`
 3. `docs/codex-handoff.md`
 
-System areas that matter for this task:
+Important system areas for this task:
 
-- Frontend workflow state and compare/live mode wiring:
-    - `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
-    - `frontend/src/pages/editor-page/workflow-editor-page.tsx`
-    - `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
-- Frontend review and migration surfaces:
-    - `frontend/src/features/diagram-workflow/components/review-dropdown.tsx`
-    - `frontend/src/features/diagram-workflow/components/review-changes-dialog.tsx`
-    - `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
-    - `frontend/src/features/diagram-workflow/components/migration-summary.tsx`
-    - `frontend/src/features/diagram-workflow/components/migration-warning-list.tsx`
-    - `frontend/src/features/diagram-workflow/lib/review-grouping.ts`
-- Frontend canonical adapters and API clients:
-    - `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
-    - `frontend/src/features/diagram-workflow/api/diagram-workflow-client.ts`
-    - `frontend/src/features/diagram-workflow/api/diagram-migration-client.ts`
-- Backend workflow and migration services:
-    - `backend/src/services/diagram-workflow-service.ts`
-    - `backend/src/services/diagram-migration-service.ts`
-    - `backend/src/routes/diagram-workflow-routes.ts`
-    - `backend/src/routes/diagram-migration-routes.ts`
-    - `backend/src/context/app-context.ts`
-    - `backend/src/app.ts`
-- Existing schema-sync/apply foundations reused here:
-    - `backend/src/services/schema-sync-service.ts`
-    - `backend/src/services/apply-service.ts`
-    - `backend/src/repositories/metadata-repository.ts`
-    - `packages/schema-sync-core/src/diff.ts`
-    - `packages/schema-sync-core/src/types.ts`
+- Backend workflow persistence and service logic:
+  - `backend/src/repositories/diagram-workflow-repository.ts`
+  - `backend/src/services/diagram-workflow-service.ts`
+  - `backend/src/routes/diagram-workflow-routes.ts`
+  - `backend/src/schemas/diagram-workflow.ts`
+- Frontend workflow state and editor mode routing:
+  - `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
+  - `frontend/src/pages/editor-page/workflow-editor-page.tsx`
+  - `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
+  - `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
+- Frontend versions UI:
+  - `frontend/src/features/diagram-workflow/components/create-version-dialog.tsx`
+  - `frontend/src/features/diagram-workflow/components/versions-panel.tsx`
+  - `frontend/src/features/diagram-workflow/components/version-list-item.tsx`
+  - `frontend/src/features/diagram-workflow/components/version-view-badge.tsx`
+  - `frontend/src/features/diagram-workflow/lib/version-labels.ts`
+- Existing compare/canonical seams reused here:
+  - `frontend/src/features/diagram-workflow/lib/compare-render-model.ts`
+  - `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
+  - `packages/schema-sync-core/src/types.ts`
+  - `packages/schema-sync-core/src/hash.ts`
 
 Important service/module boundaries:
 
-- `diagram-workflow-service` manages diagram-scoped live binding and stored live snapshots.
-- `diagram-migration-service` now owns migration preview, validation, and explicit apply orchestration for the workflow layer.
-- `apply-service` remains the lower-level execution primitive that performs drift checks, preflight checks, SQL execution, and audit persistence.
-- `review-grouping.ts` is frontend-only and builds the structured review view from canonical compare results plus supplemental change-plan signals.
-- `migration-dialog.tsx` is UI orchestration only; it calls backend routes and never uses compare overlay state as execution input.
+- `diagram-workflow-repository` owns app-db workflow state, workflow snapshots, and user-facing version rows.
+- `diagram-workflow-service` owns version creation, version listing, live snapshot refresh, and version detail lookup.
+- `diagram-workflow-routes` is the only HTTP entry point for workflow/version APIs.
+- `diagram-workflow-context` is responsible for choosing which read-only surface to load into the editor (`live`, `compare`, or `version`) without changing the mutable editor architecture.
+- `compare-render-model.ts` still only needs a baseline canonical schema plus the current Development diagram.
 
 Important high-risk files:
 
@@ -84,97 +74,107 @@ Important high-risk files:
 
 Frontend/backend/shared relationships:
 
-- Frontend derives `targetSchema` from the current in-memory development diagram via `diagramToCanonicalSchema(...)`.
-- Backend uses the stored live workflow snapshot as baseline and the client-provided canonical target as the migration source of truth.
-- `schema-sync-core` still owns change planning, risk classification, and SQL generation.
+- Frontend creates versions from the current in-memory Development diagram by sending:
+  - serialized diagram document
+  - canonical schema derived with `diagramToCanonicalSchema(...)`
+- Backend stores:
+  - immutable workflow snapshot row in `diagram_workflow_snapshots`
+  - user-facing version row in `diagram_versions`
+- Read-only version rendering uses the stored diagram document when available, and falls back to canonical-to-diagram reconstruction otherwise.
+- Version-based compare reuses the existing compare engine by swapping the baseline canonical schema only.
 
 ## Task Completed
 
 What this task was trying to achieve:
 
-- Add a Review button to the editor chrome for compare-capable diagrams.
-- Keep Review Changes read-only and structured for large diffs.
-- Add a migration workflow that separates preview, validation/preflight, execution, and result reporting.
-- Keep execution explicit and safe.
-- Avoid broad editor rewrites and avoid using compare overlay state as the execution source.
+- Add immutable per-diagram versions/snapshots of the current Development diagram.
+- Let users create versions, list them, inspect metadata, and open them in a read-only historical view.
+- Allow comparing Development against a selected version without rewriting compare mode or turning the editor into a multi-branch system.
 
 What was actually implemented:
 
-- Added a `Review` dropdown in the top toolbar when compare baseline data exists.
-- Added dropdown actions:
-    - `Review Changes`
-    - `Migration`
-- Built a structured `Review Changes` dialog that shows:
-    - summary cards for tables, fields, and relationships
-    - grouped `added` / `removed` / `changed` buckets
-    - item-level detail lines for changed properties
-    - supplemental migration-backed signals for constraints, indexes, and custom types when available
-- Built a `Migration` dialog that shows:
-    - migration preview generated from canonical live baseline vs current development canonical schema
-    - warnings / blockers / informational notes
-    - explicit preflight validation step
-    - explicit apply step with destructive confirmation handling
-    - success / failure result reporting with logs and executed SQL output
-- Added backend migration routes for:
-    - preview
-    - validate
-    - apply
-- Added backend `diagram-migration-service` to:
-    - generate change plans from workflow live snapshot + canonical target schema
-    - perform validation checks
-    - call the existing `apply-service`
-    - update the workflow live snapshot after successful apply so Compare reflects the new live state
+- Added persistent immutable version storage in the app database:
+  - snapshot rows stored in `diagram_workflow_snapshots`
+  - version metadata rows stored in new `diagram_versions`
+- Added backend workflow service methods and HTTP routes for:
+  - list versions
+  - get version detail
+  - create version
+- Added frontend create-version flow that captures:
+  - the current Development diagram document
+  - the current canonical schema
+  - optional name and note
+- Added a Versions sheet in the editor chrome with:
+  - version count
+  - version metadata list
+  - create version action
+  - open read-only action
+  - compare-to-Development action
+- Added read-only version mode with a visible immutable snapshot badge.
+- Added compare-against-version support using the existing compare render model and a version canonical schema baseline.
 
 Key decisions made:
 
-- Review Changes stays separate from Migration and remains read-only.
-- Migration preview/validation/apply all operate on canonical schemas, not compare canvas artifacts.
-- The frontend sends canonical target schema to the backend so preview/validation/apply use the current development head, including unsaved editor state.
-- Apply failures are surfaced back to the UI as structured result payloads with logs instead of only relying on thrown request errors.
+- Version compare uses URL state (`workflow=compare&compareVersionId=...`) instead of persisting a mutable compare-source choice on the server.
+- Version creation captures both a diagram document snapshot and a canonical schema snapshot.
+- Compare-based migration/review actions remain live-baseline-only; they are hidden when the compare baseline is a historical version.
+- Read-only version mode still uses the existing editor shell, but only with `readonly` and authoritative sync disabled.
 
 Approach intentionally avoided and why:
 
-- Did not overload the compare overlay model to drive execution because the design docs explicitly reject that.
-- Did not rewrite storage providers or persistence services because this workflow can be added without moving the development head.
-- Did not mix Versions/Restore work into this phase.
+- Did not turn `SchemaDashProvider` into a multi-head or multi-branch editor because the design docs explicitly reject that.
+- Did not implement restore-to-Development because safe restore needs explicit server validation, safety snapshots, and careful runtime/collaboration handling that would be risky to force into this phase.
+- Did not modify the core storage provider or persistence service because the versions workflow can sit beside the mutable Development document.
 
 ## Files Changed
 
 Files created:
 
-- `frontend/src/features/diagram-workflow/components/review-dropdown.tsx`
-    - toolbar Review button and dropdown entry point
-- `frontend/src/features/diagram-workflow/components/review-changes-dialog.tsx`
-    - structured read-only review surface
-- `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
-    - migration preview / validation / apply dialog
-- `frontend/src/features/diagram-workflow/components/migration-summary.tsx`
-    - summary cards and categorized change breakdown for migration preview
-- `frontend/src/features/diagram-workflow/components/migration-warning-list.tsx`
-    - reusable issue list for notes, warnings, and blockers
-- `frontend/src/features/diagram-workflow/lib/review-grouping.ts`
-    - transforms compare results and supplemental plan data into review-friendly grouped sections
-- `frontend/src/features/diagram-workflow/api/diagram-migration-client.ts`
-    - frontend client for preview / validate / apply migration routes
-- `frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx`
-- `frontend/src/features/diagram-workflow/components/review-changes-dialog.test.tsx`
-- `frontend/src/features/diagram-workflow/components/migration-dialog.test.tsx`
-- `frontend/src/features/diagram-workflow/lib/review-grouping.test.ts`
-- `backend/src/services/diagram-migration-service.ts`
-    - backend orchestration for preview / validate / apply
-- `backend/src/routes/diagram-migration-routes.ts`
-    - Fastify routes for migration workflow
-- `backend/test/diagram-migration-service.test.ts`
-    - backend tests for apply result handling and workflow live snapshot updates
+- `frontend/src/features/diagram-workflow/components/create-version-dialog.tsx`
+  - dialog for capturing a new immutable version from the current Development diagram
+- `frontend/src/features/diagram-workflow/components/versions-panel.tsx`
+  - right-side versions sheet with list/create/open/compare actions
+- `frontend/src/features/diagram-workflow/components/version-list-item.tsx`
+  - reusable metadata row for a single version entry
+- `frontend/src/features/diagram-workflow/components/version-view-badge.tsx`
+  - read-only badge shown when a historical snapshot is open
+- `frontend/src/features/diagram-workflow/lib/version-labels.ts`
+  - shared version display/origin/time formatting helpers
+- `frontend/src/features/diagram-workflow/components/versions-panel.test.tsx`
+  - versions list/open/compare UI behavior coverage
+- `frontend/src/features/diagram-workflow/components/version-view-badge.test.tsx`
+  - read-only version badge coverage
 
 Files modified:
 
+- `backend/src/schemas/diagram-workflow.ts`
+  - added version origin enum and create-version request schema
+- `backend/src/repositories/diagram-workflow-repository.ts`
+  - added migration 10, `diagram_versions`, version CRUD helpers, and transaction helper
+- `backend/src/services/diagram-workflow-service.ts`
+  - added create/list/get version behavior and version response shaping
+- `backend/src/routes/diagram-workflow-routes.ts`
+  - added version list/detail/create endpoints
+- `backend/test/diagram-workflow-service.test.ts`
+  - added immutable version creation/listing/open behavior coverage
+- `frontend/src/features/diagram-workflow/api/diagram-workflow-client.ts`
+  - added version DTOs and list/detail/create calls
+- `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
+  - added versions state, version detail caching, version mode, and version compare baseline loading
+- `frontend/src/features/diagram-workflow/components/live-status-chip.tsx`
+  - added explicit version read-only status badge
+- `frontend/src/features/diagram-workflow/components/compare-summary-chip.tsx`
+  - shows current compare baseline, including selected version labels
+- `frontend/src/features/diagram-workflow/components/review-dropdown.tsx`
+  - now hidden when compare is based on a version instead of live baseline
+- `frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx`
+  - updated to cover live-only gating
+- `frontend/src/pages/editor-page/workflow-editor-page.tsx`
+  - loads read-only version diagrams and waits for version compare baselines when needed
 - `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
-    - adds Review dropdown to editor chrome
-- `backend/src/context/app-context.ts`
-    - registers `diagramMigrationService`
-- `backend/src/app.ts`
-    - registers migration routes
+  - integrates the versions sheet and version-view badge
+- `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
+  - integrates the versions sheet and version-view badge in mobile chrome
 
 Important files intentionally not changed:
 
@@ -188,154 +188,160 @@ Important files intentionally not changed:
 
 Why those avoided files matter:
 
-- They are core persistence/state layers with high blast radius.
-- This task could be completed additively by using existing workflow and schema-sync seams.
+- They are high-blast-radius persistence/editor primitives.
+- This task stayed additive by using the existing workflow service, canonical schema helpers, and editor read-only mode instead of modifying the mutable editor foundation.
 
 ## Data / API / Workflow Changes
 
+App-database changes:
+
+- `diagram_workflow_snapshots`
+  - continues to store immutable snapshots
+  - now stores version snapshots created from Development with `snapshot_kind='version'`
+- `diagram_versions`
+  - new app-db table added in workflow repository migration 10
+  - fields include:
+    - `id`
+    - `diagram_id`
+    - `snapshot_id`
+    - `name`
+    - `description`
+    - `version_label`
+    - `pinned`
+    - `origin`
+    - `created_by_user_id`
+    - `created_at`
+
 New backend routes:
 
-- `POST /api/diagrams/:id/migration/preview`
-    - input: canonical target schema + optional expected live snapshot id
-    - output: generated plan, warnings/blockers, fingerprints, validation eligibility
-- `POST /api/diagrams/:id/migration/validate`
-    - input: canonical target schema + optional expected live snapshot id
-    - output: refreshed plan, validation checks, warnings/blockers, ready-to-apply boolean
-- `POST /api/diagrams/:id/migration/apply`
-    - input: canonical target schema + optional expected live snapshot id + destructive approval payload
-    - output: validation payload plus structured success/failure apply result
+- `GET /api/diagrams/:id/workflow/versions`
+  - returns per-diagram version summaries
+- `GET /api/diagrams/:id/workflow/versions/:versionId`
+  - returns full version detail including immutable snapshot payload
+- `POST /api/diagrams/:id/workflow/versions`
+  - creates a new immutable version from the provided Development diagram/canonical schema payload
 
-New workflow behavior:
+Frontend workflow changes:
 
-- Review button appears when compare-capable workflow data exists.
-- Review Changes can be opened even outside compare mode as long as the compare baseline exists.
-- Migration preview is generated from:
-    - baseline: workflow live snapshot canonical schema
-    - target: current development canonical schema
-- Validation checks currently include:
-    - connection reachable
-    - live baseline still matches expected baseline
-    - plan has no blocking canonical errors
-- Successful apply writes a new workflow live snapshot with source kind `apply` and updates workflow state to point Compare/Live Database at the new post-apply snapshot.
+- New URL state:
+  - `?workflow=version&versionId=<id>` opens a read-only historical snapshot
+  - `?workflow=compare&compareVersionId=<id>` compares the selected version against current Development
+- `Versions` button in editor chrome opens the new versions sheet.
+- Read-only version mode shows explicit immutable snapshot status.
+- Compare summary now names the active baseline.
+- Live-only review/migration actions are intentionally suppressed for version-based compare mode.
 
-Storage / compatibility notes:
+Compatibility / configuration notes:
 
 - No env var changes.
-- No database schema migration changes were needed for this task.
-- Metadata repository usage expanded through existing tables only; no new metadata tables were introduced.
+- No metadata-db changes.
+- No backup/export schema changes yet.
 
 ## Validation Performed
 
-What was tested:
+Targeted tests run:
 
-- Frontend targeted workflow tests:
-    - `npm run test:web -- review-dropdown review-changes-dialog migration-dialog review-grouping`
-- Backend targeted workflow tests:
-    - `npm run test -w @schemadash/backend -- diagram-migration-service diagram-workflow-service`
-- Backend compile check:
-    - `npm run typecheck -w @schemadash/backend`
-- Targeted eslint runs on all touched workflow/migration files
+- `npm run test -w @schemadash/backend -- diagram-workflow-service.test.ts`
+- `npm run test:web -- --run frontend/src/features/diagram-workflow/components/workflow-mode-switcher.test.tsx frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx frontend/src/features/diagram-workflow/components/versions-panel.test.tsx frontend/src/features/diagram-workflow/components/version-view-badge.test.tsx`
+- `npm run typecheck -w @schemadash/backend -- --pretty false`
 
-What these checks verified:
+What was verified:
 
-- Review dropdown visibility and actions
-- Structured review dialog rendering
-- Review grouping logic
-- Migration preview rendering
-- Validation step rendering
-- Destructive confirmation gating
-- Failed apply result reporting
-- Successful apply result reporting and workflow refresh callback
-- Backend apply orchestration updates workflow live snapshot after success
-- Backend apply failures surface stored audit logs
+- live workflow behavior still binds and refreshes without mutating Development
+- versions can be created from Development
+- stored versions remain immutable even after Development changes
+- versions list loads and shows metadata
+- read-only version mode shows immutable snapshot status
+- compare can be launched from a selected version
+- live-only review/migration controls stay hidden for version-based compare
 
 What remains unverified:
 
-- Full browser/manual QA against a real PostgreSQL database connection
-- End-to-end validation of preview/validate/apply through the actual UI with live credentials
-- Repo-wide frontend typecheck
+- manual browser QA of the versions flow in a live running app
+- end-to-end creation and inspection against real user authentication/share-token combinations
+- repo-wide root typecheck, which still has pre-existing unrelated frontend issues on this branch
 
 Known limitations / risks:
 
-- Root `npm run typecheck` is still not clean because of pre-existing unrelated frontend typing issues that were already present on the branch before this task. Backend typecheck is clean.
-- Migration preview currently creates fresh metadata baseline/change-plan records each time preview/validate/apply is run. This is acceptable for now but could be optimized later if metadata churn becomes a concern.
+- Restore-to-Development was intentionally deferred.
+- Compare baseline selection for versions is URL-driven client state, not persisted server preference.
+- Backup/export compatibility for versions is not implemented yet.
 
 ## Outstanding Work
 
-Not done yet:
+Not done in this phase:
 
-- Versions UI
-- Restore to Development
-- Compare against historical snapshots
-- End-to-end manual QA with a live PostgreSQL instance
-- Audit/history browsing UI for past migration runs
+- restore-to-Development workflow
+- automatic safety snapshot creation before restore/apply
+- backup/export portability for workflow versions
+- richer version metadata controls such as pinning or milestone-specific UX
+- persisted server-side compare baseline preference for versions, if product still wants that later
 
-Next recommended implementation phase:
+Recommended next phase:
 
-- Run end-to-end browser QA against a real database and decide whether to add migration history / audit inspection UI or move next to Versions/Snapshots, depending on product priority.
+- implement a narrow, explicit restore-to-Development flow with:
+  - server validation
+  - automatic safety snapshot creation
+  - immutable source version preservation
+  - careful collaboration/runtime handling
 
-Dependencies / risks for future work:
+Risks/dependencies for the next phase:
 
-- Do not change the rule that canonical schema is the execution source of truth.
-- Do not make apply depend on compare overlay state.
-- Keep high-risk persistence/provider files untouched unless the next phase genuinely requires them.
-- If future work touches restore/versioning, keep Development as the only mutable head.
+- restore must not mutate stored snapshots
+- restore must not destabilize collaboration session/version counters
+- restore likely needs a clearer interaction with `persistence-service` and the authoritative Development document
 
 ## Instructions for the Next Codex Session
 
-Read in this order:
+Exact reading order:
 
 1. `docs/live-database-development-compare-versions-design.md`
 2. `docs/live-db-compare-feature-map.md`
 3. `docs/codex-handoff.md`
-4. `frontend/src/features/diagram-workflow/components/review-dropdown.tsx`
-5. `frontend/src/features/diagram-workflow/components/review-changes-dialog.tsx`
-6. `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
-7. `frontend/src/features/diagram-workflow/lib/review-grouping.ts`
-8. `backend/src/services/diagram-migration-service.ts`
-9. `backend/src/routes/diagram-migration-routes.ts`
-10. `backend/src/services/apply-service.ts`
+4. `backend/src/repositories/diagram-workflow-repository.ts`
+5. `backend/src/services/diagram-workflow-service.ts`
+6. `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
+7. `frontend/src/features/diagram-workflow/components/versions-panel.tsx`
+8. `frontend/src/pages/editor-page/workflow-editor-page.tsx`
 
-Inspect next if continuing this workflow:
+What to inspect first if continuing versions/restore work:
 
-- `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
-- `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
 - `backend/src/services/diagram-workflow-service.ts`
-- `backend/test/diagram-migration-service.test.ts`
-- `frontend/src/features/diagram-workflow/components/migration-dialog.test.tsx`
+- `backend/src/repositories/diagram-workflow-repository.ts`
+- `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
+- `frontend/src/features/diagram-workflow/components/versions-panel.tsx`
 
 What to avoid breaking:
 
-- Development must stay editable and authoritative.
-- Compare must stay read-only.
-- Review Changes must stay read-only.
-- Migration apply must stay explicit and must continue updating the workflow live snapshot only after success.
+- Development must remain the only mutable editor head.
+- Review/Migration should stay tied to live compare, not historical version compare.
+- High-risk persistence/editor core files should stay untouched unless restore truly requires it.
 
 Where to continue implementation:
 
-- If improving UX: continue in `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
-- If improving safety/execution semantics: continue in `backend/src/services/diagram-migration-service.ts`
-- If extending review categorization: continue in `frontend/src/features/diagram-workflow/lib/review-grouping.ts`
+- add restore endpoints and service logic in `backend/src/services/diagram-workflow-service.ts`
+- add restore UI from `frontend/src/features/diagram-workflow/components/versions-panel.tsx`
+- if restore requires Development mutation, trace that carefully through `backend/src/services/persistence-service.ts` and only make minimal isolated changes
 
 ## Git Summary
 
 Working branch:
 
-- `feature/review-and-migration-workflow`
+- `feature/versions-and-snapshots-workflow`
 
 Pull request title:
 
-- `Add review and migration workflow after compare mode`
+- `Add diagram versions and immutable snapshot workflow`
 
-Commits created for this task:
+Commit list created for this task:
 
-- `feat: add review dropdown and workflow entry points`
-    - adds the Review button, dropdown actions, and initial dialog entry points
-- `feat: add structured review changes UI and grouping`
-    - builds the grouped read-only review experience and supplemental change-plan signals
-- `feat: add migration planning validation and preview flow`
-    - adds backend preview/validate routes and frontend migration preview UI
-- `feat: add migration execution UX and result handling`
-    - adds explicit apply handling, confirmation, result logs, and workflow live snapshot refresh after success
-- `test: validate review and migration workflow behavior`
-    - adds focused frontend/backend tests for review and migration behavior and updates this handoff document
+- `feat: add immutable diagram snapshot and version persistence`
+  - added app-db version persistence, repository helpers, and backend service support
+- `feat: add create version flow and version metadata support`
+  - added version routes/client types and the create-version capture dialog
+- `feat: add versions list and read-only version view`
+  - added versions sheet, version mode, immutable snapshot badge, and read-only version rendering
+- `feat: add compare against selected version`
+  - added version-backed compare launches, compare baseline labeling, and live-only review gating
+- `test: validate version creation listing and read-only behavior`
+  - adds targeted backend/frontend tests and refreshes this handoff for future sessions
