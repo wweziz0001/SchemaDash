@@ -84,6 +84,7 @@ What was implemented:
   - relationships
 - Added compare summary chrome and an on-canvas legend.
 - Tightened compare mode read-only behavior so canvas dragging/resizing/relationship editing/schema-sync entrypoints are disabled in compare mode.
+- Added a follow-up browser compatibility fix so frontend compare code imports compare helpers from `@schemadash/schema-sync-core/compare` subpath exports instead of the root barrel, avoiding accidental inclusion of the server-only hash module that depends on `node:crypto`.
 
 Important decisions made:
 
@@ -110,7 +111,7 @@ Files created in this task:
 - `packages/schema-sync-core/src/__tests__/compare.test.ts`
   - shared compare-engine classification test
 - `frontend/src/features/diagram-workflow/lib/compare-render-model.ts`
-  - builds the derived compare diagram plus compare metadata maps
+  - builds the derived compare diagram plus compare metadata maps and uses browser-safe compare subpath imports
 - `frontend/src/features/diagram-workflow/lib/compare-render-model.test.ts`
   - validates compare render-model output
 - `frontend/src/features/diagram-workflow/components/compare-summary-chip.tsx`
@@ -120,6 +121,8 @@ Files created in this task:
 
 Files modified in this task:
 
+- `packages/schema-sync-core/package.json`
+  - adds compare-only subpath exports for browser-safe frontend imports
 - `packages/schema-sync-core/src/index.ts`
   - exports compare modules
 - `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
@@ -190,6 +193,7 @@ Focused validation that passed:
 
 - `npm run test -w @schemadash/schema-sync-core -- --run src/__tests__/compare.test.ts`
 - `npx vitest run --config frontend/vitest.config.ts frontend/src/features/diagram-workflow/components/workflow-mode-switcher.test.tsx frontend/src/features/diagram-workflow/components/live-status-chip.test.tsx frontend/src/features/diagram-workflow/lib/compare-render-model.test.ts`
+- `npm run build:web`
 - Targeted eslint runs on all newly touched compare/workflow/canvas files during implementation.
 
 What those tests verified:
@@ -198,6 +202,7 @@ What those tests verified:
 - Compare render model preserves development layout and adds live-only entities with compare metadata.
 - Compare mode button activation gating works.
 - Compare read-only status badge appears in UI.
+- Frontend production bundling no longer pulls `node:crypto` into browser compare code.
 
 What was manually verified by code inspection / targeted checks:
 
@@ -254,6 +259,7 @@ Inspect first if continuing compare/version work:
 - `frontend/src/features/diagram-workflow/components/workflow-mode-switcher.tsx`
 - `frontend/src/features/diagram-workflow/components/compare-summary-chip.tsx`
 - `frontend/src/features/diagram-workflow/components/compare-legend.tsx`
+- `packages/schema-sync-core/package.json`
 - `frontend/src/pages/editor-page/canvas/table-node/table-node.tsx`
 - `frontend/src/pages/editor-page/canvas/table-node/table-node-field.tsx`
 - `frontend/src/pages/editor-page/canvas/relationship-edge/relationship-edge.tsx`
@@ -269,6 +275,7 @@ Where to continue:
 
 - For versions/snapshots: stay in the workflow layer and shared compare core; do not start by refactoring the editor provider.
 - Reuse `compareCanonicalSchemas()` and `buildCompareRenderModel()` instead of inventing a second diff/view model.
+- Keep browser imports pointed at `@schemadash/schema-sync-core/compare` and `@schemadash/schema-sync-core/compare-types` instead of the root `@schemadash/schema-sync-core` barrel when client code does not need server-only exports.
 
 ## 9. Git Summary
 
@@ -292,3 +299,5 @@ Commit list created for this task:
   - Added compare legend/summary UI and tightened readonly compare behavior.
 - `9d6a244 test: validate compare classification and rendering behavior`
   - Added targeted shared/frontend tests for compare classification, render-model output, and workflow UI state.
+- `fix: avoid browser crypto import in compare mode`
+  - Switched frontend compare imports to `schema-sync-core` compare subpaths and added matching package exports so Vite does not pull the server-only `node:crypto` hash module into the browser bundle.

@@ -3,9 +3,9 @@ import type {
     CompareSchemaResult,
     CompareTableResult,
     CompareValueChange,
-    CanonicalSchema,
-} from '@schemadash/schema-sync-core';
-import { compareCanonicalSchemas } from '@schemadash/schema-sync-core';
+} from '@schemadash/schema-sync-core/compare-types';
+import type { CanonicalSchema } from '@schemadash/schema-sync-core';
+import { compareCanonicalSchemas } from '@schemadash/schema-sync-core/compare';
 import type { DBField, DBRelationship, DBTable, Diagram } from '@/lib/domain';
 import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
 import { canonicalSchemaToDiagram } from '@/features/schema-sync/lib/canonical-adapters';

@@ -9,6 +9,14 @@
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js"
+        },
+        "./compare": {
+            "types": "./dist/compare.d.ts",
+            "import": "./dist/compare.js"
+        },
+        "./compare-types": {
+            "types": "./dist/compare-types.d.ts",
+            "import": "./dist/compare-types.js"
         }
     },
     "scripts": {
