@@ -175,7 +175,7 @@ export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
             setSelectedConnectionIdState(connectionId);
             setPreviewPlan(undefined);
             setApplyResult(undefined);
-            await workflow?.refreshWorkflow();
+            workflow?.setWorkflowRecord(response.workflow);
             toast({
                 title: 'Live database synced',
                 description:

@@ -26,12 +26,35 @@ export interface DiagramWorkflowContextValue {
     liveDiagram?: Diagram;
     liveModeEnabled: boolean;
     refreshWorkflow: () => Promise<void>;
+    setWorkflowRecord: (workflow?: DiagramWorkflowRecord) => void;
     setActiveMode: (mode: DiagramWorkflowMode) => void;
 }
 
 const DiagramWorkflowContext = createContext<
     DiagramWorkflowContextValue | undefined
 >(undefined);
+
+const mergeWorkflowRecord = (
+    current: DiagramWorkflowRecord | undefined,
+    next: DiagramWorkflowRecord | undefined
+) => {
+    if (!next) {
+        return next;
+    }
+
+    if (
+        next.liveSnapshot ||
+        !next.liveSnapshotId ||
+        current?.liveSnapshot?.id !== next.liveSnapshotId
+    ) {
+        return next;
+    }
+
+    return {
+        ...next,
+        liveSnapshot: current.liveSnapshot,
+    };
+};
 
 const buildLiveDiagram = (
     workflow: DiagramWorkflowRecord
@@ -63,20 +86,29 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
     const requestedMode =
         searchParams.get('workflow') === 'live' ? 'live' : 'development';
 
+    const setWorkflowRecord = useCallback(
+        (nextWorkflow?: DiagramWorkflowRecord) => {
+            setWorkflow((current) =>
+                mergeWorkflowRecord(current, nextWorkflow)
+            );
+        },
+        []
+    );
+
     const refreshWorkflow = useCallback(async () => {
         if (!diagramId) {
-            setWorkflow(undefined);
+            setWorkflowRecord(undefined);
             return;
         }
 
         setLoading(true);
         try {
             const response = await diagramWorkflowClient.getWorkflow(diagramId);
-            setWorkflow(response.workflow);
+            setWorkflowRecord(response.workflow);
         } finally {
             setLoading(false);
         }
-    }, [diagramId]);
+    }, [diagramId, setWorkflowRecord]);
 
     useEffect(() => {
         void refreshWorkflow();
@@ -101,7 +133,7 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
         () => (workflow ? buildLiveDiagram(workflow) : undefined),
         [workflow]
     );
-    const liveModeEnabled = !!workflow?.liveSnapshot;
+    const liveModeEnabled = !!workflow?.liveSnapshotId;
     const activeMode =
         requestedMode === 'live' && liveModeEnabled ? 'live' : 'development';
 
@@ -115,6 +147,7 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
             liveDiagram,
             liveModeEnabled,
             refreshWorkflow,
+            setWorkflowRecord,
             setActiveMode,
         }),
         [
@@ -126,6 +159,7 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
             refreshWorkflow,
             requestedMode,
             setActiveMode,
+            setWorkflowRecord,
             workflow,
         ]
     );
