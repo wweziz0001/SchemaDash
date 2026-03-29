@@ -10,6 +10,7 @@ import { TopNavbarMock } from './top-navbar/top-navbar-mock';
 const WorkflowEditorPageContent: React.FC = () => {
     const {
         activeMode,
+        compareRenderModel,
         diagramId,
         liveDiagram,
         loading,
@@ -17,7 +18,7 @@ const WorkflowEditorPageContent: React.FC = () => {
         workflow,
     } = useDiagramWorkflow();
 
-    if (diagramId && requestedMode === 'live' && loading && !workflow) {
+    if (diagramId && requestedMode !== 'development' && loading && !workflow) {
         return (
             <section className="flex h-screen w-screen flex-col overflow-hidden bg-background">
                 <TopNavbarMock />
@@ -30,10 +31,18 @@ const WorkflowEditorPageContent: React.FC = () => {
 
     return (
         <EditorPage
-            key={`${diagramId ?? 'workspace'}:${activeMode}:${workflow?.liveSnapshotId ?? 'none'}`}
-            initialDiagram={activeMode === 'live' ? liveDiagram : undefined}
-            readonly={activeMode === 'live'}
-            disableAuthoritativeSync={activeMode === 'live'}
+            key={`${diagramId ?? 'workspace'}:${activeMode}:${workflow?.liveSnapshotId ?? 'none'}:${compareRenderModel?.compareResult.summary.tables.total ?? 0}`}
+            initialDiagram={
+                activeMode === 'live'
+                    ? liveDiagram
+                    : activeMode === 'compare'
+                      ? compareRenderModel?.diagram
+                      : undefined
+            }
+            readonly={activeMode === 'live' || activeMode === 'compare'}
+            disableAuthoritativeSync={
+                activeMode === 'live' || activeMode === 'compare'
+            }
         />
     );
 };
