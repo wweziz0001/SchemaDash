@@ -15,10 +15,21 @@ const WorkflowEditorPageContent: React.FC = () => {
         liveDiagram,
         loading,
         requestedMode,
+        selectedVersion,
+        versionDiagram,
         workflow,
     } = useDiagramWorkflow();
 
-    if (diagramId && requestedMode !== 'development' && loading && !workflow) {
+    const waitingForReadonlyTarget =
+        (requestedMode === 'version' && !selectedVersion) ||
+        (requestedMode !== 'version' && !workflow);
+
+    if (
+        diagramId &&
+        requestedMode !== 'development' &&
+        loading &&
+        waitingForReadonlyTarget
+    ) {
         return (
             <section className="flex h-screen w-screen flex-col overflow-hidden bg-background">
                 <TopNavbarMock />
@@ -35,13 +46,21 @@ const WorkflowEditorPageContent: React.FC = () => {
             initialDiagram={
                 activeMode === 'live'
                     ? liveDiagram
-                    : activeMode === 'compare'
-                      ? compareRenderModel?.diagram
-                      : undefined
+                    : activeMode === 'version'
+                      ? versionDiagram
+                      : activeMode === 'compare'
+                        ? compareRenderModel?.diagram
+                        : undefined
             }
-            readonly={activeMode === 'live' || activeMode === 'compare'}
+            readonly={
+                activeMode === 'live' ||
+                activeMode === 'compare' ||
+                activeMode === 'version'
+            }
             disableAuthoritativeSync={
-                activeMode === 'live' || activeMode === 'compare'
+                activeMode === 'live' ||
+                activeMode === 'compare' ||
+                activeMode === 'version'
             }
         />
     );

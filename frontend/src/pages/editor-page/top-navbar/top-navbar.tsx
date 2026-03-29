@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import SchemaDashLogo from '@/assets/logo-light.png';
 import SchemaDashDarkLogo from '@/assets/logo-dark.png';
 import { useTheme } from '@/hooks/use-theme';
@@ -17,7 +17,8 @@ import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/
 import { LiveStatusChip } from '@/features/diagram-workflow/components/live-status-chip';
 import { CompareSummaryChip } from '@/features/diagram-workflow/components/compare-summary-chip';
 import { ReviewDropdown } from '@/features/diagram-workflow/components/review-dropdown';
-import { CreateVersionDialog } from '@/features/diagram-workflow/components/create-version-dialog';
+import { VersionsPanel } from '@/features/diagram-workflow/components/versions-panel';
+import { VersionViewBadge } from '@/features/diagram-workflow/components/version-view-badge';
 
 export interface TopNavbarProps {}
 
@@ -26,7 +27,6 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
     const { enabled, user, logout } = useAuth();
     const workflow = useOptionalDiagramWorkflow();
     const isAdmin = enabled && user?.role === 'admin';
-    const [createVersionOpen, setCreateVersionOpen] = useState(false);
 
     const renderStars = useCallback(() => {
         return (
@@ -66,16 +66,9 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                 <WorkflowModeSwitcher />
                 <CompareSummaryChip />
                 <LiveStatusChip />
+                <VersionViewBadge />
                 <ReviewDropdown />
-                {workflow?.workflow?.diagramAccess !== 'view' ? (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCreateVersionOpen(true)}
-                    >
-                        Create Version
-                    </Button>
-                ) : null}
+                <VersionsPanel />
                 {workflow?.activeMode === 'development' ? (
                     <SchemaSyncToolbarButton />
                 ) : null}
@@ -109,10 +102,6 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                 {renderStars()}
                 <LanguageNav />
             </div>
-            <CreateVersionDialog
-                open={createVersionOpen}
-                onOpenChange={setCreateVersionOpen}
-            />
         </nav>
     );
 };

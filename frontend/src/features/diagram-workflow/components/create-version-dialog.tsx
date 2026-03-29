@@ -75,8 +75,11 @@ export const CreateVersionDialog: React.FC<CreateVersionDialogProps> = ({
                 ),
                 diagramDocument: serializeDiagram(workflow.developmentDiagram),
             });
-            await workflow.refreshWorkflow();
-            await onCreated?.();
+            if (onCreated) {
+                await onCreated();
+            } else {
+                await workflow.refreshWorkflow();
+            }
             onOpenChange(false);
             toast({
                 title: 'Version created',

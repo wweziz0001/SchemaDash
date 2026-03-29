@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import SchemaDashLogo from '@/assets/logo-2.png';
 import { DiagramName } from './diagram-name';
 import { LanguageNav } from './language-nav/language-nav';
@@ -15,7 +15,8 @@ import { WorkflowModeSwitcher } from '@/features/diagram-workflow/components/wor
 import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
 import { LiveStatusChip } from '@/features/diagram-workflow/components/live-status-chip';
 import { CompareSummaryChip } from '@/features/diagram-workflow/components/compare-summary-chip';
-import { CreateVersionDialog } from '@/features/diagram-workflow/components/create-version-dialog';
+import { VersionsPanel } from '@/features/diagram-workflow/components/versions-panel';
+import { VersionViewBadge } from '@/features/diagram-workflow/components/version-view-badge';
 
 export interface TopNavbarMobileProps {}
 
@@ -23,7 +24,6 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
     const { enabled, user, logout } = useAuth();
     const workflow = useOptionalDiagramWorkflow();
     const isAdmin = enabled && user?.role === 'admin';
-    const [createVersionOpen, setCreateVersionOpen] = useState(false);
     const renderStars = useCallback(() => {
         return (
             <iframe
@@ -63,15 +63,7 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {workflow?.workflow?.diagramAccess !== 'view' ? (
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setCreateVersionOpen(true)}
-                            >
-                                Create Version
-                            </Button>
-                        ) : null}
+                        <VersionsPanel />
                         {workflow?.activeMode === 'development' ? (
                             <SchemaSyncToolbarButton />
                         ) : null}
@@ -113,10 +105,9 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
             <div className="flex justify-center px-2 pb-2">
                 <LiveStatusChip />
             </div>
-            <CreateVersionDialog
-                open={createVersionOpen}
-                onOpenChange={setCreateVersionOpen}
-            />
+            <div className="flex justify-center px-2 pb-2">
+                <VersionViewBadge />
+            </div>
         </nav>
     );
 };

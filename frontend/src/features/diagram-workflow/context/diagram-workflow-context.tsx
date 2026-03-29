@@ -17,29 +17,42 @@ import {
 import {
     diagramWorkflowClient,
     type DiagramWorkflowRecord,
+    type DiagramWorkflowVersionRecord,
+    type DiagramWorkflowVersionSummary,
 } from '../api/diagram-workflow-client';
 import {
     buildCompareRenderModel,
     type CompareRenderModel,
 } from '../lib/compare-render-model';
 
-export type DiagramWorkflowMode = 'development' | 'live' | 'compare';
+export type DiagramWorkflowMode =
+    | 'development'
+    | 'live'
+    | 'compare'
+    | 'version';
 
 export interface DiagramWorkflowContextValue {
     diagramId?: string;
     workflow?: DiagramWorkflowRecord;
+    versions: DiagramWorkflowVersionSummary[];
     developmentDiagram?: Diagram;
     setDevelopmentDiagram: (diagram?: Diagram) => void;
     loading: boolean;
     requestedMode: DiagramWorkflowMode;
     activeMode: DiagramWorkflowMode;
     liveDiagram?: Diagram;
+    versionDiagram?: Diagram;
     compareRenderModel?: CompareRenderModel;
+    compareSourceKind: 'live' | 'version' | null;
+    compareVersion?: DiagramWorkflowVersionRecord;
+    selectedVersion?: DiagramWorkflowVersionRecord;
     liveModeEnabled: boolean;
     compareModeEnabled: boolean;
     refreshWorkflow: () => Promise<void>;
     setWorkflowRecord: (workflow?: DiagramWorkflowRecord) => void;
     setActiveMode: (mode: DiagramWorkflowMode) => void;
+    openVersion: (versionId: string) => void;
+    compareVersionToDevelopment: (versionId: string) => void;
 }
 
 const DiagramWorkflowContext = createContext<
@@ -88,20 +101,60 @@ const buildLiveDiagram = (
     });
 };
 
+const buildVersionDiagram = ({
+    workflow,
+    version,
+}: {
+    workflow?: DiagramWorkflowRecord;
+    version?: DiagramWorkflowVersionRecord;
+}): Diagram | undefined => {
+    if (!version) {
+        return undefined;
+    }
+
+    if (version.snapshot.diagramDocument) {
+        return deserializeDiagram(version.snapshot.diagramDocument);
+    }
+
+    return canonicalSchemaToDiagram({
+        canonicalSchema: version.snapshot.canonicalSchema,
+        diagramId: workflow?.diagramId ?? version.diagramId,
+        diagramName:
+            workflow?.diagramName ?? version.name ?? version.versionLabel,
+    });
+};
+
 export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
     children,
 }) => {
     const { diagramId } = useParams<{ diagramId: string }>();
     const [searchParams, setSearchParams] = useSearchParams();
     const [workflow, setWorkflow] = useState<DiagramWorkflowRecord>();
+    const [versions, setVersions] = useState<DiagramWorkflowVersionSummary[]>(
+        []
+    );
+    const [versionRecords, setVersionRecords] = useState<
+        Record<string, DiagramWorkflowVersionRecord>
+    >({});
     const [developmentDiagram, setDevelopmentDiagram] = useState<Diagram>();
-    const [loading, setLoading] = useState(false);
+    const [loadingWorkflow, setLoadingWorkflow] = useState(false);
+    const [loadingVersionRecord, setLoadingVersionRecord] = useState(false);
+    const requestedWorkflow = searchParams.get('workflow');
     const requestedMode =
-        searchParams.get('workflow') === 'live'
-            ? 'live'
-            : searchParams.get('workflow') === 'compare'
-              ? 'compare'
-              : 'development';
+        requestedWorkflow === 'version' && searchParams.get('versionId')
+            ? 'version'
+            : requestedWorkflow === 'live'
+              ? 'live'
+              : requestedWorkflow === 'compare'
+                ? 'compare'
+                : 'development';
+    const requestedVersionId =
+        requestedMode === 'version' ? searchParams.get('versionId') : null;
+    const requestedCompareVersionId =
+        requestedMode === 'compare'
+            ? searchParams.get('compareVersionId')
+            : null;
+    const loading = loadingWorkflow || loadingVersionRecord;
 
     const setWorkflowRecord = useCallback(
         (nextWorkflow?: DiagramWorkflowRecord) => {
@@ -114,31 +167,91 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
     const setDevelopmentDiagramRecord = useCallback((nextDiagram?: Diagram) => {
         setDevelopmentDiagram(nextDiagram);
     }, []);
+    const setVersionRecord = useCallback(
+        (nextVersion?: DiagramWorkflowVersionRecord) => {
+            if (!nextVersion) {
+                return;
+            }
+
+            setVersionRecords((current) => ({
+                ...current,
+                [nextVersion.id]: nextVersion,
+            }));
+        },
+        []
+    );
+
+    const ensureVersionRecord = useCallback(
+        async (versionId: string) => {
+            if (!diagramId) {
+                return undefined;
+            }
+
+            const cached = versionRecords[versionId];
+            if (cached) {
+                return cached;
+            }
+
+            setLoadingVersionRecord(true);
+            try {
+                const response = await diagramWorkflowClient.getVersion(
+                    diagramId,
+                    versionId
+                );
+                setVersionRecord(response.version);
+                return response.version;
+            } finally {
+                setLoadingVersionRecord(false);
+            }
+        },
+        [diagramId, setVersionRecord, versionRecords]
+    );
 
     const refreshWorkflow = useCallback(async () => {
         if (!diagramId) {
             setWorkflowRecord(undefined);
+            setVersions([]);
+            setVersionRecords({});
             setDevelopmentDiagram(undefined);
             return;
         }
 
-        setLoading(true);
+        setLoadingWorkflow(true);
         try {
-            const [workflowResponse, diagramResponse] = await Promise.all([
-                diagramWorkflowClient.getWorkflow(diagramId),
-                persistenceClient.getDiagram(diagramId),
-            ]);
+            const [workflowResponse, diagramResponse, versionsResponse] =
+                await Promise.all([
+                    diagramWorkflowClient.getWorkflow(diagramId),
+                    persistenceClient.getDiagram(diagramId),
+                    diagramWorkflowClient.listVersions(diagramId),
+                ]);
 
             setDevelopmentDiagram(deserializeDiagram(diagramResponse.diagram));
             setWorkflowRecord(workflowResponse.workflow);
+            setVersions(versionsResponse.items);
         } finally {
-            setLoading(false);
+            setLoadingWorkflow(false);
         }
     }, [diagramId, setWorkflowRecord]);
 
     useEffect(() => {
         void refreshWorkflow();
     }, [refreshWorkflow]);
+
+    useEffect(() => {
+        if (!requestedVersionId) {
+            return;
+        }
+
+        void ensureVersionRecord(requestedVersionId);
+    }, [ensureVersionRecord, requestedVersionId]);
+
+    useEffect(() => {
+        if (!requestedCompareVersionId) {
+            return;
+        }
+
+        void ensureVersionRecord(requestedCompareVersionId);
+    }, [ensureVersionRecord, requestedCompareVersionId]);
 
     const setActiveMode = useCallback(
         (mode: DiagramWorkflowMode) => {
@@ -148,10 +261,44 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
                 nextParams.set('workflow', 'live');
             } else if (mode === 'compare') {
                 nextParams.set('workflow', 'compare');
+                nextParams.delete('compareVersionId');
+                nextParams.delete('versionId');
+            } else if (mode === 'version' && nextParams.get('versionId')) {
+                nextParams.set('workflow', 'version');
             } else {
                 nextParams.delete('workflow');
             }
 
+            if (mode !== 'compare') {
+                nextParams.delete('compareVersionId');
+            }
+
+            if (mode !== 'version') {
+                nextParams.delete('versionId');
+            }
+
+            setSearchParams(nextParams, { replace: true });
+        },
+        [searchParams, setSearchParams]
+    );
+
+    const openVersion = useCallback(
+        (versionId: string) => {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.set('workflow', 'version');
+            nextParams.set('versionId', versionId);
+            nextParams.delete('compareVersionId');
+            setSearchParams(nextParams, { replace: true });
+        },
+        [searchParams, setSearchParams]
+    );
+
+    const compareVersionToDevelopment = useCallback(
+        (versionId: string) => {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.set('workflow', 'compare');
+            nextParams.set('compareVersionId', versionId);
+            nextParams.delete('versionId');
             setSearchParams(nextParams, { replace: true });
         },
         [searchParams, setSearchParams]
@@ -161,58 +308,96 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
         () => (workflow ? buildLiveDiagram(workflow) : undefined),
         [workflow]
     );
+    const selectedVersion = requestedVersionId
+        ? versionRecords[requestedVersionId]
+        : undefined;
+    const compareVersion = requestedCompareVersionId
+        ? versionRecords[requestedCompareVersionId]
+        : undefined;
+    const versionDiagram = useMemo(
+        () =>
+            buildVersionDiagram({
+                workflow,
+                version: selectedVersion,
+            }),
+        [selectedVersion, workflow]
+    );
     const liveModeEnabled = !!workflow?.liveSnapshotId;
-    const compareModeEnabled = !!workflow?.liveSnapshot && !!developmentDiagram;
+    const compareSourceKind = requestedCompareVersionId
+        ? 'version'
+        : workflow?.liveSnapshot
+          ? 'live'
+          : null;
+    const compareBaselineSchema = requestedCompareVersionId
+        ? compareVersion?.snapshot.canonicalSchema
+        : workflow?.liveSnapshot?.canonicalSchema;
+    const compareModeEnabled = !!compareBaselineSchema && !!developmentDiagram;
     const compareRenderModel = useMemo(
         () =>
             requestedMode === 'compare' &&
-            workflow?.liveSnapshot &&
+            compareBaselineSchema &&
             developmentDiagram
                 ? buildCompareRenderModel({
-                      baselineSchema: workflow.liveSnapshot.canonicalSchema,
+                      baselineSchema: compareBaselineSchema,
                       developmentDiagram,
                   })
                 : undefined,
-        [developmentDiagram, requestedMode, workflow?.liveSnapshot]
+        [compareBaselineSchema, developmentDiagram, requestedMode]
     );
     const activeMode =
-        requestedMode === 'compare' && compareModeEnabled
-            ? 'compare'
-            : requestedMode === 'live' && liveModeEnabled
-              ? 'live'
-              : 'development';
+        requestedMode === 'version' && versionDiagram
+            ? 'version'
+            : requestedMode === 'compare' && compareModeEnabled
+              ? 'compare'
+              : requestedMode === 'live' && liveModeEnabled
+                ? 'live'
+                : 'development';
 
     const value = useMemo<DiagramWorkflowContextValue>(
         () => ({
             diagramId,
             workflow,
+            versions,
             developmentDiagram,
             setDevelopmentDiagram: setDevelopmentDiagramRecord,
             loading,
             requestedMode,
             activeMode,
             liveDiagram,
+            versionDiagram,
             compareRenderModel,
+            compareSourceKind,
+            compareVersion,
+            selectedVersion,
             liveModeEnabled,
             compareModeEnabled,
             refreshWorkflow,
             setWorkflowRecord,
             setActiveMode,
+            openVersion,
+            compareVersionToDevelopment,
         }),
         [
             activeMode,
             compareModeEnabled,
             compareRenderModel,
+            compareSourceKind,
+            compareVersion,
             developmentDiagram,
             diagramId,
             liveDiagram,
             liveModeEnabled,
             loading,
+            openVersion,
+            compareVersionToDevelopment,
             refreshWorkflow,
             requestedMode,
             setActiveMode,
             setDevelopmentDiagramRecord,
             setWorkflowRecord,
+            selectedVersion,
+            versionDiagram,
+            versions,
             workflow,
         ]
     );
