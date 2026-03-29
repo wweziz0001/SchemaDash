@@ -380,6 +380,17 @@ const hasMatchingUniqueReference = (
     });
 };
 
+const findTargetTable = (
+    schema: CanonicalSchema,
+    schemaName: string,
+    tableName: string
+) =>
+    schema.tables.find(
+        (table) =>
+            normalizeName(table.schemaName) === normalizeName(schemaName) &&
+            normalizeName(table.name) === normalizeName(tableName)
+    );
+
 const summarize = (
     changes: SchemaChange[],
     warnings: RiskWarning[]
@@ -928,6 +939,36 @@ export const createChangePlan = ({
                         `${change.table.schemaName}.${change.table.name}.${column.name}`
                     );
                 }
+                if (
+                    change.table.primaryKey &&
+                    !resolveColumnNames(
+                        change.table,
+                        change.table.primaryKey.columnIds
+                    )?.length
+                ) {
+                    analyzedWarnings.push({
+                        code: 'primary_key_columns_missing',
+                        level: 'blocked',
+                        title: 'Primary key columns could not be resolved',
+                        message: `Primary key ${change.table.primaryKey.name ?? change.table.primaryKey.id} on ${change.table.schemaName}.${change.table.name} does not reference any valid target columns.`,
+                        changeIds: [change.id],
+                    });
+                }
+
+                for (const constraint of change.table.uniqueConstraints) {
+                    if (
+                        !resolveColumnNames(change.table, constraint.columnIds)
+                            ?.length
+                    ) {
+                        analyzedWarnings.push({
+                            code: 'unique_constraint_columns_missing',
+                            level: 'blocked',
+                            title: 'Unique constraint columns could not be resolved',
+                            message: `Unique constraint ${constraint.name} on ${change.table.schemaName}.${change.table.name} does not reference any valid target columns.`,
+                            changeIds: [change.id],
+                        });
+                    }
+                }
                 break;
             case 'add_column':
                 ensureSupportedType(
@@ -947,15 +988,130 @@ export const createChangePlan = ({
                     `${change.schemaName}.${change.tableName}.${change.columnName}`
                 );
                 break;
+            case 'add_primary_key': {
+                const table = findTargetTable(
+                    target,
+                    change.schemaName,
+                    change.tableName
+                );
+                if (!table) {
+                    analyzedWarnings.push({
+                        code: 'primary_key_table_missing',
+                        level: 'blocked',
+                        title: 'Primary key table not found',
+                        message: `Primary key ${change.primaryKey.name ?? change.primaryKey.id} targets ${change.schemaName}.${change.tableName}, but that table does not exist in the target schema.`,
+                        changeIds: [change.id],
+                    });
+                    break;
+                }
+                if (
+                    !resolveColumnNames(table, change.primaryKey.columnIds)
+                        ?.length
+                ) {
+                    analyzedWarnings.push({
+                        code: 'primary_key_columns_missing',
+                        level: 'blocked',
+                        title: 'Primary key columns could not be resolved',
+                        message: `Primary key ${change.primaryKey.name ?? change.primaryKey.id} on ${change.schemaName}.${change.tableName} does not reference any valid target columns.`,
+                        changeIds: [change.id],
+                    });
+                }
+                break;
+            }
+            case 'add_unique_constraint': {
+                const table = findTargetTable(
+                    target,
+                    change.schemaName,
+                    change.tableName
+                );
+                if (!table) {
+                    analyzedWarnings.push({
+                        code: 'unique_constraint_table_missing',
+                        level: 'blocked',
+                        title: 'Unique constraint table not found',
+                        message: `Unique constraint ${change.constraint.name} targets ${change.schemaName}.${change.tableName}, but that table does not exist in the target schema.`,
+                        changeIds: [change.id],
+                    });
+                    break;
+                }
+                if (
+                    !resolveColumnNames(table, change.constraint.columnIds)
+                        ?.length
+                ) {
+                    analyzedWarnings.push({
+                        code: 'unique_constraint_columns_missing',
+                        level: 'blocked',
+                        title: 'Unique constraint columns could not be resolved',
+                        message: `Unique constraint ${change.constraint.name} on ${change.schemaName}.${change.tableName} does not reference any valid target columns.`,
+                        changeIds: [change.id],
+                    });
+                }
+                break;
+            }
+            case 'add_index': {
+                const table = findTargetTable(
+                    target,
+                    change.schemaName,
+                    change.tableName
+                );
+                if (!table) {
+                    analyzedWarnings.push({
+                        code: 'index_table_missing',
+                        level: 'blocked',
+                        title: 'Index table not found',
+                        message: `Index ${change.index.name} targets ${change.schemaName}.${change.tableName}, but that table does not exist in the target schema.`,
+                        changeIds: [change.id],
+                    });
+                    break;
+                }
+                if (
+                    !resolveColumnNames(table, change.index.columnIds)?.length
+                ) {
+                    analyzedWarnings.push({
+                        code: 'index_columns_missing',
+                        level: 'blocked',
+                        title: 'Index columns could not be resolved',
+                        message: `Index ${change.index.name} on ${change.schemaName}.${change.tableName} does not reference any valid target columns.`,
+                        changeIds: [change.id],
+                    });
+                }
+                break;
+            }
             case 'add_foreign_key': {
-                const referencedTable = target.tables.find(
-                    (table) =>
-                        normalizeName(table.schemaName) ===
-                            normalizeName(
-                                change.foreignKey.referencedSchemaName
-                            ) &&
-                        normalizeName(table.name) ===
-                            normalizeName(change.foreignKey.referencedTableName)
+                const localTable = findTargetTable(
+                    target,
+                    change.schemaName,
+                    change.tableName
+                );
+                if (!localTable) {
+                    analyzedWarnings.push({
+                        code: 'foreign_key_table_missing',
+                        level: 'blocked',
+                        title: 'Foreign key source table not found',
+                        message: `Foreign key ${change.foreignKey.name} targets ${change.schemaName}.${change.tableName}, but that table does not exist in the target schema.`,
+                        changeIds: [change.id],
+                    });
+                    break;
+                }
+
+                if (
+                    !resolveColumnNames(localTable, change.foreignKey.columnIds)
+                        ?.length
+                ) {
+                    analyzedWarnings.push({
+                        code: 'foreign_key_columns_missing',
+                        level: 'blocked',
+                        title: 'Foreign key columns could not be resolved',
+                        message: `Foreign key ${change.foreignKey.name} on ${change.schemaName}.${change.tableName} does not reference any valid local columns.`,
+                        changeIds: [change.id],
+                    });
+                    break;
+                }
+
+                const referencedTable = findTargetTable(
+                    target,
+                    change.foreignKey.referencedSchemaName,
+                    change.foreignKey.referencedTableName
                 );
 
                 if (!referencedTable) {
@@ -964,6 +1120,22 @@ export const createChangePlan = ({
                         level: 'blocked',
                         title: 'Foreign key target table not found',
                         message: `Foreign key ${change.foreignKey.name} references ${change.foreignKey.referencedSchemaName}.${change.foreignKey.referencedTableName}, but that table does not exist in the target schema.`,
+                        changeIds: [change.id],
+                    });
+                    break;
+                }
+
+                if (
+                    !resolveColumnNames(
+                        referencedTable,
+                        change.foreignKey.referencedColumnNames
+                    )?.length
+                ) {
+                    analyzedWarnings.push({
+                        code: 'foreign_key_reference_columns_missing',
+                        level: 'blocked',
+                        title: 'Foreign key target columns could not be resolved',
+                        message: `Foreign key ${change.foreignKey.name} references ${change.foreignKey.referencedSchemaName}.${change.foreignKey.referencedTableName}, but the referenced column set could not be resolved in the target schema.`,
                         changeIds: [change.id],
                     });
                     break;
