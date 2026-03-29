@@ -14,6 +14,7 @@ export interface VersionListItemProps {
     compareBaseline?: boolean;
     onOpen: () => void;
     onCompare?: () => void;
+    onRestore?: () => void;
 }
 
 export const VersionListItem: React.FC<VersionListItemProps> = ({
@@ -22,6 +23,7 @@ export const VersionListItem: React.FC<VersionListItemProps> = ({
     compareBaseline = false,
     onOpen,
     onCompare,
+    onRestore,
 }) => (
     <article className="space-y-3 rounded-lg border bg-background p-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
@@ -60,6 +62,11 @@ export const VersionListItem: React.FC<VersionListItemProps> = ({
             {onCompare ? (
                 <Button variant="outline" size="sm" onClick={onCompare}>
                     Compare to Development
+                </Button>
+            ) : null}
+            {onRestore ? (
+                <Button variant="destructive" size="sm" onClick={onRestore}>
+                    Restore to Development
                 </Button>
             ) : null}
         </div>
