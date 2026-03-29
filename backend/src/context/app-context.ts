@@ -1,10 +1,12 @@
 import type { ServerEnv } from '../config/env.js';
 import { AppRepository } from '../repositories/app-repository.js';
+import { DiagramWorkflowRepository } from '../repositories/diagram-workflow-repository.js';
 import { MetadataRepository } from '../repositories/metadata-repository.js';
 import { ApplyService } from '../services/apply-service.js';
 import { AdminService } from '../services/admin-service.js';
 import { AuthService } from '../services/auth-service.js';
 import { ConnectionsService } from '../services/connections-service.js';
+import { DiagramWorkflowService } from '../services/diagram-workflow-service.js';
 import { DiagramCollaborationBroker } from '../services/diagram-collaboration-broker.js';
 import type { OidcClientProvider } from '../services/oidc-provider.js';
 import { PersistenceService } from '../services/persistence-service.js';
@@ -21,6 +23,7 @@ export interface AppContext {
     schemaSyncService: SchemaSyncService;
     applyService: ApplyService;
     persistenceService: PersistenceService;
+    diagramWorkflowService: DiagramWorkflowService;
     close: () => void;
 }
 
@@ -37,6 +40,9 @@ export const createAppContext = (
         new MetadataRepository(env.metadataDbPath);
     const appRepository =
         options?.appRepository ?? new AppRepository(env.appDbPath);
+    const diagramWorkflowRepository = new DiagramWorkflowRepository(
+        env.appDbPath
+    );
     const authService = new AuthService(
         appRepository,
         env,
@@ -68,6 +74,12 @@ export const createAppContext = (
             collaborationBroker: diagramCollaborationBroker,
         }
     );
+    const diagramWorkflowService = new DiagramWorkflowService(
+        diagramWorkflowRepository,
+        metadataRepository,
+        persistenceService,
+        schemaSyncService
+    );
 
     return {
         env,
@@ -80,6 +92,7 @@ export const createAppContext = (
         schemaSyncService,
         applyService,
         persistenceService,
+        diagramWorkflowService,
         close: () => {
             if (!options?.metadataRepository) {
                 metadataRepository.close();
@@ -87,6 +100,7 @@ export const createAppContext = (
             if (!options?.appRepository) {
                 appRepository.close();
             }
+            diagramWorkflowRepository.close();
         },
     };
 };

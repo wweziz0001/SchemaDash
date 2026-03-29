@@ -127,11 +127,11 @@ export const routes: RouteObject[] = [
     ...['workspace', 'diagrams/:diagramId'].map((path) => ({
         path,
         async lazy() {
-            const { EditorPage } =
-                await import('./pages/editor-page/editor-page');
+            const { WorkflowEditorPage } =
+                await import('./pages/editor-page/workflow-editor-page');
 
             return {
-                element: <EditorPage />,
+                element: <WorkflowEditorPage />,
             };
         },
     })),

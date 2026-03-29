@@ -123,7 +123,12 @@ const EditorPageComponent: React.FC<{
 export const EditorPage: React.FC<{
     initialDiagram?: Diagram;
     readonly?: boolean;
-}> = ({ initialDiagram, readonly = false }) => (
+    disableAuthoritativeSync?: boolean;
+}> = ({
+    initialDiagram,
+    readonly = false,
+    disableAuthoritativeSync = false,
+}) => (
     <LocalConfigProvider>
         <ThemeProvider>
             <FullScreenLoaderProvider>
@@ -135,6 +140,9 @@ export const EditorPage: React.FC<{
                                     <SchemaDashProvider
                                         diagram={initialDiagram}
                                         readonly={readonly}
+                                        authoritativeSync={
+                                            !disableAuthoritativeSync
+                                        }
                                     >
                                         <DiagramFilterProvider>
                                             <HistoryProvider>

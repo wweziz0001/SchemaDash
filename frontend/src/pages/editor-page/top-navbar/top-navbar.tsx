@@ -12,12 +12,16 @@ import { useAuth } from '@/features/auth/hooks/use-auth';
 import { Link } from 'react-router-dom';
 import { CurrentDiagramShareButton } from './current-diagram-share-button';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
+import { WorkflowModeSwitcher } from '@/features/diagram-workflow/components/workflow-mode-switcher';
+import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
+import { LiveStatusChip } from '@/features/diagram-workflow/components/live-status-chip';
 
 export interface TopNavbarProps {}
 
 export const TopNavbar: React.FC<TopNavbarProps> = () => {
     const { effectiveTheme } = useTheme();
     const { enabled, user, logout } = useAuth();
+    const workflow = useOptionalDiagramWorkflow();
     const isAdmin = enabled && user?.role === 'admin';
 
     const renderStars = useCallback(() => {
@@ -55,7 +59,11 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
             </div>
             <DiagramName />
             <div className="hidden flex-1 items-center justify-end gap-2 sm:flex">
-                <SchemaSyncToolbarButton />
+                <WorkflowModeSwitcher />
+                <LiveStatusChip />
+                {workflow?.activeMode !== 'live' ? (
+                    <SchemaSyncToolbarButton />
+                ) : null}
                 <LastSaved />
                 <ActiveDiagramParticipants />
                 <CurrentDiagramShareButton />

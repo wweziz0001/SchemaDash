@@ -49,7 +49,7 @@ export const SchemaSyncDialog: React.FC = () => {
         saveConnection,
         deleteConnection,
         testConnectionDraft,
-        importLiveSchema,
+        syncLiveDatabase,
         refreshFromDatabase,
         previewChanges,
         applyChanges,
@@ -61,7 +61,6 @@ export const SchemaSyncDialog: React.FC = () => {
     );
     const [editingConnectionId, setEditingConnectionId] = useState<string>();
     const [importSchemas, setImportSchemas] = useState('public');
-    const [importMode, setImportMode] = useState<'replace' | 'new'>('replace');
     const [confirmationText, setConfirmationText] = useState('');
     const [busyAction, setBusyAction] = useState<string>();
 
@@ -152,9 +151,7 @@ export const SchemaSyncDialog: React.FC = () => {
                         <TabsTrigger value="connections">
                             Manage Connections
                         </TabsTrigger>
-                        <TabsTrigger value="import">
-                            Import Live Schema
-                        </TabsTrigger>
+                        <TabsTrigger value="import">Live Database</TabsTrigger>
                         <TabsTrigger value="preview">
                             Preview & Apply
                         </TabsTrigger>
@@ -489,60 +486,41 @@ export const SchemaSyncDialog: React.FC = () => {
 
                                 <div className="mt-4 rounded-md border bg-secondary/20 p-3 text-sm">
                                     <div className="font-medium">
-                                        Import Behavior
+                                        Workflow Behavior
                                     </div>
-                                    <div className="mt-2 flex gap-3">
-                                        <label className="flex items-center gap-2">
-                                            <input
-                                                type="radio"
-                                                checked={
-                                                    importMode === 'replace'
-                                                }
-                                                onChange={() =>
-                                                    setImportMode('replace')
-                                                }
-                                            />
-                                            Replace current diagram
-                                        </label>
-                                        <label className="flex items-center gap-2">
-                                            <input
-                                                type="radio"
-                                                checked={importMode === 'new'}
-                                                onChange={() =>
-                                                    setImportMode('new')
-                                                }
-                                            />
-                                            Create new diagram
-                                        </label>
+                                    <div className="mt-2 text-muted-foreground">
+                                        Development remains your editable
+                                        diagram. Syncing stores a separate Live
+                                        Database snapshot for read-only review
+                                        and future compare work.
                                     </div>
                                 </div>
 
                                 <div className="mt-4 flex flex-wrap gap-2">
                                     <Button
                                         onClick={() =>
-                                            run('import-live', async () => {
+                                            run('sync-live', async () => {
                                                 if (!selectedConnectionId) {
                                                     throw new Error(
                                                         'Select a connection first.'
                                                     );
                                                 }
-                                                await importLiveSchema({
+                                                await syncLiveDatabase({
                                                     connectionId:
                                                         selectedConnectionId,
                                                     schemas:
                                                         schemaList.length > 0
                                                             ? schemaList
                                                             : ['public'],
-                                                    mode: importMode,
                                                 });
                                             })
                                         }
                                         disabled={
                                             !selectedConnectionId ||
-                                            busyAction === 'import-live'
+                                            busyAction === 'sync-live'
                                         }
                                     >
-                                        Import Live Schema
+                                        Bind & Sync Live Database
                                     </Button>
                                     <Button
                                         variant="secondary"

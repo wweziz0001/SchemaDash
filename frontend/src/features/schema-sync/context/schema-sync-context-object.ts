@@ -7,8 +7,6 @@ import type {
     ConnectionUpsert,
 } from '@schemadash/schema-sync-core';
 
-type ImportMode = 'replace' | 'new';
-
 export interface SchemaSyncContextValue {
     open: boolean;
     setOpen: (open: boolean) => void;
@@ -29,10 +27,9 @@ export interface SchemaSyncContextValue {
         payload: ConnectionUpsert,
         connectionId?: string
     ) => Promise<void>;
-    importLiveSchema: (params: {
+    syncLiveDatabase: (params: {
         connectionId: string;
         schemas: string[];
-        mode: ImportMode;
     }) => Promise<void>;
     refreshFromDatabase: () => Promise<void>;
     previewChanges: () => Promise<void>;
