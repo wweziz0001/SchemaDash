@@ -16,7 +16,11 @@ export const ReviewDropdown: React.FC = () => {
     const [reviewOpen, setReviewOpen] = useState(false);
     const [migrationOpen, setMigrationOpen] = useState(false);
 
-    if (!workflow?.diagramId || !workflow.compareModeEnabled) {
+    if (
+        !workflow?.diagramId ||
+        !workflow.compareModeEnabled ||
+        workflow.compareSourceKind !== 'live'
+    ) {
         return null;
     }
 

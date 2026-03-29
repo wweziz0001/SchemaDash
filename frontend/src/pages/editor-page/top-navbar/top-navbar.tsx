@@ -17,6 +17,8 @@ import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/
 import { LiveStatusChip } from '@/features/diagram-workflow/components/live-status-chip';
 import { CompareSummaryChip } from '@/features/diagram-workflow/components/compare-summary-chip';
 import { ReviewDropdown } from '@/features/diagram-workflow/components/review-dropdown';
+import { VersionsPanel } from '@/features/diagram-workflow/components/versions-panel';
+import { VersionViewBadge } from '@/features/diagram-workflow/components/version-view-badge';
 
 export interface TopNavbarProps {}
 
@@ -64,7 +66,9 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                 <WorkflowModeSwitcher />
                 <CompareSummaryChip />
                 <LiveStatusChip />
+                <VersionViewBadge />
                 <ReviewDropdown />
+                <VersionsPanel />
                 {workflow?.activeMode === 'development' ? (
                     <SchemaSyncToolbarButton />
                 ) : null}

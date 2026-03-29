@@ -15,6 +15,8 @@ import { WorkflowModeSwitcher } from '@/features/diagram-workflow/components/wor
 import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
 import { LiveStatusChip } from '@/features/diagram-workflow/components/live-status-chip';
 import { CompareSummaryChip } from '@/features/diagram-workflow/components/compare-summary-chip';
+import { VersionsPanel } from '@/features/diagram-workflow/components/versions-panel';
+import { VersionViewBadge } from '@/features/diagram-workflow/components/version-view-badge';
 
 export interface TopNavbarMobileProps {}
 
@@ -61,6 +63,7 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <VersionsPanel />
                         {workflow?.activeMode === 'development' ? (
                             <SchemaSyncToolbarButton />
                         ) : null}
@@ -101,6 +104,9 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
             </div>
             <div className="flex justify-center px-2 pb-2">
                 <LiveStatusChip />
+            </div>
+            <div className="flex justify-center px-2 pb-2">
+                <VersionViewBadge />
             </div>
         </nav>
     );

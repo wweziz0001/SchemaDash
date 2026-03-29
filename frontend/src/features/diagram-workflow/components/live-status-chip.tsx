@@ -81,23 +81,29 @@ export const LiveStatusChip: React.FC = () => {
                       };
 
         const modeBadge =
-            workflow.activeMode === 'compare'
+            workflow.activeMode === 'version'
                 ? {
                       variant: 'secondary' as const,
-                      label: 'Compare read-only',
-                      title: 'Compare mode is a read-only review of Live Database versus Development.',
+                      label: 'Version read-only',
+                      title: 'Historical version views are immutable and read-only.',
                   }
-                : workflow.activeMode === 'live'
+                : workflow.activeMode === 'compare'
                   ? {
                         variant: 'secondary' as const,
-                        label: 'Read-only',
-                        title: 'Live Database mode is read-only.',
+                        label: 'Compare read-only',
+                        title: 'Compare mode is a read-only review of Live Database versus Development.',
                     }
-                  : {
-                        variant: 'outline' as const,
-                        label: 'Editable',
-                        title: 'Development mode remains editable.',
-                    };
+                  : workflow.activeMode === 'live'
+                    ? {
+                          variant: 'secondary' as const,
+                          label: 'Read-only',
+                          title: 'Live Database mode is read-only.',
+                      }
+                    : {
+                          variant: 'outline' as const,
+                          label: 'Editable',
+                          title: 'Development mode remains editable.',
+                      };
 
         return {
             connectionBadge,

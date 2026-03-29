@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { canonicalSchemaSchema } from '@schemadash/schema-sync-core';
+import { diagramDocumentSchema } from './persistence.js';
 
 export const diagramWorkflowSyncStatusSchema = z.enum([
     'disconnected',
@@ -39,9 +41,25 @@ export const diagramWorkflowLayoutSourceSchema = z.enum([
     'auto_layout',
 ]);
 
+export const diagramWorkflowVersionOriginSchema = z.enum([
+    'manual',
+    'milestone',
+    'system',
+    'before_restore',
+    'before_apply',
+]);
+
 export const bindDiagramWorkflowConnectionSchema = z.object({
     connectionId: z.string().trim().min(1),
     importedSchemas: z.array(z.string().trim().min(1)).optional(),
+});
+
+export const createDiagramWorkflowVersionSchema = z.object({
+    name: z.string().trim().min(1).max(160).nullable().optional(),
+    description: z.string().trim().max(500).nullable().optional(),
+    origin: diagramWorkflowVersionOriginSchema.optional().default('manual'),
+    canonicalSchema: canonicalSchemaSchema,
+    diagramDocument: diagramDocumentSchema,
 });
 
 export type DiagramWorkflowSyncStatus = z.infer<
@@ -62,6 +80,12 @@ export type DiagramWorkflowSnapshotSourceKind = z.infer<
 export type DiagramWorkflowLayoutSource = z.infer<
     typeof diagramWorkflowLayoutSourceSchema
 >;
+export type DiagramWorkflowVersionOrigin = z.infer<
+    typeof diagramWorkflowVersionOriginSchema
+>;
 export type BindDiagramWorkflowConnectionInput = z.infer<
     typeof bindDiagramWorkflowConnectionSchema
+>;
+export type CreateDiagramWorkflowVersionInput = z.infer<
+    typeof createDiagramWorkflowVersionSchema
 >;

@@ -1,4 +1,5 @@
 import { requestJson } from '@/lib/api/request';
+import type { DiagramDto } from '@/features/persistence/api/persistence-client';
 import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 
 export type DiagramWorkflowSyncStatus =
@@ -10,6 +11,13 @@ export type DiagramWorkflowSyncStatus =
     | 'error';
 
 export type DiagramWorkflowConnectionStatus = 'unknown' | 'ok' | 'failed';
+
+export type DiagramWorkflowVersionOrigin =
+    | 'manual'
+    | 'milestone'
+    | 'system'
+    | 'before_restore'
+    | 'before_apply';
 
 export interface DiagramWorkflowLiveSnapshot {
     id: string;
@@ -38,6 +46,37 @@ export interface DiagramWorkflowRecord {
     defaultCompareSourceId: string | null;
     updatedAt: string;
     liveSnapshot: DiagramWorkflowLiveSnapshot | null;
+}
+
+export interface DiagramWorkflowVersionAuthor {
+    id: string;
+    displayName: string;
+    email: string | null;
+}
+
+export interface DiagramWorkflowVersionSummary {
+    id: string;
+    diagramId: string;
+    snapshotId: string;
+    name: string | null;
+    description: string | null;
+    versionLabel: string;
+    origin: DiagramWorkflowVersionOrigin;
+    pinned: boolean;
+    createdAt: string;
+    createdBy: DiagramWorkflowVersionAuthor | null;
+}
+
+export interface DiagramWorkflowVersionRecord extends DiagramWorkflowVersionSummary {
+    snapshot: {
+        id: string;
+        fingerprint: string;
+        canonicalSchema: CanonicalSchema;
+        diagramDocument: DiagramDto | null;
+        layoutSource: 'captured' | 'derived' | 'auto_layout';
+        sourceKind: 'introspection' | 'development' | 'restore' | 'apply';
+        createdAt: string;
+    };
 }
 
 export interface WorkflowCompatibilitySyncMetadata {
@@ -74,4 +113,29 @@ export const diagramWorkflowClient = {
         }>(`/api/diagrams/${diagramId}/workflow/refresh-live`, {
             method: 'POST',
         }),
+    listVersions: async (diagramId: string) =>
+        requestJson<{ items: DiagramWorkflowVersionSummary[] }>(
+            `/api/diagrams/${diagramId}/workflow/versions`
+        ),
+    getVersion: async (diagramId: string, versionId: string) =>
+        requestJson<{ version: DiagramWorkflowVersionRecord }>(
+            `/api/diagrams/${diagramId}/workflow/versions/${versionId}`
+        ),
+    createVersion: async (
+        diagramId: string,
+        payload: {
+            name?: string | null;
+            description?: string | null;
+            origin?: DiagramWorkflowVersionOrigin;
+            canonicalSchema: CanonicalSchema;
+            diagramDocument: DiagramDto;
+        }
+    ) =>
+        requestJson<{ version: DiagramWorkflowVersionRecord }>(
+            `/api/diagrams/${diagramId}/workflow/versions`,
+            {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            }
+        ),
 };

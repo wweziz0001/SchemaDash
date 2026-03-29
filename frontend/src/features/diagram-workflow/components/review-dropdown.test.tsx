@@ -20,6 +20,7 @@ describe('review dropdown', () => {
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
             compareModeEnabled: false,
+            compareSourceKind: 'live',
         } as never);
 
         render(<ReviewDropdown />);
@@ -32,6 +33,7 @@ describe('review dropdown', () => {
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
             compareModeEnabled: true,
+            compareSourceKind: 'live',
         } as never);
 
         render(<ReviewDropdown />);
@@ -44,5 +46,17 @@ describe('review dropdown', () => {
         expect(
             screen.getByRole('menuitem', { name: 'Migration' })
         ).toBeTruthy();
+    });
+
+    it('stays hidden when compare is based on a historical version', () => {
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            diagramId: 'diagram-1',
+            compareModeEnabled: true,
+            compareSourceKind: 'version',
+        } as never);
+
+        render(<ReviewDropdown />);
+
+        expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
     });
 });

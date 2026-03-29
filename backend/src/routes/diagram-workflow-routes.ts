@@ -44,4 +44,50 @@ export const registerDiagramWorkflowRoutes = (
             request.auth.user
         );
     });
+
+    app.get('/api/diagrams/:id/workflow/versions', async (request) => {
+        const params = request.params as { id: string };
+        const shareToken = resolveRequestShareToken(request);
+
+        return {
+            items: context.diagramWorkflowService.listVersions(
+                params.id,
+                request.auth.user,
+                {
+                    shareToken,
+                }
+            ),
+        };
+    });
+
+    app.get(
+        '/api/diagrams/:id/workflow/versions/:versionId',
+        async (request) => {
+            const params = request.params as { id: string; versionId: string };
+            const shareToken = resolveRequestShareToken(request);
+
+            return {
+                version: context.diagramWorkflowService.getVersion(
+                    params.id,
+                    params.versionId,
+                    request.auth.user,
+                    {
+                        shareToken,
+                    }
+                ),
+            };
+        }
+    );
+
+    app.post('/api/diagrams/:id/workflow/versions', async (request) => {
+        const params = request.params as { id: string };
+
+        return {
+            version: context.diagramWorkflowService.createVersion(
+                params.id,
+                request.body,
+                request.auth.user
+            ),
+        };
+    });
 };
