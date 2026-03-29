@@ -7,12 +7,11 @@ import type {
 
 const quoteIdent = (value: string) => `"${value.replace(/"/g, '""')}"`;
 const quoteLiteral = (value: string) => `'${value.replace(/'/g, "''")}'`;
-const columnNameFromKey = (value: string) =>
-    value.includes('.') ? value.slice(value.lastIndexOf('.') + 1) : value;
 const qualify = (schemaName: string, tableName: string) =>
     `${quoteIdent(schemaName)}.${quoteIdent(tableName)}`;
 const normalizeTypeReference = (value: string) =>
     value.replace(/"/g, '').replace(/\[\]$/, '').trim();
+const normalizeName = (value: string) => value.trim().toLowerCase();
 
 const buildCustomTypeMap = (schema?: CanonicalSchema) =>
     new Map(
@@ -21,6 +20,50 @@ const buildCustomTypeMap = (schema?: CanonicalSchema) =>
             customType,
         ])
     );
+
+const buildTableMap = (schema?: CanonicalSchema) =>
+    new Map(
+        (schema?.tables ?? []).map((table) => [
+            `${normalizeName(table.schemaName)}.${normalizeName(table.name)}`,
+            table,
+        ])
+    );
+
+const resolveColumnName = (
+    table: CanonicalTable,
+    columnKeyOrName: string
+): string | null => {
+    const normalized = normalizeName(columnKeyOrName);
+    const directName = columnKeyOrName.includes('.')
+        ? columnKeyOrName.slice(columnKeyOrName.lastIndexOf('.') + 1)
+        : columnKeyOrName;
+
+    const directMatch = table.columns.find(
+        (column) => normalizeName(column.name) === normalizeName(directName)
+    );
+    if (directMatch) {
+        return directMatch.name;
+    }
+
+    const byReference = table.columns.find(
+        (column) =>
+            normalizeName(column.id) === normalized ||
+            normalizeName(column.sync?.sourceId ?? '') === normalized
+    );
+
+    return byReference?.name ?? null;
+};
+
+const resolveColumnNames = (
+    table: CanonicalTable,
+    columnKeysOrNames: string[]
+): string[] | null => {
+    const resolved = columnKeysOrNames.map((value) =>
+        resolveColumnName(table, value)
+    );
+
+    return resolved.every(Boolean) ? (resolved as string[]) : null;
+};
 
 const renderTypeReference = ({
     typeName,
@@ -160,6 +203,8 @@ const orderRank = (change: SchemaChange): number => {
         case 'alter_column_nullability':
         case 'rename_column':
             return 40;
+        case 'drop_primary_key':
+            return 45;
         case 'add_primary_key':
         case 'add_unique_constraint':
         case 'add_check_constraint':
@@ -172,7 +217,6 @@ const orderRank = (change: SchemaChange): number => {
         case 'drop_index':
         case 'drop_unique_constraint':
         case 'drop_check_constraint':
-        case 'drop_primary_key':
             return 80;
         case 'drop_column':
             return 90;
@@ -187,6 +231,7 @@ export const generateMigrationSql = (
 ): string[] => {
     const sql: string[] = [];
     const customTypesById = buildCustomTypeMap(targetSchema);
+    const tablesByName = buildTableMap(targetSchema);
 
     for (const change of [...changes].sort(
         (left, right) => orderRank(left) - orderRank(right)
@@ -256,8 +301,16 @@ export const generateMigrationSql = (
                 );
                 break;
             case 'add_primary_key': {
-                const columnNames = change.primaryKey.columnIds
-                    .map(columnNameFromKey)
+                const table = tablesByName.get(
+                    `${normalizeName(change.schemaName)}.${normalizeName(change.tableName)}`
+                );
+                const resolvedColumnNames = table
+                    ? resolveColumnNames(table, change.primaryKey.columnIds)
+                    : null;
+                if (!resolvedColumnNames?.length) {
+                    break;
+                }
+                const columnNames = resolvedColumnNames
                     .map(quoteIdent)
                     .join(', ');
                 sql.push(
@@ -271,8 +324,16 @@ export const generateMigrationSql = (
                 );
                 break;
             case 'add_unique_constraint': {
-                const columnNames = change.constraint.columnIds
-                    .map(columnNameFromKey)
+                const table = tablesByName.get(
+                    `${normalizeName(change.schemaName)}.${normalizeName(change.tableName)}`
+                );
+                const resolvedColumnNames = table
+                    ? resolveColumnNames(table, change.constraint.columnIds)
+                    : null;
+                if (!resolvedColumnNames?.length) {
+                    break;
+                }
+                const columnNames = resolvedColumnNames
                     .map(quoteIdent)
                     .join(', ');
                 sql.push(
@@ -286,8 +347,16 @@ export const generateMigrationSql = (
                 );
                 break;
             case 'add_index': {
-                const columnNames = change.index.columnIds
-                    .map(columnNameFromKey)
+                const table = tablesByName.get(
+                    `${normalizeName(change.schemaName)}.${normalizeName(change.tableName)}`
+                );
+                const resolvedColumnNames = table
+                    ? resolveColumnNames(table, change.index.columnIds)
+                    : null;
+                if (!resolvedColumnNames?.length) {
+                    break;
+                }
+                const columnNames = resolvedColumnNames
                     .map(quoteIdent)
                     .join(', ');
                 sql.push(
@@ -301,11 +370,34 @@ export const generateMigrationSql = (
                 );
                 break;
             case 'add_foreign_key': {
-                const localColumns = change.foreignKey.columnIds
-                    .map(columnNameFromKey)
+                const localTable = tablesByName.get(
+                    `${normalizeName(change.schemaName)}.${normalizeName(change.tableName)}`
+                );
+                const referencedTable = tablesByName.get(
+                    `${normalizeName(change.foreignKey.referencedSchemaName)}.${normalizeName(change.foreignKey.referencedTableName)}`
+                );
+                const resolvedLocalColumns = localTable
+                    ? resolveColumnNames(
+                          localTable,
+                          change.foreignKey.columnIds
+                      )
+                    : null;
+                const resolvedReferenceColumns = referencedTable
+                    ? resolveColumnNames(
+                          referencedTable,
+                          change.foreignKey.referencedColumnNames
+                      )
+                    : change.foreignKey.referencedColumnNames;
+                if (
+                    !resolvedLocalColumns?.length ||
+                    !resolvedReferenceColumns?.length
+                ) {
+                    break;
+                }
+                const localColumns = resolvedLocalColumns
                     .map(quoteIdent)
                     .join(', ');
-                const referenceColumns = change.foreignKey.referencedColumnNames
+                const referenceColumns = resolvedReferenceColumns
                     .map(quoteIdent)
                     .join(', ');
                 sql.push(

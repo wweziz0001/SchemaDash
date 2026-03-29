@@ -1,53 +1,78 @@
 # Codex Handoff
 
-## 1. Project Overview
+## Project Overview
 
-SchemaDash is a full-stack database schema diagram editor with frontend canvas editing, backend persistence/collaboration, and a shared `schema-sync-core` package for canonical schema import/diff/apply logic.
+SchemaDash is a full-stack schema design and synchronization product with:
+
+- a React/Tailwind frontend for canvas-based schema editing
+- a Fastify backend for persistence, collaboration, workflow state, and operational schema-sync routes
+- a shared `packages/schema-sync-core` package for canonical schema types, diffing, risk analysis, SQL generation, compare results, and apply planning
 
 Relevant product context for this task:
 
-- The current mutable head is the `Development` diagram document.
-- A diagram can also have a read-only `Live Database` snapshot attached through the workflow layer.
-- `Compare` is intentionally derived, read-only, and based on canonical schema comparison between the live snapshot baseline and the current development diagram.
-- This task implemented only the Compare phase for `Live Database` vs `Development`.
+- `Development` is still the editable head and the authoritative mutable diagram.
+- `Live Database` is a read-only workflow snapshot attached to the diagram.
+- `Compare` is a derived read-only visualization between the live snapshot and the current development schema.
+- This task adds the next layer after Compare:
+    - a `Review` toolbar control
+    - a read-only structured review surface
+    - a migration preview / validation / explicit apply workflow based on canonical live vs development state
 
-Key concepts for the touched area:
+Key concepts needed for this area:
 
-- `CanonicalSchema` is the source of truth for compare classification.
-- `frontend/src/features/schema-sync/lib/canonical-adapters.ts` converts between diagram data and canonical schema.
-- `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx` owns editor mode selection (`development`, `live`, `compare`) and workflow-scoped derived state.
-- The compare canvas is still rendered through the normal editor/canvas stack, but the diagram loaded into the read-only compare surface is derived on demand.
+- Canonical schema is the source of truth for review and migration logic.
+- The compare canvas overlay is not the source of truth for execution.
+- The workflow layer keeps live snapshot state beside the diagram instead of replacing the editable diagram document.
+- The migration path should reuse schema-sync diff/apply primitives, not invent a separate execution engine.
 
-## 2. Current Architectural Context
+## Current Architectural Context
 
-Parts of the system that matter for this task:
-
-- Shared compare engine:
-  - `packages/schema-sync-core/src/compare-types.ts`
-  - `packages/schema-sync-core/src/compare.ts`
-  - `packages/schema-sync-core/src/index.ts`
-- Frontend workflow state and compare derivation:
-  - `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
-  - `frontend/src/features/diagram-workflow/lib/compare-render-model.ts`
-  - `frontend/src/pages/editor-page/workflow-editor-page.tsx`
-- Compare-specific UI surface:
-  - `frontend/src/features/diagram-workflow/components/workflow-mode-switcher.tsx`
-  - `frontend/src/features/diagram-workflow/components/live-status-chip.tsx`
-  - `frontend/src/features/diagram-workflow/components/compare-summary-chip.tsx`
-  - `frontend/src/features/diagram-workflow/components/compare-legend.tsx`
-- Compare visual rendering on the canvas:
-  - `frontend/src/pages/editor-page/canvas/canvas.tsx`
-  - `frontend/src/pages/editor-page/canvas/table-node/table-node.tsx`
-  - `frontend/src/pages/editor-page/canvas/table-node/table-node-field.tsx`
-  - `frontend/src/pages/editor-page/canvas/relationship-edge/relationship-edge.tsx`
-
-Important docs to read first:
+Read these first:
 
 1. `docs/live-database-development-compare-versions-design.md`
 2. `docs/live-db-compare-feature-map.md`
 3. `docs/codex-handoff.md`
 
-Important high-risk files that were intentionally avoided in this task:
+System areas that matter for this task:
+
+- Frontend workflow state and compare/live mode wiring:
+    - `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
+    - `frontend/src/pages/editor-page/workflow-editor-page.tsx`
+    - `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
+- Frontend review and migration surfaces:
+    - `frontend/src/features/diagram-workflow/components/review-dropdown.tsx`
+    - `frontend/src/features/diagram-workflow/components/review-changes-dialog.tsx`
+    - `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
+    - `frontend/src/features/diagram-workflow/components/migration-summary.tsx`
+    - `frontend/src/features/diagram-workflow/components/migration-warning-list.tsx`
+    - `frontend/src/features/diagram-workflow/lib/review-grouping.ts`
+- Frontend canonical adapters and API clients:
+    - `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
+    - `frontend/src/features/diagram-workflow/api/diagram-workflow-client.ts`
+    - `frontend/src/features/diagram-workflow/api/diagram-migration-client.ts`
+- Backend workflow and migration services:
+    - `backend/src/services/diagram-workflow-service.ts`
+    - `backend/src/services/diagram-migration-service.ts`
+    - `backend/src/routes/diagram-workflow-routes.ts`
+    - `backend/src/routes/diagram-migration-routes.ts`
+    - `backend/src/context/app-context.ts`
+    - `backend/src/app.ts`
+- Existing schema-sync/apply foundations reused here:
+    - `backend/src/services/schema-sync-service.ts`
+    - `backend/src/services/apply-service.ts`
+    - `backend/src/repositories/metadata-repository.ts`
+    - `packages/schema-sync-core/src/diff.ts`
+    - `packages/schema-sync-core/src/types.ts`
+
+Important service/module boundaries:
+
+- `diagram-workflow-service` manages diagram-scoped live binding and stored live snapshots.
+- `diagram-migration-service` now owns migration preview, validation, and explicit apply orchestration for the workflow layer.
+- `apply-service` remains the lower-level execution primitive that performs drift checks, preflight checks, SQL execution, and audit persistence.
+- `review-grouping.ts` is frontend-only and builds the structured review view from canonical compare results plus supplemental change-plan signals.
+- `migration-dialog.tsx` is UI orchestration only; it calls backend routes and never uses compare overlay state as execution input.
+
+Important high-risk files:
 
 - `frontend/src/context/storage-context/storage-provider.tsx`
 - `frontend/src/context/schemadash-context/schemadash-provider.tsx`
@@ -57,98 +82,99 @@ Important high-risk files that were intentionally avoided in this task:
 - `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
 - `packages/schema-sync-core/src/types.ts`
 
-Important service/module boundaries:
+Frontend/backend/shared relationships:
 
-- `schema-sync-core` now owns canonical compare contracts and compare classification logic.
-- The workflow context owns fetching the live workflow record and the persisted development diagram, then deriving compare state on demand.
-- `compare-render-model.ts` converts compare results into a canvas-ready read-only diagram plus metadata maps.
-- Canvas components consume compare metadata maps for visual treatment; compare does not mutate backend state and is not persisted as its own source of truth.
+- Frontend derives `targetSchema` from the current in-memory development diagram via `diagramToCanonicalSchema(...)`.
+- Backend uses the stored live workflow snapshot as baseline and the client-provided canonical target as the migration source of truth.
+- `schema-sync-core` still owns change planning, risk classification, and SQL generation.
 
-## 3. Task Completed
+## Task Completed
 
-Goal of this task:
+What this task was trying to achieve:
 
-- Implement only the Compare phase for `Live Database` vs `Development`.
-- Keep compare derived/read-only.
-- Keep development as the mutable authoritative head.
-- Avoid turning `SchemaDashProvider` into a multi-branch editor.
+- Add a Review button to the editor chrome for compare-capable diagrams.
+- Keep Review Changes read-only and structured for large diffs.
+- Add a migration workflow that separates preview, validation/preflight, execution, and result reporting.
+- Keep execution explicit and safe.
+- Avoid broad editor rewrites and avoid using compare overlay state as the execution source.
 
-What was implemented:
+What was actually implemented:
 
-- Added compare-specific contracts and a canonical compare engine in `schema-sync-core`.
-- Added compare mode to the workflow layer and enabled it only when both a live snapshot and a development diagram are available.
-- Loaded the persisted development diagram through the existing persistence client, converted it to canonical, compared it with the live snapshot canonical schema, and built a derived compare diagram on demand.
-- Added compare canvas rendering for:
-  - tables
-  - fields
-  - relationships
-- Added compare summary chrome and an on-canvas legend.
-- Tightened compare mode read-only behavior so canvas dragging/resizing/relationship editing/schema-sync entrypoints are disabled in compare mode.
-- Added a follow-up browser compatibility fix so frontend compare code imports compare helpers from `@schemadash/schema-sync-core/compare` subpath exports instead of the root barrel, avoiding accidental inclusion of the server-only hash module that depends on `node:crypto`.
+- Added a `Review` dropdown in the top toolbar when compare baseline data exists.
+- Added dropdown actions:
+    - `Review Changes`
+    - `Migration`
+- Built a structured `Review Changes` dialog that shows:
+    - summary cards for tables, fields, and relationships
+    - grouped `added` / `removed` / `changed` buckets
+    - item-level detail lines for changed properties
+    - supplemental migration-backed signals for constraints, indexes, and custom types when available
+- Built a `Migration` dialog that shows:
+    - migration preview generated from canonical live baseline vs current development canonical schema
+    - warnings / blockers / informational notes
+    - explicit preflight validation step
+    - explicit apply step with destructive confirmation handling
+    - success / failure result reporting with logs and executed SQL output
+- Added backend migration routes for:
+    - preview
+    - validate
+    - apply
+- Added backend `diagram-migration-service` to:
+    - generate change plans from workflow live snapshot + canonical target schema
+    - perform validation checks
+    - call the existing `apply-service`
+    - update the workflow live snapshot after successful apply so Compare reflects the new live state
 
-Important decisions made:
+Key decisions made:
 
-- Compare uses `compareCanonicalSchemas()` from the shared package instead of overloading `ChangePlan`.
-- The compare canvas is a derived diagram built in `compare-render-model.ts`, not a new persisted document.
-- Matching in the compare render model now indexes by both `sync.sourceId` and identity/name-based fallbacks so live-only items without true source IDs still render correctly.
+- Review Changes stays separate from Migration and remains read-only.
+- Migration preview/validation/apply all operate on canonical schemas, not compare canvas artifacts.
+- The frontend sends canonical target schema to the backend so preview/validation/apply use the current development head, including unsaved editor state.
+- Apply failures are surfaced back to the UI as structured result payloads with logs instead of only relying on thrown request errors.
 
-Approaches intentionally avoided:
+Approach intentionally avoided and why:
 
-- No Versions UI.
-- No restore-to-development workflow.
-- No backend compare persistence.
-- No broad editor-core/provider rewrite.
-- No changes to the listed high-risk persistence/provider files.
+- Did not overload the compare overlay model to drive execution because the design docs explicitly reject that.
+- Did not rewrite storage providers or persistence services because this workflow can be added without moving the development head.
+- Did not mix Versions/Restore work into this phase.
 
-## 4. Files Changed
+## Files Changed
 
-Files created in this task:
+Files created:
 
-- `packages/schema-sync-core/src/compare-types.ts`
-  - compare-specific shared types and Zod schemas
-- `packages/schema-sync-core/src/compare.ts`
-  - canonical compare engine
-- `packages/schema-sync-core/src/__tests__/compare.test.ts`
-  - shared compare-engine classification test
-- `frontend/src/features/diagram-workflow/lib/compare-render-model.ts`
-  - builds the derived compare diagram plus compare metadata maps and uses browser-safe compare subpath imports
-- `frontend/src/features/diagram-workflow/lib/compare-render-model.test.ts`
-  - validates compare render-model output
-- `frontend/src/features/diagram-workflow/components/compare-summary-chip.tsx`
-  - compact compare summary for editor chrome
-- `frontend/src/features/diagram-workflow/components/compare-legend.tsx`
-  - on-canvas compare legend/read-only note
+- `frontend/src/features/diagram-workflow/components/review-dropdown.tsx`
+    - toolbar Review button and dropdown entry point
+- `frontend/src/features/diagram-workflow/components/review-changes-dialog.tsx`
+    - structured read-only review surface
+- `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
+    - migration preview / validation / apply dialog
+- `frontend/src/features/diagram-workflow/components/migration-summary.tsx`
+    - summary cards and categorized change breakdown for migration preview
+- `frontend/src/features/diagram-workflow/components/migration-warning-list.tsx`
+    - reusable issue list for notes, warnings, and blockers
+- `frontend/src/features/diagram-workflow/lib/review-grouping.ts`
+    - transforms compare results and supplemental plan data into review-friendly grouped sections
+- `frontend/src/features/diagram-workflow/api/diagram-migration-client.ts`
+    - frontend client for preview / validate / apply migration routes
+- `frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx`
+- `frontend/src/features/diagram-workflow/components/review-changes-dialog.test.tsx`
+- `frontend/src/features/diagram-workflow/components/migration-dialog.test.tsx`
+- `frontend/src/features/diagram-workflow/lib/review-grouping.test.ts`
+- `backend/src/services/diagram-migration-service.ts`
+    - backend orchestration for preview / validate / apply
+- `backend/src/routes/diagram-migration-routes.ts`
+    - Fastify routes for migration workflow
+- `backend/test/diagram-migration-service.test.ts`
+    - backend tests for apply result handling and workflow live snapshot updates
 
-Files modified in this task:
+Files modified:
 
-- `packages/schema-sync-core/package.json`
-  - adds compare-only subpath exports for browser-safe frontend imports
-- `packages/schema-sync-core/src/index.ts`
-  - exports compare modules
-- `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
-  - adds compare mode, loads development diagram, derives compare render model on demand
-- `frontend/src/features/diagram-workflow/components/workflow-mode-switcher.tsx`
-  - adds `Compare` mode button and activation gating
-- `frontend/src/features/diagram-workflow/components/workflow-mode-switcher.test.tsx`
-  - covers compare button activation
-- `frontend/src/features/diagram-workflow/components/live-status-chip.tsx`
-  - shows compare read-only state
-- `frontend/src/features/diagram-workflow/components/live-status-chip.test.tsx`
-  - validates compare read-only badge
-- `frontend/src/pages/editor-page/workflow-editor-page.tsx`
-  - routes compare mode into a read-only derived diagram
-- `frontend/src/pages/editor-page/canvas/canvas.tsx`
-  - disables drag/connect mutations in readonly compare mode and renders the compare legend
-- `frontend/src/pages/editor-page/canvas/table-node/table-node.tsx`
-  - applies table compare styling/markers and suppresses edit controls in readonly mode
-- `frontend/src/pages/editor-page/canvas/table-node/table-node-field.tsx`
-  - applies field compare styling and property-change text treatment
-- `frontend/src/pages/editor-page/canvas/relationship-edge/relationship-edge.tsx`
-  - applies relationship compare styling and blocks edit popovers in readonly mode
 - `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
-  - adds compare summary chip and hides schema-sync entrypoint outside development mode
-- `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
-  - same mobile treatment
+    - adds Review dropdown to editor chrome
+- `backend/src/context/app-context.ts`
+    - registers `diagramMigrationService`
+- `backend/src/app.ts`
+    - registers migration routes
 
 Important files intentionally not changed:
 
@@ -160,144 +186,156 @@ Important files intentionally not changed:
 - `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
 - `packages/schema-sync-core/src/types.ts`
 
-## 5. Data / API / Workflow Changes
+Why those avoided files matter:
 
-New models and workflow behavior:
+- They are core persistence/state layers with high blast radius.
+- This task could be completed additively by using existing workflow and schema-sync seams.
 
-- Added compare-specific shared result types in `schema-sync-core`.
-- Added `compareCanonicalSchemas({ baseline, target })`.
-- Added frontend workflow mode `compare`.
-- Added derived `CompareRenderModel` containing:
-  - derived compare diagram
-  - compare result summary
-  - compare metadata maps for tables/fields/relationships
+## Data / API / Workflow Changes
 
-UI/workflow changes:
+New backend routes:
 
-- Compare mode is activated via `?workflow=compare`.
-- Compare mode is enabled only when:
-  - `workflow.liveSnapshot` exists
-  - persisted development diagram load succeeds
-- Compare mode is read-only and does not persist compare results.
+- `POST /api/diagrams/:id/migration/preview`
+    - input: canonical target schema + optional expected live snapshot id
+    - output: generated plan, warnings/blockers, fingerprints, validation eligibility
+- `POST /api/diagrams/:id/migration/validate`
+    - input: canonical target schema + optional expected live snapshot id
+    - output: refreshed plan, validation checks, warnings/blockers, ready-to-apply boolean
+- `POST /api/diagrams/:id/migration/apply`
+    - input: canonical target schema + optional expected live snapshot id + destructive approval payload
+    - output: validation payload plus structured success/failure apply result
 
-Storage/API changes:
+New workflow behavior:
 
-- No backend API changes in this task.
-- No schema migrations.
-- No env/config changes.
-- No compatibility layer added beyond using existing live workflow and persistence APIs.
+- Review button appears when compare-capable workflow data exists.
+- Review Changes can be opened even outside compare mode as long as the compare baseline exists.
+- Migration preview is generated from:
+    - baseline: workflow live snapshot canonical schema
+    - target: current development canonical schema
+- Validation checks currently include:
+    - connection reachable
+    - live baseline still matches expected baseline
+    - plan has no blocking canonical errors
+- Successful apply writes a new workflow live snapshot with source kind `apply` and updates workflow state to point Compare/Live Database at the new post-apply snapshot.
 
-## 6. Validation Performed
+Storage / compatibility notes:
 
-Focused validation that passed:
+- No env var changes.
+- No database schema migration changes were needed for this task.
+- Metadata repository usage expanded through existing tables only; no new metadata tables were introduced.
 
-- `npm run test -w @schemadash/schema-sync-core -- --run src/__tests__/compare.test.ts`
-- `npx vitest run --config frontend/vitest.config.ts frontend/src/features/diagram-workflow/components/workflow-mode-switcher.test.tsx frontend/src/features/diagram-workflow/components/live-status-chip.test.tsx frontend/src/features/diagram-workflow/lib/compare-render-model.test.ts`
-- `npm run build:web`
-- Targeted eslint runs on all newly touched compare/workflow/canvas files during implementation.
+## Validation Performed
 
-What those tests verified:
+What was tested:
 
-- Compare engine classifies added/removed/changed tables, fields, and relationships.
-- Compare render model preserves development layout and adds live-only entities with compare metadata.
-- Compare mode button activation gating works.
-- Compare read-only status badge appears in UI.
-- Frontend production bundling no longer pulls `node:crypto` into browser compare code.
+- Frontend targeted workflow tests:
+    - `npm run test:web -- review-dropdown review-changes-dialog migration-dialog review-grouping`
+- Backend targeted workflow tests:
+    - `npm run test -w @schemadash/backend -- diagram-migration-service diagram-workflow-service`
+- Backend compile check:
+    - `npm run typecheck -w @schemadash/backend`
+- Targeted eslint runs on all touched workflow/migration files
 
-What was manually verified by code inspection / targeted checks:
+What these checks verified:
 
-- Compare results are derived from canonical schema, not `ChangePlan`.
-- Compare mode is routed as read-only in `workflow-editor-page.tsx`.
-- Read-only compare disables drag/connect/edit affordances in the canvas components that were changed.
-- Schema Sync entrypoint is hidden outside Development mode.
+- Review dropdown visibility and actions
+- Structured review dialog rendering
+- Review grouping logic
+- Migration preview rendering
+- Validation step rendering
+- Destructive confirmation gating
+- Failed apply result reporting
+- Successful apply result reporting and workflow refresh callback
+- Backend apply orchestration updates workflow live snapshot after success
+- Backend apply failures surface stored audit logs
 
 What remains unverified:
 
-- Full browser/manual visual QA on dense real-world diagrams.
-- End-to-end editor interaction coverage across all compare edge cases.
-- Any behavior that depends on the repo-wide test/typecheck environment outside the targeted compare suite.
+- Full browser/manual QA against a real PostgreSQL database connection
+- End-to-end validation of preview/validate/apply through the actual UI with live credentials
+- Repo-wide frontend typecheck
 
-Known limitations / validation caveat:
+Known limitations / risks:
 
-- `npm run typecheck` still fails on this branch due pre-existing unrelated issues, including matcher typings in older tests and a `replaceAll` target complaint in `frontend/vite.config.ts`. These were not introduced by this compare task.
+- Root `npm run typecheck` is still not clean because of pre-existing unrelated frontend typing issues that were already present on the branch before this task. Backend typecheck is clean.
+- Migration preview currently creates fresh metadata baseline/change-plan records each time preview/validate/apply is run. This is acceptable for now but could be optimized later if metadata churn becomes a concern.
 
-## 7. Outstanding Work
+## Outstanding Work
 
 Not done yet:
 
-- Versions/snapshots UI
-- Compare-against-version workflow
-- Restore-to-development
-- Broader multi-version workflow state
-- Additional compare polish for dense diagrams and more exhaustive visual/manual QA
+- Versions UI
+- Restore to Development
+- Compare against historical snapshots
+- End-to-end manual QA with a live PostgreSQL instance
+- Audit/history browsing UI for past migration runs
 
-Recommended next implementation phase:
+Next recommended implementation phase:
 
-- Implement immutable diagram versions/snapshots using the existing workflow foundation and reuse the compare engine/render model for `live` and `version` baselines.
+- Run end-to-end browser QA against a real database and decide whether to add migration history / audit inspection UI or move next to Versions/Snapshots, depending on product priority.
 
-Blockers / risks for next phase:
+Dependencies / risks for future work:
 
-- Do not push snapshot/version state into `SchemaDashProvider` as editable parallel branches.
-- Keep compare derived and read-only.
-- Preserve the separation between workflow-derived views and the mutable development head.
+- Do not change the rule that canonical schema is the execution source of truth.
+- Do not make apply depend on compare overlay state.
+- Keep high-risk persistence/provider files untouched unless the next phase genuinely requires them.
+- If future work touches restore/versioning, keep Development as the only mutable head.
 
-## 8. Instructions for the Next Codex Session
+## Instructions for the Next Codex Session
 
 Read in this order:
 
 1. `docs/live-database-development-compare-versions-design.md`
 2. `docs/live-db-compare-feature-map.md`
 3. `docs/codex-handoff.md`
-4. `packages/schema-sync-core/src/compare-types.ts`
-5. `packages/schema-sync-core/src/compare.ts`
-6. `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
-7. `frontend/src/features/diagram-workflow/lib/compare-render-model.ts`
-8. `frontend/src/pages/editor-page/workflow-editor-page.tsx`
+4. `frontend/src/features/diagram-workflow/components/review-dropdown.tsx`
+5. `frontend/src/features/diagram-workflow/components/review-changes-dialog.tsx`
+6. `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
+7. `frontend/src/features/diagram-workflow/lib/review-grouping.ts`
+8. `backend/src/services/diagram-migration-service.ts`
+9. `backend/src/routes/diagram-migration-routes.ts`
+10. `backend/src/services/apply-service.ts`
 
-Inspect first if continuing compare/version work:
+Inspect next if continuing this workflow:
 
-- `frontend/src/features/diagram-workflow/components/workflow-mode-switcher.tsx`
-- `frontend/src/features/diagram-workflow/components/compare-summary-chip.tsx`
-- `frontend/src/features/diagram-workflow/components/compare-legend.tsx`
-- `packages/schema-sync-core/package.json`
-- `frontend/src/pages/editor-page/canvas/table-node/table-node.tsx`
-- `frontend/src/pages/editor-page/canvas/table-node/table-node-field.tsx`
-- `frontend/src/pages/editor-page/canvas/relationship-edge/relationship-edge.tsx`
+- `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
+- `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
+- `backend/src/services/diagram-workflow-service.ts`
+- `backend/test/diagram-migration-service.test.ts`
+- `frontend/src/features/diagram-workflow/components/migration-dialog.test.tsx`
 
-Avoid breaking:
+What to avoid breaking:
 
-- Derived/read-only compare behavior
-- Development remaining the mutable head
-- Existing live mode behavior from the workflow foundation branch
-- The decision to keep compare out of the high-risk persistence/provider files
+- Development must stay editable and authoritative.
+- Compare must stay read-only.
+- Review Changes must stay read-only.
+- Migration apply must stay explicit and must continue updating the workflow live snapshot only after success.
 
-Where to continue:
+Where to continue implementation:
 
-- For versions/snapshots: stay in the workflow layer and shared compare core; do not start by refactoring the editor provider.
-- Reuse `compareCanonicalSchemas()` and `buildCompareRenderModel()` instead of inventing a second diff/view model.
-- Keep browser imports pointed at `@schemadash/schema-sync-core/compare` and `@schemadash/schema-sync-core/compare-types` instead of the root `@schemadash/schema-sync-core` barrel when client code does not need server-only exports.
+- If improving UX: continue in `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
+- If improving safety/execution semantics: continue in `backend/src/services/diagram-migration-service.ts`
+- If extending review categorization: continue in `frontend/src/features/diagram-workflow/lib/review-grouping.ts`
 
-## 9. Git Summary
+## Git Summary
 
 Working branch:
 
-- `feature/compare-mode-visual-engine`
+- `feature/review-and-migration-workflow`
 
 Pull request title:
 
-- `Implement compare mode visual engine for Live Database vs Development`
+- `Add review and migration workflow after compare mode`
 
-Commit list created for this task:
+Commits created for this task:
 
-- `e4123dd feat: add canonical compare contracts and compare engine`
-  - Added shared compare types and canonical compare classification logic in `schema-sync-core`.
-- `4e79eb7 feat: add compare mode state and baseline plumbing`
-  - Added compare mode to workflow context/editor routing and created the derived compare render model plumbing.
-- `01a8732 feat: add compare canvas rendering and visual indicators`
-  - Applied compare status rendering to tables, fields, and relationships on the canvas.
-- `bfecfc8 feat: add compare legend summary and read-only UX`
-  - Added compare legend/summary UI and tightened readonly compare behavior.
-- `9d6a244 test: validate compare classification and rendering behavior`
-  - Added targeted shared/frontend tests for compare classification, render-model output, and workflow UI state.
-- `fix: avoid browser crypto import in compare mode`
-  - Switched frontend compare imports to `schema-sync-core` compare subpaths and added matching package exports so Vite does not pull the server-only `node:crypto` hash module into the browser bundle.
+- `feat: add review dropdown and workflow entry points`
+    - adds the Review button, dropdown actions, and initial dialog entry points
+- `feat: add structured review changes UI and grouping`
+    - builds the grouped read-only review experience and supplemental change-plan signals
+- `feat: add migration planning validation and preview flow`
+    - adds backend preview/validate routes and frontend migration preview UI
+- `feat: add migration execution UX and result handling`
+    - adds explicit apply handling, confirmation, result logs, and workflow live snapshot refresh after success
+- `test: validate review and migration workflow behavior`
+    - adds focused frontend/backend tests for review and migration behavior and updates this handoff document

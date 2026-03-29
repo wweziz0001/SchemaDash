@@ -164,4 +164,95 @@ describe('buildCompareRenderModel', () => {
             'removed'
         );
     });
+
+    it('does not duplicate identical fields when development sync metadata is missing', () => {
+        const model = buildCompareRenderModel({
+            baselineSchema: {
+                ...baselineSchema,
+                tables: [
+                    {
+                        id: 'public.table_1',
+                        schemaName: 'public',
+                        name: 'table_1',
+                        kind: 'table',
+                        sync: { sourceId: 'public.table_1' },
+                        columns: [
+                            {
+                                id: 'public.table_1.id',
+                                name: 'id',
+                                dataType: 'bigint',
+                                nullable: false,
+                                sync: { sourceId: 'public.table_1.id' },
+                            },
+                            {
+                                id: 'public.table_1.field_2',
+                                name: 'field_2',
+                                dataType: 'date',
+                                nullable: true,
+                                sync: {
+                                    sourceId: 'public.table_1.field_2',
+                                },
+                            },
+                        ],
+                        primaryKey: {
+                            id: 'public.table_1_pkey',
+                            name: 'public.table_1_pkey',
+                            columnIds: ['public.table_1.id'],
+                        },
+                        uniqueConstraints: [],
+                        indexes: [],
+                        foreignKeys: [],
+                        checkConstraints: [],
+                    },
+                ],
+            },
+            developmentDiagram: {
+                ...developmentDiagram,
+                tables: [
+                    {
+                        ...developmentDiagram.tables[0],
+                        name: 'table_1',
+                        schema: 'public',
+                        syncMetadata: {
+                            sourceId: 'public.table_1',
+                            sourceName: 'table_1',
+                        },
+                        fields: [
+                            {
+                                ...developmentDiagram.tables[0].fields[0],
+                                name: 'id',
+                                type: { id: 'bigint', name: 'bigint' },
+                                syncMetadata: undefined,
+                            },
+                            {
+                                ...developmentDiagram.tables[0].fields[1],
+                                name: 'field_2',
+                                type: { id: 'date', name: 'date' },
+                                nullable: true,
+                                syncMetadata: undefined,
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+
+        const table = model.diagram.tables?.find(
+            (entry) => entry.name === 'table_1'
+        );
+        const idFields = table?.fields.filter((field) => field.name === 'id');
+        const field2Fields = table?.fields.filter(
+            (field) => field.name === 'field_2'
+        );
+
+        expect(model.tablesById.get(table?.id ?? '')?.status).toBe('unchanged');
+        expect(idFields).toHaveLength(1);
+        expect(field2Fields).toHaveLength(1);
+        expect(
+            table?.fields.every((field) => {
+                const visual = model.fieldsById.get(field.id);
+                return visual?.status === 'unchanged';
+            })
+        ).toBe(true);
+    });
 });

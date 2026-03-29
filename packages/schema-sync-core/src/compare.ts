@@ -12,14 +12,12 @@ import type {
     CompareTableResult,
     CompareValueChange,
 } from './compare-types.js';
+import { normalizeComparableType } from './type-normalization.js';
 
 const qualifyTable = (schemaName: string, tableName: string) =>
     `${schemaName}.${tableName}`;
 
 const normalizeName = (value: string) => value.trim().toLowerCase();
-
-const normalizeType = (value?: string | null) =>
-    value?.trim().replace(/\s+/g, ' ').toLowerCase() ?? null;
 
 const normalizeScalar = (
     value: string | number | boolean | null | undefined
@@ -48,6 +46,15 @@ const getTableMatchKey = (table: CanonicalTable) =>
 const getColumnMatchKey = (column: CanonicalColumn) =>
     (column.sync?.sourceId ?? normalizeName(column.name)).toLowerCase();
 
+const getColumnMatchKeys = (column: CanonicalColumn) =>
+    uniqueBy(
+        [
+            column.sync?.sourceId?.toLowerCase(),
+            normalizeName(column.name),
+        ].filter(Boolean) as string[],
+        (value) => value
+    );
+
 const getQualifiedColumnKey = (
     table: CanonicalTable,
     column: CanonicalColumn
@@ -59,6 +66,18 @@ const getQualifiedColumnKey = (
 const getTableIdentityKey = (schemaName: string, tableName: string) =>
     qualifyTable(schemaName, tableName).toLowerCase();
 
+const uniqueBy = <T>(items: T[], keyFn: (item: T) => string): T[] => {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+        const key = keyFn(item);
+        if (seen.has(key)) {
+            return false;
+        }
+        seen.add(key);
+        return true;
+    });
+};
+
 const collectSingleColumnUniqueKeys = (table: CanonicalTable) =>
     new Set(
         table.uniqueConstraints
@@ -66,25 +85,38 @@ const collectSingleColumnUniqueKeys = (table: CanonicalTable) =>
             .map((constraint) => normalizeColumnRef(constraint.columnIds[0]))
     );
 
+const getColumnReferenceKeys = (
+    table: CanonicalTable,
+    column: CanonicalColumn
+) =>
+    uniqueBy(
+        [
+            ...getColumnMatchKeys(column),
+            normalizeName(column.id),
+            getQualifiedColumnKey(table, column),
+        ],
+        (value) => value
+    );
+
 const isColumnPrimaryKey = (table: CanonicalTable, column: CanonicalColumn) => {
-    const key = getColumnMatchKey(column);
-    const qualifiedKey = getQualifiedColumnKey(table, column);
+    const referenceKeys = new Set(getColumnReferenceKeys(table, column));
     const primaryKeyColumnIds = table.primaryKey?.columnIds ?? [];
 
     return (
         column.isPrimaryKey === true ||
-        primaryKeyColumnIds.some((columnId) => {
-            const normalized = normalizeName(columnId);
-            return normalized === key || normalized === qualifiedKey;
-        })
+        primaryKeyColumnIds.some((columnId) =>
+            referenceKeys.has(normalizeName(columnId))
+        )
     );
 };
 
 const isColumnUnique = (table: CanonicalTable, column: CanonicalColumn) => {
-    const columnKey = getColumnMatchKey(column);
+    const columnReferenceKeys = getColumnReferenceKeys(table, column);
     return (
         column.isUnique === true ||
-        collectSingleColumnUniqueKeys(table).has(columnKey)
+        columnReferenceKeys.some((key) =>
+            collectSingleColumnUniqueKeys(table).has(normalizeColumnRef(key))
+        )
     );
 };
 
@@ -141,36 +173,29 @@ const compareColumns = ({
     targetTable: CanonicalTable;
     tableMatchKey: string;
 }): CompareFieldResult[] => {
-    const baselineByKey = new Map(
-        baselineTable.columns.map((column) => [
-            getColumnMatchKey(column),
-            column,
-        ])
-    );
-    const targetByKey = new Map(
-        targetTable.columns.map((column) => [getColumnMatchKey(column), column])
-    );
-    const fieldKeys = new Set([...baselineByKey.keys(), ...targetByKey.keys()]);
     const fields: CompareFieldResult[] = [];
+    const targetByKey = new Map<string, CanonicalColumn>();
+    const matchedTargetColumnIds = new Set<string>();
 
-    for (const fieldKey of fieldKeys) {
-        const baselineColumn = baselineByKey.get(fieldKey);
-        const targetColumn = targetByKey.get(fieldKey);
-
-        if (!baselineColumn && targetColumn) {
-            fields.push({
-                matchKey: fieldKey,
-                tableMatchKey,
-                status: 'added',
-                target: targetColumn,
-                changedProperties: [],
-            });
-            continue;
+    for (const column of targetTable.columns) {
+        for (const key of getColumnMatchKeys(column)) {
+            if (!targetByKey.has(key)) {
+                targetByKey.set(key, column);
+            }
         }
+    }
 
-        if (baselineColumn && !targetColumn) {
+    for (const baselineColumn of baselineTable.columns) {
+        const targetColumn = getColumnMatchKeys(baselineColumn)
+            .map((columnKey) => targetByKey.get(columnKey))
+            .find(
+                (candidate) =>
+                    !!candidate && !matchedTargetColumnIds.has(candidate.id)
+            );
+
+        if (!targetColumn) {
             fields.push({
-                matchKey: fieldKey,
+                matchKey: getColumnMatchKey(baselineColumn),
                 tableMatchKey,
                 status: 'removed',
                 baseline: baselineColumn,
@@ -179,15 +204,13 @@ const compareColumns = ({
             continue;
         }
 
-        if (!baselineColumn || !targetColumn) {
-            continue;
-        }
+        matchedTargetColumnIds.add(targetColumn.id);
 
         const changedProperties: CompareValueChange[] = [];
-        const baselineType = normalizeType(
+        const baselineType = normalizeComparableType(
             baselineColumn.dataTypeDisplay ?? baselineColumn.dataType
         );
-        const targetType = normalizeType(
+        const targetType = normalizeComparableType(
             targetColumn.dataTypeDisplay ?? targetColumn.dataType
         );
 
@@ -250,12 +273,28 @@ const compareColumns = ({
         }
 
         fields.push({
-            matchKey: fieldKey,
+            matchKey:
+                getColumnMatchKeys(targetColumn)[0] ??
+                getColumnMatchKey(targetColumn),
             tableMatchKey,
             status: changedProperties.length > 0 ? 'changed' : 'unchanged',
             baseline: baselineColumn,
             target: targetColumn,
             changedProperties,
+        });
+    }
+
+    for (const targetColumn of targetTable.columns) {
+        if (matchedTargetColumnIds.has(targetColumn.id)) {
+            continue;
+        }
+
+        fields.push({
+            matchKey: getColumnMatchKey(targetColumn),
+            tableMatchKey,
+            status: 'added',
+            target: targetColumn,
+            changedProperties: [],
         });
     }
 

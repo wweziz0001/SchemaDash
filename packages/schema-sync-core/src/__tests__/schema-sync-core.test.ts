@@ -228,6 +228,56 @@ describe('schema sync core', () => {
         );
     });
 
+    it('does not emit type changes for equivalent PostgreSQL aliases with the same modifiers', () => {
+        const aliasBaseline: CanonicalSchema = {
+            ...baseline,
+            tables: [
+                {
+                    ...baseline.tables[0],
+                    columns: [
+                        {
+                            ...baseline.tables[0].columns[0],
+                            dataType: 'integer',
+                        },
+                        {
+                            ...baseline.tables[0].columns[1],
+                            dataType: 'character varying(200)',
+                        },
+                    ],
+                },
+            ],
+        };
+
+        const plan = createChangePlan({
+            id: 'plan-type-alias-equivalence',
+            baselineSnapshotId: 'snapshot-1',
+            connectionId: 'conn-1',
+            baseline: aliasBaseline,
+            target: {
+                ...aliasBaseline,
+                tables: [
+                    {
+                        ...aliasBaseline.tables[0],
+                        columns: [
+                            {
+                                ...aliasBaseline.tables[0].columns[0],
+                                dataType: 'int',
+                            },
+                            {
+                                ...aliasBaseline.tables[0].columns[1],
+                                dataType: 'varchar(200)',
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+
+        expect(
+            plan.changes.some((change) => change.kind === 'alter_column_type')
+        ).toBe(false);
+    });
+
     it('creates enum SQL before creating a new table that depends on it', () => {
         const plan = createChangePlan({
             id: 'plan-enum-create-table',
@@ -437,6 +487,100 @@ describe('schema sync core', () => {
             plan.changes.some((change) => change.kind === 'create_enum_type')
         ).toBe(false);
         expect(plan.blocked).toBe(false);
+    });
+
+    it('blocks invalid index definitions when no target columns can be resolved', () => {
+        const plan = createChangePlan({
+            id: 'plan-invalid-index',
+            baselineSnapshotId: 'snapshot-1',
+            connectionId: 'conn-1',
+            baseline,
+            target: {
+                ...baseline,
+                tables: [
+                    {
+                        ...baseline.tables[0],
+                        indexes: [
+                            {
+                                id: 'users_invalid_idx',
+                                name: 'users_invalid_idx',
+                                unique: false,
+                                type: 'btree',
+                                columnIds: [],
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+
+        expect(plan.blocked).toBe(true);
+        expect(
+            plan.warnings.some(
+                (warning) => warning.code === 'index_columns_missing'
+            )
+        ).toBe(true);
+        expect(
+            plan.sqlStatements.some((statement) =>
+                statement.includes('CREATE INDEX "users_invalid_idx"')
+            )
+        ).toBe(false);
+    });
+
+    it('drops an existing primary key before adding the replacement primary key', () => {
+        const plan = createChangePlan({
+            id: 'plan-primary-key-ordering',
+            baselineSnapshotId: 'snapshot-1',
+            connectionId: 'conn-1',
+            baseline,
+            target: {
+                ...baseline,
+                tables: [
+                    {
+                        ...baseline.tables[0],
+                        columns: [
+                            {
+                                ...baseline.tables[0].columns[0],
+                                id: 'target-id-column',
+                                sync: undefined,
+                            },
+                            {
+                                id: 'target-field-2-column',
+                                name: 'field_2',
+                                dataType: 'bigint',
+                                nullable: false,
+                            },
+                        ],
+                        primaryKey: {
+                            id: 'users_pkey',
+                            name: 'users_pkey',
+                            columnIds: [
+                                'target-id-column',
+                                'target-field-2-column',
+                            ],
+                        },
+                    },
+                ],
+            },
+        });
+
+        const addColumnIndex = plan.sqlStatements.findIndex((statement) =>
+            statement.includes('ADD COLUMN "field_2" bigint NOT NULL')
+        );
+        const dropPrimaryKeyIndex = plan.sqlStatements.findIndex((statement) =>
+            statement.includes(
+                'ALTER TABLE "public"."users" DROP CONSTRAINT IF EXISTS "users_pkey";'
+            )
+        );
+        const addPrimaryKeyIndex = plan.sqlStatements.findIndex((statement) =>
+            statement.includes(
+                'ALTER TABLE "public"."users" ADD PRIMARY KEY ("id", "field_2");'
+            )
+        );
+
+        expect(addColumnIndex).toBeGreaterThanOrEqual(0);
+        expect(dropPrimaryKeyIndex).toBeGreaterThan(addColumnIndex);
+        expect(addPrimaryKeyIndex).toBeGreaterThan(dropPrimaryKeyIndex);
     });
 
     it('blocks unknown custom types when no enum definition is available', () => {
