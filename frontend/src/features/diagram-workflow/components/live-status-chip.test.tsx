@@ -31,9 +31,9 @@ describe('live status chip', () => {
 
         render(<LiveStatusChip />);
 
-        expect(screen.getByText('Connected: Warehouse')).toBeInTheDocument();
-        expect(screen.getByText(/Last synced/)).toBeInTheDocument();
-        expect(screen.getByText('Read-only')).toBeInTheDocument();
+        expect(screen.queryByText('Connected: Warehouse')).not.toBeNull();
+        expect(screen.queryByText(/Last synced/)).not.toBeNull();
+        expect(screen.queryByText('Read-only')).not.toBeNull();
     });
 
     it('shows disconnected state before a live database is bound', () => {
@@ -52,8 +52,27 @@ describe('live status chip', () => {
 
         render(<LiveStatusChip />);
 
-        expect(screen.getByText('Disconnected')).toBeInTheDocument();
-        expect(screen.getByText('Live unavailable')).toBeInTheDocument();
-        expect(screen.getByText('Editable')).toBeInTheDocument();
+        expect(screen.queryByText('Disconnected')).not.toBeNull();
+        expect(screen.queryByText('Live unavailable')).not.toBeNull();
+        expect(screen.queryByText('Editable')).not.toBeNull();
+    });
+
+    it('shows compare read-only state while reviewing differences', () => {
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            diagramId: 'diagram-1',
+            activeMode: 'compare',
+            workflow: {
+                connectionId: 'connection-1',
+                connectionName: 'Warehouse',
+                connectionStatus: 'ok',
+                liveSnapshotId: 'live-snapshot-1',
+                syncStatus: 'in_sync',
+                lastSyncedAt: '2026-03-28T15:30:00.000Z',
+            },
+        } as never);
+
+        render(<LiveStatusChip />);
+
+        expect(screen.queryByText('Compare read-only')).not.toBeNull();
     });
 });

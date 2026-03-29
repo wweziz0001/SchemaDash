@@ -28,6 +28,7 @@ import { TopNavbarMock } from './top-navbar/top-navbar-mock';
 import { DiagramFilterProvider } from '@/context/diagram-filter-context/diagram-filter-provider';
 import { SchemaSyncProvider } from '@/features/schema-sync/context/schema-sync-context';
 import { SchemaSyncDialog } from '@/features/schema-sync/dialogs/schema-sync-dialog';
+import { WorkflowDevelopmentDiagramSync } from '@/features/diagram-workflow/components/workflow-development-diagram-sync';
 import type { Diagram } from '@/lib/domain/diagram';
 
 const OPEN_STAR_US_AFTER_SECONDS = 30;
@@ -81,6 +82,7 @@ const EditorPageComponent: React.FC<{
 
     return (
         <SchemaSyncProvider>
+            <WorkflowDevelopmentDiagramSync />
             <Helmet>
                 <title>
                     {diagramName

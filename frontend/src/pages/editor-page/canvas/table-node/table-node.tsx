@@ -53,6 +53,7 @@ import { useDiff } from '@/context/diff-context/use-diff';
 import { TableNodeStatus } from './table-node-status/table-node-status';
 import { TableEditMode } from './table-edit-mode/table-edit-mode';
 import { useCanvas } from '@/hooks/use-canvas';
+import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
 
 export const TABLE_RELATIONSHIP_SOURCE_HANDLE_ID_PREFIX = 'table_rel_source_';
 export const TABLE_RELATIONSHIP_TARGET_HANDLE_ID_PREFIX = 'table_rel_target_';
@@ -84,6 +85,7 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
         },
     }) => {
         const { updateTable, relationships, readonly } = useSchemaDash();
+        const workflow = useOptionalDiagramWorkflow();
         const edges = useStore((store) => store.edges) as EdgeType[];
         const {
             openTableFromSidebar,
@@ -204,6 +206,25 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
 
         const { isDiffTableChanged, isDiffNewTable, isDiffTableRemoved } =
             diffState;
+        const compareTable =
+            workflow?.activeMode === 'compare'
+                ? workflow.compareRenderModel?.tablesById.get(table.id)
+                : undefined;
+        const compareNameChange = compareTable?.changedProperties.find(
+            (change) => change.property === 'name'
+        );
+        const isVisualTableChanged =
+            compareTable?.status !== undefined
+                ? compareTable.status === 'changed'
+                : isDiffTableChanged;
+        const isVisualNewTable =
+            compareTable?.status !== undefined
+                ? compareTable.status === 'added'
+                : isDiffNewTable;
+        const isVisualTableRemoved =
+            compareTable?.status !== undefined
+                ? compareTable.status === 'removed'
+                : isDiffTableRemoved;
 
         const selectedRelEdges: RelationshipEdgeType[] = useMemo(() => {
             if (edges.length === 0) return [];
@@ -364,16 +385,16 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                     highlightTable
                         ? 'ring-2 ring-offset-slate-50 dark:ring-offset-slate-900 ring-blue-500 ring-offset-2 animate-scale-2'
                         : '',
-                    isDiffTableChanged &&
+                    isVisualTableChanged &&
                         !isSummaryOnly &&
-                        !isDiffNewTable &&
-                        !isDiffTableRemoved
+                        !isVisualNewTable &&
+                        !isVisualTableRemoved
                         ? 'outline outline-[3px] outline-sky-500 dark:outline-sky-900 outline-offset-[5px]'
                         : '',
-                    isDiffNewTable
+                    isVisualNewTable
                         ? 'outline outline-[3px] outline-green-500 dark:outline-green-900 outline-offset-[5px]'
                         : '',
-                    isDiffTableRemoved
+                    isVisualTableRemoved
                         ? 'outline outline-[3px] outline-red-500 dark:outline-red-900 outline-offset-[5px]'
                         : editTableMode
                           ? 'invisible'
@@ -386,9 +407,9 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                 hasHighlightedCustomType,
                 highlightTable,
                 isSummaryOnly,
-                isDiffTableChanged,
-                isDiffNewTable,
-                isDiffTableRemoved,
+                isVisualTableChanged,
+                isVisualNewTable,
+                isVisualTableRemoved,
                 isTarget,
                 editTableMode,
                 isPartOfCreatingRelationship,
@@ -459,7 +480,7 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                     }}
                 >
                     <NodeResizer
-                        isVisible={focused}
+                        isVisible={focused && !readonly}
                         lineClassName="!border-none !w-2"
                         minWidth={MIN_TABLE_SIZE}
                         maxWidth={MAX_TABLE_SIZE}
@@ -491,11 +512,11 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                     />
                     <TableNodeStatus
                         status={
-                            isDiffNewTable
+                            isVisualNewTable
                                 ? 'new'
-                                : isDiffTableRemoved
+                                : isVisualTableRemoved
                                   ? 'removed'
-                                  : isDiffTableChanged && !isSummaryOnly
+                                  : isVisualTableChanged && !isSummaryOnly
                                     ? 'changed'
                                     : 'none'
                         }
@@ -504,9 +525,18 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                         className="h-2 rounded-t-[6px]"
                         style={{ backgroundColor: tableColor }}
                     ></div>
-                    <div className="group flex h-9 items-center justify-between bg-slate-200 px-2 dark:bg-slate-900">
+                    <div
+                        className="group flex h-9 items-center justify-between bg-slate-200 px-2 dark:bg-slate-900"
+                        title={
+                            compareTable?.changedProperties.length
+                                ? `Changed: ${compareTable.changedProperties
+                                      .map((change) => change.property)
+                                      .join(', ')}`
+                                : undefined
+                        }
+                    >
                         <div className="flex min-w-0 flex-1 items-center gap-2">
-                            {isDiffNewTable ? (
+                            {isVisualNewTable ? (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <SquarePlus
@@ -516,7 +546,7 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                                     </TooltipTrigger>
                                     <TooltipContent>New Table</TooltipContent>
                                 </Tooltip>
-                            ) : isDiffTableRemoved ? (
+                            ) : isVisualTableRemoved ? (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <SquareMinus
@@ -528,7 +558,7 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                                         Table Removed
                                     </TooltipContent>
                                 </Tooltip>
-                            ) : isDiffTableChanged && !isSummaryOnly ? (
+                            ) : isVisualTableChanged && !isSummaryOnly ? (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <SquareDot
@@ -546,7 +576,21 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                                 <Table2 className="size-3.5 shrink-0 text-gray-600 dark:text-primary" />
                             )}
 
-                            {tableChangedName ? (
+                            {compareNameChange ? (
+                                <Label className="flex h-5 items-center justify-center truncate rounded-sm bg-sky-200 px-2 py-0.5 text-sm font-normal text-sky-900 dark:bg-sky-800 dark:text-sky-200">
+                                    <span className="truncate">
+                                        {String(
+                                            compareNameChange.baseline ?? ''
+                                        )}
+                                    </span>
+                                    <span className="mx-1 font-semibold">
+                                        →
+                                    </span>
+                                    <span className="truncate">
+                                        {String(compareNameChange.target ?? '')}
+                                    </span>
+                                </Label>
+                            ) : tableChangedName ? (
                                 <Label className="flex h-5 items-center justify-center truncate rounded-sm bg-sky-200 px-2 py-0.5 text-sm font-normal text-sky-900 dark:bg-sky-800 dark:text-sky-200">
                                     <span className="truncate">
                                         {tableChangedName.old}
@@ -558,15 +602,15 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                                         {tableChangedName.new}
                                     </span>
                                 </Label>
-                            ) : isDiffNewTable ? (
+                            ) : isVisualNewTable ? (
                                 <Label className="flex h-5 flex-col justify-center truncate rounded-sm bg-green-200 px-2 py-0.5 text-sm font-normal text-green-900 dark:bg-green-800 dark:text-green-200">
                                     {table.name}
                                 </Label>
-                            ) : isDiffTableRemoved ? (
+                            ) : isVisualTableRemoved ? (
                                 <Label className="flex h-5 flex-col justify-center truncate rounded-sm bg-red-200 px-2 py-0.5 text-sm font-normal text-red-900 dark:bg-red-800 dark:text-red-200">
                                     {table.name}
                                 </Label>
-                            ) : isDiffTableChanged && !isSummaryOnly ? (
+                            ) : isVisualTableChanged && !isSummaryOnly ? (
                                 <Label className="flex h-5 flex-col justify-center truncate rounded-sm bg-sky-200 px-2 py-0.5 text-sm font-normal text-sky-900 dark:bg-sky-800 dark:text-sky-200">
                                     {table.name}
                                 </Label>
@@ -586,21 +630,23 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                                     <CircleDotDashed className="size-4" />
                                 </Button>
                             )}
-                            <Button
-                                variant="ghost"
-                                className="size-6 p-0 text-slate-500 hover:bg-primary-foreground hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                                onClick={
-                                    table.width !== MAX_TABLE_SIZE
-                                        ? expandTable
-                                        : shrinkTable
-                                }
-                            >
-                                {table.width !== MAX_TABLE_SIZE ? (
-                                    <ChevronsLeftRight className="size-4" />
-                                ) : (
-                                    <ChevronsRightLeft className="size-4" />
-                                )}
-                            </Button>
+                            {readonly ? null : (
+                                <Button
+                                    variant="ghost"
+                                    className="size-6 p-0 text-slate-500 hover:bg-primary-foreground hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                                    onClick={
+                                        table.width !== MAX_TABLE_SIZE
+                                            ? expandTable
+                                            : shrinkTable
+                                    }
+                                >
+                                    {table.width !== MAX_TABLE_SIZE ? (
+                                        <ChevronsLeftRight className="size-4" />
+                                    ) : (
+                                        <ChevronsRightLeft className="size-4" />
+                                    )}
+                                </Button>
+                            )}
                         </div>
                     </div>
                     <div
@@ -623,26 +669,27 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                             />
                         ))}
                     </div>
-                    {(editTableMode && editModeInitialFieldCount !== null
-                        ? editModeInitialFieldCount
-                        : fields.length) > TABLE_MINIMIZED_FIELDS && (
-                        <div
-                            className="z-10 flex h-8 cursor-pointer items-center justify-center rounded-b-md border-t text-xs text-muted-foreground transition-colors duration-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-                            onClick={toggleExpand}
-                        >
-                            {expanded ? (
-                                <>
-                                    <ChevronUp className="mr-1 size-3.5" />
-                                    {t('show_less')}
-                                </>
-                            ) : (
-                                <>
-                                    <ChevronDown className="mr-1 size-3.5" />
-                                    {t('show_more')}
-                                </>
-                            )}
-                        </div>
-                    )}
+                    {!readonly &&
+                        (editTableMode && editModeInitialFieldCount !== null
+                            ? editModeInitialFieldCount
+                            : fields.length) > TABLE_MINIMIZED_FIELDS && (
+                            <div
+                                className="z-10 flex h-8 cursor-pointer items-center justify-center rounded-b-md border-t text-xs text-muted-foreground transition-colors duration-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                onClick={toggleExpand}
+                            >
+                                {expanded ? (
+                                    <>
+                                        <ChevronUp className="mr-1 size-3.5" />
+                                        {t('show_less')}
+                                    </>
+                                ) : (
+                                    <>
+                                        <ChevronDown className="mr-1 size-3.5" />
+                                        {t('show_more')}
+                                    </>
+                                )}
+                            </div>
+                        )}
                 </div>
             </TableNodeContextMenu>
         );

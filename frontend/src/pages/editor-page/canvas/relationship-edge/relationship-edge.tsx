@@ -12,6 +12,7 @@ import { useLocalConfig } from '@/hooks/use-local-config';
 import { useCanvas } from '@/hooks/use-canvas';
 import { EditRelationshipPopover } from './edit-relationship-popover';
 import { EllipsisIcon } from 'lucide-react';
+import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
 
 export type RelationshipEdgeType = Edge<
     {
@@ -38,9 +39,14 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
             const { checkIfRelationshipRemoved, checkIfNewRelationship } =
                 useDiff();
             const { showCardinality } = useLocalConfig();
+            const workflow = useOptionalDiagramWorkflow();
 
-            const { relationships, updateRelationship, removeRelationship } =
-                useSchemaDash();
+            const {
+                relationships,
+                updateRelationship,
+                removeRelationship,
+                readonly,
+            } = useSchemaDash();
             const {
                 editRelationshipPopover,
                 openRelationshipPopover,
@@ -56,6 +62,10 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
 
             const handleEdgeClick = useCallback(
                 (e: React.MouseEvent) => {
+                    if (readonly) {
+                        return;
+                    }
+
                     if (e.detail === 2) {
                         // Double click - open popover
                         openRelationshipPopover({
@@ -65,11 +75,15 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
                     }
                     // Single click just selects the edge, doesn't open popover
                 },
-                [openRelationshipPopover, id]
+                [openRelationshipPopover, id, readonly]
             );
 
             const handleContextMenu = useCallback(
                 (e: React.MouseEvent) => {
+                    if (readonly) {
+                        return;
+                    }
+
                     e.preventDefault();
                     e.stopPropagation();
                     openRelationshipPopover({
@@ -77,18 +91,22 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
                         position: { x: e.clientX, y: e.clientY },
                     });
                 },
-                [id, openRelationshipPopover]
+                [id, openRelationshipPopover, readonly]
             );
 
             const handleIndicatorClick = useCallback(
                 (e: React.MouseEvent) => {
+                    if (readonly) {
+                        return;
+                    }
+
                     e.stopPropagation();
                     openRelationshipPopover({
                         relationshipId: id,
                         position: { x: e.clientX, y: e.clientY },
                     });
                 },
-                [id, openRelationshipPopover]
+                [id, openRelationshipPopover, readonly]
             );
 
             const handleSwitchTables = useCallback(async () => {
@@ -350,6 +368,20 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
                         : false,
                 [checkIfRelationshipRemoved, relationship?.id]
             );
+            const compareRelationship =
+                workflow?.activeMode === 'compare'
+                    ? workflow.compareRenderModel?.relationshipsById.get(id)
+                    : undefined;
+            const isVisualNewRelationship =
+                compareRelationship?.status !== undefined
+                    ? compareRelationship.status === 'added'
+                    : isDiffNewRelationship;
+            const isVisualRemovedRelationship =
+                compareRelationship?.status !== undefined
+                    ? compareRelationship.status === 'removed'
+                    : isDiffRelationshipRemoved;
+            const isVisualChangedRelationship =
+                compareRelationship?.status === 'changed';
 
             // Calculate the midpoint of the edge for the indicator
             const edgeMidpoint = useMemo(() => {
@@ -385,11 +417,16 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
                             `!stroke-2 ${selected ? '!stroke-teal-600' : '!stroke-slate-400'}`,
                             {
                                 '!stroke-green-500 !stroke-[3px]':
-                                    isDiffNewRelationship,
+                                    isVisualNewRelationship,
                                 '!stroke-red-500 !stroke-[3px]':
-                                    isDiffRelationshipRemoved,
+                                    isVisualRemovedRelationship,
+                                '!stroke-sky-500 !stroke-[3px]':
+                                    isVisualChangedRelationship,
                             },
                         ])}
+                        strokeDasharray={
+                            isVisualChangedRelationship ? '6 4' : undefined
+                        }
                         onClick={handleEdgeClick}
                         onContextMenu={handleContextMenu}
                     />
@@ -403,7 +440,7 @@ export const RelationshipEdge: React.FC<EdgeProps<RelationshipEdgeType>> =
                         onClick={handleEdgeClick}
                         onContextMenu={handleContextMenu}
                     />
-                    {selected && (
+                    {selected && !readonly && (
                         <foreignObject
                             width={24}
                             height={24}

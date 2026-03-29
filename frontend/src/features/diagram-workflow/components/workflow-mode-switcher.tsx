@@ -37,6 +37,22 @@ export const WorkflowModeSwitcher: React.FC = () => {
             >
                 Live Database
             </Button>
+            <Button
+                size="sm"
+                variant={
+                    workflow.activeMode === 'compare' ? 'secondary' : 'ghost'
+                }
+                className="h-7 px-3 text-xs"
+                onClick={() => workflow.setActiveMode('compare')}
+                disabled={!workflow.compareModeEnabled}
+                title={
+                    workflow.compareModeEnabled
+                        ? 'Inspect live database versus development in a read-only compare view'
+                        : 'Sync a live database and load a development diagram to enable compare'
+                }
+            >
+                Compare
+            </Button>
         </div>
     );
 };

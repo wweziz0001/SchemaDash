@@ -122,6 +122,8 @@ import { defaultSchemas } from '@/lib/data/default-schemas';
 import { useDiff } from '@/context/diff-context/use-diff';
 import { useClickAway } from 'react-use';
 import { LivePresenceCursors } from './live-presence-cursors';
+import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
+import { CompareLegend } from '@/features/diagram-workflow/components/compare-legend';
 
 const HIGHLIGHTED_EDGE_Z_INDEX = 1;
 const DEFAULT_EDGE_Z_INDEX = 0;
@@ -272,6 +274,7 @@ export interface CanvasProps {
 
 export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
     const { getEdge, getInternalNode, getNode } = useReactFlow();
+    const workflow = useOptionalDiagramWorkflow();
     const [selectedTableIds, setSelectedTableIds] = useState<string[]>([]);
     const [selectedRelationshipIds, setSelectedRelationshipIds] = useState<
         string[]
@@ -814,7 +817,10 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
 
             if (readonly) {
                 changesToApply = changesToApply.filter(
-                    (change) => change.type !== 'remove'
+                    (change) =>
+                        change.type !== 'remove' &&
+                        change.type !== 'position' &&
+                        change.type !== 'dimensions'
                 );
             }
 
@@ -1679,6 +1685,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                     proOptions={{
                         hideAttribution: true,
                     }}
+                    nodesDraggable={!readonly}
+                    nodesConnectable={!readonly}
                     fitView={false}
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
@@ -1695,6 +1703,13 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                     deleteKeyCode={['Backspace', 'Delete']}
                     multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
                 >
+                    {workflow?.activeMode === 'compare' ? (
+                        <div className="pointer-events-none absolute right-4 top-4 z-20">
+                            <div className="pointer-events-auto">
+                                <CompareLegend />
+                            </div>
+                        </div>
+                    ) : null}
                     <Controls
                         position="top-left"
                         showZoom={false}
