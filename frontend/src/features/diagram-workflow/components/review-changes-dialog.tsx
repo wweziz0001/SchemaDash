@@ -46,8 +46,6 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                   baselineSchema:
                       workflow.workflow.liveSnapshot.canonicalSchema,
                   developmentDiagram: workflow.developmentDiagram,
-                  baselineSnapshotId: workflow.workflow.liveSnapshotId,
-                  connectionId: workflow.workflow.connectionId,
               })
             : null;
 

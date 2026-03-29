@@ -120,8 +120,6 @@ describe('buildReviewGrouping', () => {
         const review = buildReviewGrouping({
             baselineSchema,
             developmentDiagram,
-            baselineSnapshotId: 'workflow-live-1',
-            connectionId: 'connection-1',
         });
 
         expect(
