@@ -77,8 +77,20 @@ export const VersionsPanel: React.FC = () => {
                                             workflow.selectedVersion?.id ===
                                                 version.id
                                         }
+                                        compareBaseline={
+                                            workflow.compareSourceKind ===
+                                                'version' &&
+                                            workflow.compareVersion?.id ===
+                                                version.id
+                                        }
                                         onOpen={() => {
                                             workflow.openVersion(version.id);
+                                            setOpen(false);
+                                        }}
+                                        onCompare={() => {
+                                            workflow.compareVersionToDevelopment(
+                                                version.id
+                                            );
                                             setOpen(false);
                                         }}
                                     />

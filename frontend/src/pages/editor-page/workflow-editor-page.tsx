@@ -15,6 +15,8 @@ const WorkflowEditorPageContent: React.FC = () => {
         liveDiagram,
         loading,
         requestedMode,
+        compareSourceKind,
+        compareVersion,
         selectedVersion,
         versionDiagram,
         workflow,
@@ -22,6 +24,9 @@ const WorkflowEditorPageContent: React.FC = () => {
 
     const waitingForReadonlyTarget =
         (requestedMode === 'version' && !selectedVersion) ||
+        (requestedMode === 'compare' &&
+            compareSourceKind === 'version' &&
+            !compareVersion) ||
         (requestedMode !== 'version' && !workflow);
 
     if (
