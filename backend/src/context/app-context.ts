@@ -86,7 +86,8 @@ export const createAppContext = (
         diagramWorkflowRepository,
         metadataRepository,
         persistenceService,
-        connectionsService
+        connectionsService,
+        applyService
     );
 
     return {

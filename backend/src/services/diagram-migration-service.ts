@@ -12,6 +12,7 @@ import type { DiagramWorkflowRepository } from '../repositories/diagram-workflow
 import type { MetadataRepository } from '../repositories/metadata-repository.js';
 import type { ConnectionsService } from './connections-service.js';
 import type { PersistenceService } from './persistence-service.js';
+import type { ApplyService } from './apply-service.js';
 import { AppError } from '../utils/app-error.js';
 import { generateId } from '../utils/id.js';
 
@@ -53,6 +54,22 @@ export interface DiagramMigrationValidation extends DiagramMigrationPreview {
     readyToApply: boolean;
 }
 
+export interface DiagramMigrationApplyResult {
+    status: 'succeeded' | 'failed';
+    jobId: string | null;
+    auditId: string | null;
+    logs: string[];
+    executedStatements: string[];
+    error: string | null;
+    postApplySnapshotId: string | null;
+    updatedLiveSnapshotId: string | null;
+}
+
+export interface DiagramMigrationApplyResponse {
+    validation: DiagramMigrationValidation;
+    result: DiagramMigrationApplyResult;
+}
+
 const warningToIssue = (warning: RiskWarning): DiagramMigrationIssue => ({
     code: warning.code,
     severity:
@@ -70,7 +87,8 @@ export class DiagramMigrationService {
         private readonly workflowRepository: DiagramWorkflowRepository,
         private readonly metadataRepository: MetadataRepository,
         private readonly persistenceService: PersistenceService,
-        private readonly connectionsService: ConnectionsService
+        private readonly connectionsService: ConnectionsService,
+        private readonly applyService: ApplyService
     ) {}
 
     previewMigration(
@@ -324,6 +342,156 @@ export class DiagramMigrationService {
             readyToApply,
             plan: preview.plan,
         };
+    }
+
+    async applyMigration(
+        diagramId: string,
+        input: {
+            targetSchema: CanonicalSchema;
+            expectedLiveSnapshotId?: string | null;
+            destructiveApproval: {
+                confirmed: boolean;
+                confirmationText: string;
+            };
+        },
+        actor?: AppUserRecord | null,
+        actorLabel = 'local-user'
+    ): Promise<DiagramMigrationApplyResponse> {
+        const validation = await this.validateMigration(
+            diagramId,
+            {
+                targetSchema: input.targetSchema,
+                expectedLiveSnapshotId: input.expectedLiveSnapshotId,
+            },
+            actor
+        );
+
+        if (!validation.readyToApply) {
+            return {
+                validation,
+                result: {
+                    status: 'failed',
+                    jobId: null,
+                    auditId: null,
+                    logs: [],
+                    executedStatements: [],
+                    error:
+                        validation.issues.find(
+                            (issue) => issue.severity === 'blocking'
+                        )?.message ?? 'Migration validation did not pass.',
+                    postApplySnapshotId: null,
+                    updatedLiveSnapshotId: null,
+                },
+            };
+        }
+
+        try {
+            const applyResult = await this.applyService.applyPlan({
+                planId: validation.plan.id,
+                actor: actorLabel,
+                destructiveApproval: input.destructiveApproval,
+            });
+            const updatedLiveSnapshotId = this.recordPostApplyLiveSnapshot({
+                diagramId,
+                actor,
+                connectionId: validation.plan.connectionId,
+                previousLiveSnapshotId:
+                    validation.workflowLiveSnapshotId ?? undefined,
+                postApplySnapshotId: applyResult.postApplySnapshotId ?? null,
+            });
+
+            return {
+                validation,
+                result: {
+                    status: 'succeeded',
+                    jobId: applyResult.jobId,
+                    auditId: applyResult.auditId,
+                    logs: applyResult.logs,
+                    executedStatements: applyResult.executedStatements,
+                    error: applyResult.error ?? null,
+                    postApplySnapshotId:
+                        applyResult.postApplySnapshotId ?? null,
+                    updatedLiveSnapshotId,
+                },
+            };
+        } catch (error) {
+            const audit = this.metadataRepository.getLatestAuditForChangePlan(
+                validation.plan.id
+            );
+
+            return {
+                validation,
+                result: {
+                    status: 'failed',
+                    jobId: null,
+                    auditId: audit?.id ?? null,
+                    logs: audit?.logs ?? [],
+                    executedStatements: [],
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : 'Failed to apply the migration plan.',
+                    postApplySnapshotId: audit?.postApplySnapshotId ?? null,
+                    updatedLiveSnapshotId: null,
+                },
+            };
+        }
+    }
+
+    private recordPostApplyLiveSnapshot({
+        diagramId,
+        actor,
+        connectionId,
+        previousLiveSnapshotId,
+        postApplySnapshotId,
+    }: {
+        diagramId: string;
+        actor?: AppUserRecord | null;
+        connectionId: string;
+        previousLiveSnapshotId?: string | null;
+        postApplySnapshotId: string | null;
+    }): string | null {
+        if (!postApplySnapshotId) {
+            return null;
+        }
+
+        const postApplySnapshot =
+            this.metadataRepository.getSnapshot(postApplySnapshotId);
+        const state = this.workflowRepository.getState(diagramId);
+        if (!postApplySnapshot || !state) {
+            return null;
+        }
+
+        const now = new Date().toISOString();
+        const liveSnapshotId = generateId();
+        this.workflowRepository.putSnapshot({
+            id: liveSnapshotId,
+            diagramId,
+            snapshotKind: 'live',
+            sourceKind: 'apply',
+            connectionId,
+            fingerprint: postApplySnapshot.fingerprint,
+            canonicalSchema: postApplySnapshot.schema,
+            diagramDocument: null,
+            layoutSource: 'derived',
+            basedOnSnapshotId: previousLiveSnapshotId ?? null,
+            createdByUserId: actor?.id ?? null,
+            createdAt: now,
+        });
+        this.workflowRepository.putState({
+            ...state,
+            liveSnapshotId,
+            liveFingerprint: postApplySnapshot.fingerprint,
+            syncStatus: 'in_sync',
+            connectionStatus: 'ok',
+            lastSyncedAt: now,
+            lastSyncError: null,
+            defaultCompareSourceKind: 'live',
+            defaultCompareSourceId: liveSnapshotId,
+            updatedAt: now,
+        });
+
+        return liveSnapshotId;
     }
 
     private requireEditableDiagram(

@@ -39,6 +39,22 @@ export interface DiagramMigrationValidation extends DiagramMigrationPreview {
     readyToApply: boolean;
 }
 
+export interface DiagramMigrationApplyResult {
+    status: 'succeeded' | 'failed';
+    jobId: string | null;
+    auditId: string | null;
+    logs: string[];
+    executedStatements: string[];
+    error: string | null;
+    postApplySnapshotId: string | null;
+    updatedLiveSnapshotId: string | null;
+}
+
+export interface DiagramMigrationApplyResponse {
+    validation: DiagramMigrationValidation;
+    result: DiagramMigrationApplyResult;
+}
+
 export const diagramMigrationClient = {
     previewMigration: async (
         diagramId: string,
@@ -63,6 +79,24 @@ export const diagramMigrationClient = {
     ) =>
         requestJson<{ validation: DiagramMigrationValidation }>(
             `/api/diagrams/${diagramId}/migration/validate`,
+            {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            }
+        ),
+    applyMigration: async (
+        diagramId: string,
+        payload: {
+            targetSchema: CanonicalSchema;
+            expectedLiveSnapshotId?: string | null;
+            destructiveApproval: {
+                confirmed: boolean;
+                confirmationText: string;
+            };
+        }
+    ) =>
+        requestJson<{ apply: DiagramMigrationApplyResponse }>(
+            `/api/diagrams/${diagramId}/migration/apply`,
             {
                 method: 'POST',
                 body: JSON.stringify(payload),
