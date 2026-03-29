@@ -17,6 +17,7 @@ import {
 import { analyzePlanRisks } from './risk.js';
 import { generateMigrationSql } from './sql.js';
 import { hashCanonicalSchema } from './hash.js';
+import { normalizeComparableType } from './type-normalization.js';
 
 const qualifyTable = (schemaName: string, tableName: string) =>
     `${schemaName}.${tableName}`;
@@ -656,7 +657,14 @@ export const createChangePlan = ({
                 });
             }
 
-            if (baselineColumn.dataType !== targetColumn.dataType) {
+            if (
+                normalizeComparableType(
+                    baselineColumn.dataTypeDisplay ?? baselineColumn.dataType
+                ) !==
+                normalizeComparableType(
+                    targetColumn.dataTypeDisplay ?? targetColumn.dataType
+                )
+            ) {
                 changes.push({
                     id: `alter-column-type:${targetTable.id}:${targetColumn.id}`,
                     kind: 'alter_column_type',

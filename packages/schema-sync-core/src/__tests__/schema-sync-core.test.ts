@@ -228,6 +228,56 @@ describe('schema sync core', () => {
         );
     });
 
+    it('does not emit type changes for equivalent PostgreSQL aliases with the same modifiers', () => {
+        const aliasBaseline: CanonicalSchema = {
+            ...baseline,
+            tables: [
+                {
+                    ...baseline.tables[0],
+                    columns: [
+                        {
+                            ...baseline.tables[0].columns[0],
+                            dataType: 'integer',
+                        },
+                        {
+                            ...baseline.tables[0].columns[1],
+                            dataType: 'character varying(200)',
+                        },
+                    ],
+                },
+            ],
+        };
+
+        const plan = createChangePlan({
+            id: 'plan-type-alias-equivalence',
+            baselineSnapshotId: 'snapshot-1',
+            connectionId: 'conn-1',
+            baseline: aliasBaseline,
+            target: {
+                ...aliasBaseline,
+                tables: [
+                    {
+                        ...aliasBaseline.tables[0],
+                        columns: [
+                            {
+                                ...aliasBaseline.tables[0].columns[0],
+                                dataType: 'int',
+                            },
+                            {
+                                ...aliasBaseline.tables[0].columns[1],
+                                dataType: 'varchar(200)',
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+
+        expect(
+            plan.changes.some((change) => change.kind === 'alter_column_type')
+        ).toBe(false);
+    });
+
     it('creates enum SQL before creating a new table that depends on it', () => {
         const plan = createChangePlan({
             id: 'plan-enum-create-table',

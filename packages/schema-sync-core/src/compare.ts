@@ -12,14 +12,12 @@ import type {
     CompareTableResult,
     CompareValueChange,
 } from './compare-types.js';
+import { normalizeComparableType } from './type-normalization.js';
 
 const qualifyTable = (schemaName: string, tableName: string) =>
     `${schemaName}.${tableName}`;
 
 const normalizeName = (value: string) => value.trim().toLowerCase();
-
-const normalizeType = (value?: string | null) =>
-    value?.trim().replace(/\s+/g, ' ').toLowerCase() ?? null;
 
 const normalizeScalar = (
     value: string | number | boolean | null | undefined
@@ -209,10 +207,10 @@ const compareColumns = ({
         matchedTargetColumnIds.add(targetColumn.id);
 
         const changedProperties: CompareValueChange[] = [];
-        const baselineType = normalizeType(
+        const baselineType = normalizeComparableType(
             baselineColumn.dataTypeDisplay ?? baselineColumn.dataType
         );
-        const targetType = normalizeType(
+        const targetType = normalizeComparableType(
             targetColumn.dataTypeDisplay ?? targetColumn.dataType
         );
 

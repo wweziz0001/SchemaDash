@@ -299,4 +299,56 @@ describe('compare canonical schemas', () => {
             usersTable?.fields.some((field) => field.status === 'removed')
         ).toBe(false);
     });
+
+    it('treats equivalent PostgreSQL type aliases as unchanged in compare mode', () => {
+        const result = compareCanonicalSchemas({
+            baseline: {
+                ...baseline,
+                tables: [
+                    {
+                        ...baseline.tables[0],
+                        columns: [
+                            {
+                                ...baseline.tables[0].columns[0],
+                                dataType: 'integer',
+                            },
+                            {
+                                ...baseline.tables[0].columns[1],
+                                dataType: 'character varying(200)',
+                            },
+                        ],
+                    },
+                    ...baseline.tables.slice(1),
+                ],
+            },
+            target: {
+                ...baseline,
+                tables: [
+                    {
+                        ...baseline.tables[0],
+                        columns: [
+                            {
+                                ...baseline.tables[0].columns[0],
+                                dataType: 'int',
+                            },
+                            {
+                                ...baseline.tables[0].columns[1],
+                                dataType: 'varchar(200)',
+                            },
+                        ],
+                    },
+                    ...baseline.tables.slice(1),
+                ],
+            },
+        });
+
+        const usersTable = result.tables.find(
+            (table) => table.matchKey === 'users'
+        );
+
+        expect(usersTable?.status).toBe('unchanged');
+        expect(
+            usersTable?.fields.every((field) => field.status === 'unchanged')
+        ).toBe(true);
+    });
 });
