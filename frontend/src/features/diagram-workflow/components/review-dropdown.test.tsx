@@ -24,9 +24,7 @@ describe('review dropdown', () => {
 
         render(<ReviewDropdown />);
 
-        expect(
-            screen.queryByRole('button', { name: 'Review' })
-        ).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
     });
 
     it('opens a menu with review changes and migration actions', async () => {
@@ -42,9 +40,9 @@ describe('review dropdown', () => {
 
         expect(
             screen.getByRole('menuitem', { name: 'Review Changes' })
-        ).toBeInTheDocument();
+        ).toBeTruthy();
         expect(
             screen.getByRole('menuitem', { name: 'Migration' })
-        ).toBeInTheDocument();
+        ).toBeTruthy();
     });
 });
