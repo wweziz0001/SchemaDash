@@ -10,7 +10,13 @@ import {
 } from '@/components/dialog/dialog';
 import { Input } from '@/components/input/input';
 import { Label } from '@/components/label/label';
+import { useSchemaDash } from '@/hooks/use-schemadash';
+import { useStorage } from '@/hooks/use-storage';
+import { persistenceClient } from '@/features/persistence/api/persistence-client';
+import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
 import type { DiagramWorkflowVersionSummary } from '../api/diagram-workflow-client';
+import { diagramWorkflowClient } from '../api/diagram-workflow-client';
+import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
 import {
     getRestoreConfirmationHint,
     getRestoreVersionHeading,
@@ -21,24 +27,19 @@ import { RestoreWarningPanel } from './restore-warning-panel';
 export interface RestoreVersionDialogProps {
     open: boolean;
     version?: DiagramWorkflowVersionSummary;
-    submitting?: boolean;
-    errorMessage?: string | null;
     onOpenChange: (open: boolean) => void;
-    onConfirm?: (
-        version: DiagramWorkflowVersionSummary,
-        confirmationText: string
-    ) => Promise<void> | void;
 }
 
 export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
     open,
     version,
-    submitting = false,
-    errorMessage = null,
     onOpenChange,
-    onConfirm,
 }) => {
+    const workflow = useOptionalDiagramWorkflow();
+    const storage = useStorage();
+    const { updateDiagramData } = useSchemaDash();
     const [confirmationText, setConfirmationText] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         if (!open) {
@@ -54,6 +55,68 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
                 RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT,
         [confirmationText, submitting, version]
     );
+
+    const handleRestore = async () => {
+        if (!version || !workflow?.diagramId || !workflow.developmentDiagram) {
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const sessionState = await storage.getDiagramSessionState(
+                workflow.diagramId
+            );
+            const persistedDiagram =
+                sessionState?.collaboration.document.version === undefined
+                    ? await persistenceClient.getDiagram(workflow.diagramId)
+                    : null;
+            const baseVersion =
+                sessionState?.collaboration.document.version ??
+                persistedDiagram?.collaboration.document.version;
+
+            if (!baseVersion) {
+                return;
+            }
+
+            await diagramWorkflowClient.restoreVersionToDevelopment(
+                workflow.diagramId,
+                version.id,
+                {
+                    confirmationText: confirmationText.trim(),
+                    baseVersion,
+                    sessionId: sessionState?.session.id,
+                    currentDevelopmentCanonicalSchema: diagramToCanonicalSchema(
+                        workflow.developmentDiagram
+                    ),
+                }
+            );
+
+            const refreshedDiagram = await storage.getDiagram(
+                workflow.diagramId,
+                {
+                    includeRelationships: true,
+                    includeTables: true,
+                    includeDependencies: true,
+                    includeAreas: true,
+                    includeCustomTypes: true,
+                    includeNotes: true,
+                }
+            );
+
+            if (refreshedDiagram) {
+                await updateDiagramData(refreshedDiagram, {
+                    forceUpdateStorage: true,
+                });
+                workflow.setDevelopmentDiagram(refreshedDiagram);
+            }
+
+            workflow.setActiveMode('development');
+            await workflow.refreshWorkflow();
+            onOpenChange(false);
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,12 +135,6 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
 
                 <div className="space-y-4">
                     {version ? <RestoreWarningPanel version={version} /> : null}
-
-                    {errorMessage ? (
-                        <p className="text-sm text-destructive">
-                            {errorMessage}
-                        </p>
-                    ) : null}
 
                     <div className="space-y-2">
                         <Label htmlFor="restore-confirmation-text">
@@ -112,13 +169,7 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
                     <Button
                         variant="destructive"
                         disabled={confirmDisabled}
-                        onClick={() => {
-                            if (!version || !onConfirm) {
-                                return;
-                            }
-
-                            void onConfirm(version, confirmationText.trim());
-                        }}
+                        onClick={() => void handleRestore()}
                     >
                         {submitting ? 'Restoring...' : 'Restore to Development'}
                     </Button>
