@@ -1,16 +1,25 @@
-import type { CanonicalSchema } from '@schemadash/schema-sync-core';
+import {
+    hashCanonicalSchema,
+    type CanonicalSchema,
+} from '@schemadash/schema-sync-core';
 import type { AppUserRecord } from '../repositories/app-repository.js';
 import type {
     DiagramWorkflowRepository,
     DiagramWorkflowSnapshotRecord,
     DiagramWorkflowStateRecord,
+    DiagramWorkflowVersionRecord,
 } from '../repositories/diagram-workflow-repository.js';
 import type { MetadataRepository } from '../repositories/metadata-repository.js';
-import { bindDiagramWorkflowConnectionSchema } from '../schemas/diagram-workflow.js';
+import {
+    bindDiagramWorkflowConnectionSchema,
+    createDiagramWorkflowVersionSchema,
+    type DiagramWorkflowVersionOrigin,
+} from '../schemas/diagram-workflow.js';
 import type { PersistenceService } from './persistence-service.js';
 import type { SchemaSyncService } from './schema-sync-service.js';
 import { AppError } from '../utils/app-error.js';
 import { generateId } from '../utils/id.js';
+import type { DiagramDocument } from '../schemas/persistence.js';
 
 type PersistedDiagramView = NonNullable<
     ReturnType<PersistenceService['getDiagram']>
@@ -53,6 +62,37 @@ export interface DiagramWorkflowView {
     liveSnapshot: DiagramWorkflowLiveSnapshotView | null;
 }
 
+export interface DiagramWorkflowVersionAuthorView {
+    id: string;
+    displayName: string;
+    email: string | null;
+}
+
+export interface DiagramWorkflowVersionSummaryView {
+    id: string;
+    diagramId: string;
+    snapshotId: string;
+    name: string | null;
+    description: string | null;
+    versionLabel: string;
+    origin: DiagramWorkflowVersionOrigin;
+    pinned: boolean;
+    createdAt: string;
+    createdBy: DiagramWorkflowVersionAuthorView | null;
+}
+
+export interface DiagramWorkflowVersionView extends DiagramWorkflowVersionSummaryView {
+    snapshot: {
+        id: string;
+        fingerprint: string;
+        canonicalSchema: CanonicalSchema;
+        diagramDocument: DiagramDocument | null;
+        layoutSource: DiagramWorkflowSnapshotRecord['layoutSource'];
+        sourceKind: DiagramWorkflowSnapshotRecord['sourceKind'];
+        createdAt: string;
+    };
+}
+
 export class DiagramWorkflowService {
     constructor(
         private readonly repository: DiagramWorkflowRepository,
@@ -73,6 +113,103 @@ export class DiagramWorkflowService {
             : null;
 
         return this.toWorkflowView(diagram, state, liveSnapshot);
+    }
+
+    listVersions(
+        diagramId: string,
+        actor?: AppUserRecord | null,
+        options?: { shareToken?: string | null }
+    ): DiagramWorkflowVersionSummaryView[] {
+        this.requireDiagramView(diagramId, actor, options);
+
+        return this.repository
+            .listVersions(diagramId)
+            .map((version) => this.toVersionSummaryView(version));
+    }
+
+    getVersion(
+        diagramId: string,
+        versionId: string,
+        actor?: AppUserRecord | null,
+        options?: { shareToken?: string | null }
+    ): DiagramWorkflowVersionView {
+        this.requireDiagramView(diagramId, actor, options);
+
+        const version = this.repository.getVersion(versionId);
+        if (!version || version.diagramId !== diagramId) {
+            throw new AppError(
+                'Version not found.',
+                404,
+                'DIAGRAM_VERSION_NOT_FOUND'
+            );
+        }
+
+        const snapshot = this.repository.getSnapshot(version.snapshotId);
+        if (!snapshot || snapshot.diagramId !== diagramId) {
+            throw new AppError(
+                'Version snapshot not found.',
+                404,
+                'DIAGRAM_VERSION_SNAPSHOT_NOT_FOUND'
+            );
+        }
+
+        return this.toVersionView(version, snapshot);
+    }
+
+    createVersion(
+        diagramId: string,
+        input: unknown,
+        actor?: AppUserRecord | null
+    ): DiagramWorkflowVersionView {
+        this.requireEditableDiagram(diagramId, actor);
+        const payload = createDiagramWorkflowVersionSchema.parse(input);
+        const createdAt = new Date().toISOString();
+        const workflowState = this.repository.getState(diagramId);
+        const snapshotId = generateId();
+        const versionId = generateId();
+        const versionNumber = this.repository.countVersions(diagramId) + 1;
+        const versionLabel = `Version ${versionNumber}`;
+        const fingerprint = hashCanonicalSchema(payload.canonicalSchema);
+        const canonicalSchema: CanonicalSchema = {
+            ...payload.canonicalSchema,
+            fingerprint,
+            importedAt: payload.canonicalSchema.importedAt ?? createdAt,
+        };
+        const snapshot: DiagramWorkflowSnapshotRecord = {
+            id: snapshotId,
+            diagramId,
+            snapshotKind: 'version',
+            sourceKind: 'development',
+            connectionId: workflowState?.connectionId ?? null,
+            fingerprint,
+            canonicalSchema,
+            diagramDocument: payload.diagramDocument,
+            layoutSource: 'captured',
+            basedOnSnapshotId: null,
+            createdByUserId: actor?.id ?? null,
+            createdAt,
+        };
+        const version: DiagramWorkflowVersionRecord = {
+            id: versionId,
+            diagramId,
+            snapshotId,
+            name: payload.name ?? null,
+            description: payload.description ?? null,
+            versionLabel,
+            pinned: false,
+            origin: payload.origin,
+            createdByUserId: actor?.id ?? null,
+            createdByDisplayName: actor?.displayName ?? null,
+            createdByEmail: actor?.email ?? null,
+            createdAt,
+        };
+
+        this.repository.transaction(() => {
+            this.repository.putSnapshot(snapshot);
+            this.repository.putVersion(version);
+        });
+
+        return this.toVersionView(version, snapshot);
     }
 
     bindConnection(
@@ -281,6 +418,52 @@ export class DiagramWorkflowService {
         }
 
         return diagram;
+    }
+
+    private toVersionSummaryView(
+        version: DiagramWorkflowVersionRecord
+    ): DiagramWorkflowVersionSummaryView {
+        return {
+            id: version.id,
+            diagramId: version.diagramId,
+            snapshotId: version.snapshotId,
+            name: version.name,
+            description: version.description,
+            versionLabel: version.versionLabel,
+            origin: version.origin,
+            pinned: version.pinned,
+            createdAt: version.createdAt,
+            createdBy:
+                version.createdByUserId &&
+                (version.createdByDisplayName || version.createdByEmail)
+                    ? {
+                          id: version.createdByUserId,
+                          displayName:
+                              version.createdByDisplayName ??
+                              version.createdByEmail ??
+                              'Unknown user',
+                          email: version.createdByEmail,
+                      }
+                    : null,
+        };
+    }
+
+    private toVersionView(
+        version: DiagramWorkflowVersionRecord,
+        snapshot: DiagramWorkflowSnapshotRecord
+    ): DiagramWorkflowVersionView {
+        return {
+            ...this.toVersionSummaryView(version),
+            snapshot: {
+                id: snapshot.id,
+                fingerprint: snapshot.fingerprint,
+                canonicalSchema: snapshot.canonicalSchema,
+                diagramDocument: snapshot.diagramDocument,
+                layoutSource: snapshot.layoutSource,
+                sourceKind: snapshot.sourceKind,
+                createdAt: snapshot.createdAt,
+            },
+        };
     }
 
     private toWorkflowView(

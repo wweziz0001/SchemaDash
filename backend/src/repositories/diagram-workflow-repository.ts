@@ -7,13 +7,16 @@ import {
     diagramWorkflowSnapshotKindSchema,
     diagramWorkflowSnapshotSourceKindSchema,
     diagramWorkflowSyncStatusSchema,
+    diagramWorkflowVersionOriginSchema,
     type DiagramWorkflowCompareSourceKind,
     type DiagramWorkflowConnectionStatus,
     type DiagramWorkflowLayoutSource,
     type DiagramWorkflowSnapshotKind,
     type DiagramWorkflowSnapshotSourceKind,
     type DiagramWorkflowSyncStatus,
+    type DiagramWorkflowVersionOrigin,
 } from '../schemas/diagram-workflow.js';
+import type { DiagramDocument } from '../schemas/persistence.js';
 
 export interface DiagramWorkflowStateRecord {
     diagramId: string;
@@ -42,10 +45,25 @@ export interface DiagramWorkflowSnapshotRecord {
     connectionId: string | null;
     fingerprint: string;
     canonicalSchema: CanonicalSchema;
-    diagramDocument: Record<string, unknown> | null;
+    diagramDocument: DiagramDocument | null;
     layoutSource: DiagramWorkflowLayoutSource;
     basedOnSnapshotId: string | null;
     createdByUserId: string | null;
+    createdAt: string;
+}
+
+export interface DiagramWorkflowVersionRecord {
+    id: string;
+    diagramId: string;
+    snapshotId: string;
+    name: string | null;
+    description: string | null;
+    versionLabel: string;
+    pinned: boolean;
+    origin: DiagramWorkflowVersionOrigin;
+    createdByUserId: string | null;
+    createdByDisplayName: string | null;
+    createdByEmail: string | null;
     createdAt: string;
 }
 
@@ -62,6 +80,10 @@ export class DiagramWorkflowRepository {
 
     close() {
         this.db.close();
+    }
+
+    transaction<T>(callback: () => T): T {
+        return this.db.transaction(callback)();
     }
 
     private initialize() {
@@ -84,14 +106,10 @@ export class DiagramWorkflowRepository {
             ).map((row) => row.version)
         );
 
-        const migrationVersion = 9;
-        if (appliedVersions.has(migrationVersion)) {
-            return;
-        }
-
-        const now = new Date().toISOString();
-        const applyMigration = this.db.transaction(() => {
-            this.db.exec(`
+        if (!appliedVersions.has(9)) {
+            const now = new Date().toISOString();
+            this.db.transaction(() => {
+                this.db.exec(`
                 CREATE TABLE IF NOT EXISTS diagram_workflow_state (
                     diagram_id TEXT PRIMARY KEY,
                     connection_id TEXT,
@@ -133,17 +151,54 @@ export class DiagramWorkflowRepository {
                 ON diagram_workflow_snapshots(diagram_id, snapshot_kind, created_at DESC);
             `);
 
-            this.db
-                .prepare(
-                    `
+                this.db
+                    .prepare(
+                        `
                     INSERT INTO app_migrations (version, applied_at)
                     VALUES (?, ?)
                     `
-                )
-                .run(migrationVersion, now);
-        });
+                    )
+                    .run(9, now);
+            })();
+        }
 
-        applyMigration();
+        if (!appliedVersions.has(10)) {
+            const now = new Date().toISOString();
+            this.db.transaction(() => {
+                this.db.exec(`
+                    CREATE TABLE IF NOT EXISTS diagram_versions (
+                        id TEXT PRIMARY KEY,
+                        diagram_id TEXT NOT NULL,
+                        snapshot_id TEXT NOT NULL,
+                        name TEXT,
+                        description TEXT,
+                        version_label TEXT NOT NULL,
+                        pinned INTEGER NOT NULL DEFAULT 0,
+                        origin TEXT NOT NULL DEFAULT 'manual',
+                        created_by_user_id TEXT,
+                        created_at TEXT NOT NULL,
+                        FOREIGN KEY(diagram_id) REFERENCES app_diagrams(id) ON DELETE CASCADE,
+                        FOREIGN KEY(snapshot_id) REFERENCES diagram_workflow_snapshots(id) ON DELETE CASCADE,
+                        FOREIGN KEY(created_by_user_id) REFERENCES app_users(id) ON DELETE SET NULL
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_diagram_versions_diagram_created
+                    ON diagram_versions(diagram_id, created_at DESC);
+
+                    CREATE INDEX IF NOT EXISTS idx_diagram_versions_snapshot
+                    ON diagram_versions(snapshot_id);
+                `);
+
+                this.db
+                    .prepare(
+                        `
+                        INSERT INTO app_migrations (version, applied_at)
+                        VALUES (?, ?)
+                        `
+                    )
+                    .run(10, now);
+            })();
+        }
     }
 
     getState(diagramId: string): DiagramWorkflowStateRecord | undefined {
@@ -275,6 +330,39 @@ export class DiagramWorkflowRepository {
             );
     }
 
+    putVersion(version: DiagramWorkflowVersionRecord) {
+        this.db
+            .prepare(
+                `
+                INSERT INTO diagram_versions (
+                    id,
+                    diagram_id,
+                    snapshot_id,
+                    name,
+                    description,
+                    version_label,
+                    pinned,
+                    origin,
+                    created_by_user_id,
+                    created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `
+            )
+            .run(
+                version.id,
+                version.diagramId,
+                version.snapshotId,
+                version.name,
+                version.description,
+                version.versionLabel,
+                version.pinned ? 1 : 0,
+                version.origin,
+                version.createdByUserId,
+                version.createdAt
+            );
+    }
+
     getSnapshot(snapshotId: string): DiagramWorkflowSnapshotRecord | undefined {
         const row = this.db
             .prepare(
@@ -299,6 +387,77 @@ export class DiagramWorkflowRepository {
             .get(snapshotId) as Record<string, unknown> | undefined;
 
         return row ? this.mapSnapshot(row) : undefined;
+    }
+
+    getVersion(versionId: string): DiagramWorkflowVersionRecord | undefined {
+        const row = this.db
+            .prepare(
+                `
+                SELECT
+                    version.id,
+                    version.diagram_id,
+                    version.snapshot_id,
+                    version.name,
+                    version.description,
+                    version.version_label,
+                    version.pinned,
+                    version.origin,
+                    version.created_by_user_id,
+                    version.created_at,
+                    user.display_name AS created_by_display_name,
+                    user.email AS created_by_email
+                FROM diagram_versions AS version
+                LEFT JOIN app_users AS user
+                    ON user.id = version.created_by_user_id
+                WHERE version.id = ?
+                `
+            )
+            .get(versionId) as Record<string, unknown> | undefined;
+
+        return row ? this.mapVersion(row) : undefined;
+    }
+
+    listVersions(diagramId: string): DiagramWorkflowVersionRecord[] {
+        const rows = this.db
+            .prepare(
+                `
+                SELECT
+                    version.id,
+                    version.diagram_id,
+                    version.snapshot_id,
+                    version.name,
+                    version.description,
+                    version.version_label,
+                    version.pinned,
+                    version.origin,
+                    version.created_by_user_id,
+                    version.created_at,
+                    user.display_name AS created_by_display_name,
+                    user.email AS created_by_email
+                FROM diagram_versions AS version
+                LEFT JOIN app_users AS user
+                    ON user.id = version.created_by_user_id
+                WHERE version.diagram_id = ?
+                ORDER BY version.created_at DESC
+                `
+            )
+            .all(diagramId) as Array<Record<string, unknown>>;
+
+        return rows.map((row) => this.mapVersion(row));
+    }
+
+    countVersions(diagramId: string): number {
+        const row = this.db
+            .prepare(
+                `
+                SELECT COUNT(*) AS count
+                FROM diagram_versions
+                WHERE diagram_id = ?
+                `
+            )
+            .get(diagramId) as { count: number };
+
+        return row.count;
     }
 
     private mapState(row: Record<string, unknown>): DiagramWorkflowStateRecord {
@@ -364,7 +523,7 @@ export class DiagramWorkflowRepository {
             canonicalSchema: JSON.parse(
                 String(row.canonical_schema_json)
             ) as CanonicalSchema,
-            diagramDocument: parseJson<Record<string, unknown> | null>(
+            diagramDocument: parseJson<DiagramDocument | null>(
                 row.diagram_document_json
                     ? String(row.diagram_document_json)
                     : null,
@@ -378,6 +537,31 @@ export class DiagramWorkflowRepository {
                 : null,
             createdByUserId: row.created_by_user_id
                 ? String(row.created_by_user_id)
+                : null,
+            createdAt: String(row.created_at),
+        };
+    }
+
+    private mapVersion(
+        row: Record<string, unknown>
+    ): DiagramWorkflowVersionRecord {
+        return {
+            id: String(row.id),
+            diagramId: String(row.diagram_id),
+            snapshotId: String(row.snapshot_id),
+            name: row.name ? String(row.name) : null,
+            description: row.description ? String(row.description) : null,
+            versionLabel: String(row.version_label),
+            pinned: Number(row.pinned) === 1,
+            origin: diagramWorkflowVersionOriginSchema.parse(row.origin),
+            createdByUserId: row.created_by_user_id
+                ? String(row.created_by_user_id)
+                : null,
+            createdByDisplayName: row.created_by_display_name
+                ? String(row.created_by_display_name)
+                : null,
+            createdByEmail: row.created_by_email
+                ? String(row.created_by_email)
                 : null,
             createdAt: String(row.created_at),
         };
