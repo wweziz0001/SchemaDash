@@ -631,6 +631,49 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                                 </AlertDescription>
                                             </Alert>
 
+                                            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                                                <div className="rounded-md border bg-muted/20 p-3">
+                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                        Job ID
+                                                    </div>
+                                                    <div className="mt-2 break-all text-sm font-medium">
+                                                        {execution.result
+                                                            .jobId ??
+                                                            'Not recorded'}
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-md border bg-muted/20 p-3">
+                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                        Audit ID
+                                                    </div>
+                                                    <div className="mt-2 break-all text-sm font-medium">
+                                                        {execution.result
+                                                            .auditId ??
+                                                            'Not recorded'}
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-md border bg-muted/20 p-3">
+                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                        Post-apply snapshot
+                                                    </div>
+                                                    <div className="mt-2 break-all text-sm font-medium">
+                                                        {execution.result
+                                                            .postApplySnapshotId ??
+                                                            'Not recorded'}
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-md border bg-muted/20 p-3">
+                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                        Workflow live snapshot
+                                                    </div>
+                                                    <div className="mt-2 break-all text-sm font-medium">
+                                                        {execution.result
+                                                            .updatedLiveSnapshotId ??
+                                                            'Not updated'}
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <div className="grid gap-3 md:grid-cols-2">
                                                 <div className="rounded-md border bg-muted/20 p-3">
                                                     <div className="text-sm font-medium">

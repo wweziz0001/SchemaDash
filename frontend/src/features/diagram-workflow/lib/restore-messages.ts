@@ -16,7 +16,7 @@ export const getRestoreConfirmationHint = () =>
 export const getRestoreSuccessDescription = (
     result: DiagramWorkflowVersionRestoreResult
 ) =>
-    `Development now reflects ${getRestoreVersionHeading(result.restoredVersion)}. Safety snapshot ${getRestoreVersionHeading(result.safetySnapshotVersion)} was created first.`;
+    `Development now reflects ${getRestoreVersionHeading(result.restoredVersion)} at document version ${result.development.documentVersion}. Safety snapshot ${getRestoreVersionHeading(result.safetySnapshotVersion)} was created first.`;
 
 export const getRestoreFailureMessage = (error: unknown) =>
     error instanceof Error
