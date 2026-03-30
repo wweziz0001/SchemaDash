@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { Separator } from '@/components/separator/separator';
 import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
 import { useToast } from '@/components/toast/use-toast';
+import { useStorage } from '@/hooks/use-storage';
 import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
 import {
     diagramMigrationClient,
@@ -30,11 +31,21 @@ export interface MigrationDialogProps {
     onOpenChange: (open: boolean) => void;
 }
 
+const FULL_DIAGRAM_LOAD_OPTIONS = {
+    includeRelationships: true,
+    includeTables: true,
+    includeDependencies: true,
+    includeAreas: true,
+    includeCustomTypes: true,
+    includeNotes: true,
+} as const;
+
 export const MigrationDialog: React.FC<MigrationDialogProps> = ({
     open,
     onOpenChange,
 }) => {
     const workflow = useOptionalDiagramWorkflow();
+    const storage = useStorage();
     const { toast } = useToast();
     const [preview, setPreview] = useState<DiagramMigrationPreview | null>(
         null
@@ -83,6 +94,68 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                   }
                 : null,
         [workflow?.workflow]
+    );
+
+    const syncCompatibilityMetadata = useCallback(
+        async (response: DiagramMigrationApplyResponse) => {
+            if (!workflow?.diagramId) {
+                return false;
+            }
+
+            const existingDiagram = await storage.getDiagram(
+                workflow.diagramId,
+                FULL_DIAGRAM_LOAD_OPTIONS
+            );
+            if (!existingDiagram) {
+                return false;
+            }
+
+            const appliedAt = new Date().toISOString();
+            const nextSchemaSync =
+                response.result.status === 'succeeded' &&
+                response.result.postApplySnapshotId
+                    ? {
+                          ...(existingDiagram.schemaSync ?? {}),
+                          connectionId:
+                              workflow.workflow?.connectionId ??
+                              existingDiagram.schemaSync?.connectionId,
+                          importedSchemas:
+                              workflow.workflow?.importedSchemas ??
+                              existingDiagram.schemaSync?.importedSchemas,
+                          baselineSnapshotId:
+                              response.result.postApplySnapshotId,
+                          baselineFingerprint:
+                              response.validation.plan.targetFingerprint,
+                          lastImportedAt: appliedAt,
+                          lastPreviewPlanId: null,
+                          lastPreviewedAt: null,
+                          lastAuditId: response.result.auditId,
+                          lastPostApplySnapshotId:
+                              response.result.postApplySnapshotId,
+                      }
+                    : {
+                          ...(existingDiagram.schemaSync ?? {}),
+                          lastAuditId: response.result.auditId,
+                          lastPostApplySnapshotId:
+                              response.result.postApplySnapshotId ?? null,
+                      };
+
+            await storage.addDiagram({
+                diagram: {
+                    ...existingDiagram,
+                    schemaSync: nextSchemaSync,
+                    updatedAt: new Date(appliedAt),
+                },
+            });
+
+            return true;
+        },
+        [
+            storage,
+            workflow?.diagramId,
+            workflow?.workflow?.connectionId,
+            workflow?.workflow?.importedSchemas,
+        ]
     );
 
     const loadPreview = useCallback(async () => {
@@ -222,13 +295,30 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
             setPreview(response.apply.validation);
             setValidation(response.apply.validation);
             if (response.apply.result.status === 'succeeded') {
+                let compatibilityWarning: string | null = null;
+                try {
+                    await syncCompatibilityMetadata(response.apply);
+                } catch (error) {
+                    compatibilityWarning =
+                        error instanceof Error
+                            ? error.message
+                            : 'The legacy Schema Sync baseline metadata could not be updated automatically.';
+                }
                 await workflow.refreshWorkflow();
                 toast({
-                    title: 'Migration applied',
+                    title: compatibilityWarning
+                        ? 'Migration applied with follow-up warning'
+                        : 'Migration applied',
                     description:
-                        'The live database snapshot was updated after the migration finished successfully.',
+                        compatibilityWarning ??
+                        'The live database snapshot and legacy Schema Sync baseline were updated after the migration finished successfully.',
                 });
             } else {
+                try {
+                    await syncCompatibilityMetadata(response.apply);
+                } catch {
+                    // The migration already failed; do not replace the primary failure surface.
+                }
                 toast({
                     title: 'Migration failed',
                     description:
@@ -540,6 +630,49 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                                             : 'Migration completed without executing any SQL statements.')}
                                                 </AlertDescription>
                                             </Alert>
+
+                                            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                                                <div className="rounded-md border bg-muted/20 p-3">
+                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                        Job ID
+                                                    </div>
+                                                    <div className="mt-2 break-all text-sm font-medium">
+                                                        {execution.result
+                                                            .jobId ??
+                                                            'Not recorded'}
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-md border bg-muted/20 p-3">
+                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                        Audit ID
+                                                    </div>
+                                                    <div className="mt-2 break-all text-sm font-medium">
+                                                        {execution.result
+                                                            .auditId ??
+                                                            'Not recorded'}
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-md border bg-muted/20 p-3">
+                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                        Post-apply snapshot
+                                                    </div>
+                                                    <div className="mt-2 break-all text-sm font-medium">
+                                                        {execution.result
+                                                            .postApplySnapshotId ??
+                                                            'Not recorded'}
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-md border bg-muted/20 p-3">
+                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                                                        Workflow live snapshot
+                                                    </div>
+                                                    <div className="mt-2 break-all text-sm font-medium">
+                                                        {execution.result
+                                                            .updatedLiveSnapshotId ??
+                                                            'Not updated'}
+                                                    </div>
+                                                </div>
+                                            </div>
 
                                             <div className="grid gap-3 md:grid-cols-2">
                                                 <div className="rounded-md border bg-muted/20 p-3">

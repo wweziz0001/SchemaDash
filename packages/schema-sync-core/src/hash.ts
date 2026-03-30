@@ -1,4 +1,5 @@
-import { createHash } from 'node:crypto';
+import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex } from '@noble/hashes/utils';
 import type { CanonicalSchema } from './types.js';
 
 const VOLATILE_SCHEMA_KEYS = new Set(['fingerprint', 'importedAt']);
@@ -22,7 +23,5 @@ const stableSort = (value: unknown): unknown => {
 
 export const hashCanonicalSchema = (schema: CanonicalSchema): string => {
     const normalized = stableSort(schema);
-    return createHash('sha256')
-        .update(JSON.stringify(normalized))
-        .digest('hex');
+    return bytesToHex(sha256(JSON.stringify(normalized)));
 };

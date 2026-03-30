@@ -24,6 +24,7 @@ import {
     buildCompareRenderModel,
     type CompareRenderModel,
 } from '../lib/compare-render-model';
+import { getAuthoritativeVersionCanonicalSchema } from '../lib/version-canonical';
 
 export type DiagramWorkflowMode =
     | 'development'
@@ -329,7 +330,7 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
           ? 'live'
           : null;
     const compareBaselineSchema = requestedCompareVersionId
-        ? compareVersion?.snapshot.canonicalSchema
+        ? getAuthoritativeVersionCanonicalSchema(compareVersion)
         : workflow?.liveSnapshot?.canonicalSchema;
     const compareModeEnabled = !!compareBaselineSchema && !!developmentDiagram;
     const compareRenderModel = useMemo(

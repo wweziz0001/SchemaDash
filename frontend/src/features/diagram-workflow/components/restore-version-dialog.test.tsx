@@ -218,6 +218,7 @@ describe('restore version dialog', () => {
         expect(toast).toHaveBeenCalledWith(
             expect.objectContaining({
                 title: 'Development restored',
+                description: expect.stringContaining('document version 8'),
             })
         );
     });
