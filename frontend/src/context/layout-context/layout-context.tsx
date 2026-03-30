@@ -6,9 +6,12 @@ export type SidebarSection =
     | 'tables'
     | 'refs'
     | 'customTypes'
-    | 'visuals';
+    | 'visuals'
+    | 'versions';
 
 export type VisualsTab = 'areas' | 'notes';
+
+export type VersionsTab = 'version' | 'changelog';
 
 export interface LayoutContext {
     openedTableInSidebar: string | undefined;
@@ -42,6 +45,9 @@ export interface LayoutContext {
 
     selectedVisualsTab: VisualsTab;
     selectVisualsTab: (tab: VisualsTab) => void;
+
+    selectedVersionsTab: VersionsTab;
+    selectVersionsTab: (tab: VersionsTab) => void;
 
     isSidePanelShowed: boolean;
     hideSidePanel: () => void;
@@ -81,6 +87,9 @@ export const layoutContext = createContext<LayoutContext>({
 
     selectedVisualsTab: 'areas',
     selectVisualsTab: emptyFn,
+
+    selectedVersionsTab: 'version',
+    selectVersionsTab: emptyFn,
 
     isSidePanelShowed: false,
     hideSidePanel: emptyFn,

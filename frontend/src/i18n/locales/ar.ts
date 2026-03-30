@@ -10,6 +10,7 @@ export const ar: LanguageTranslation = {
             dependencies: 'التبعيات',
             custom_types: 'الأنواع المخصصة',
             visuals: 'مرئيات',
+            versions: 'الإصدارات',
         },
         menu: {
             actions: {
@@ -246,6 +247,23 @@ export const ar: LanguageTranslation = {
                 tabs: {
                     areas: 'المناطق',
                     notes: 'ملاحظات',
+                },
+            },
+
+            versions_section: {
+                versions: 'الإصدارات',
+                filter: 'تصفية الإصدارات',
+                add_version: 'إنشاء إصدار',
+                clear: 'مسح التصفية',
+                no_results: 'لم يتم العثور على إصدارات مطابقة للتصفية.',
+                tabs: {
+                    version: 'اللقطات',
+                    changelog: 'سير العمل',
+                },
+                empty_state: {
+                    title: 'لا توجد إصدارات',
+                    description:
+                        'أنشئ لقطة ثابتة لمراجعتها أو استعادتها لاحقاً.',
                 },
             },
 

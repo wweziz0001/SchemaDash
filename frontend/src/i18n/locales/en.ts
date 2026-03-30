@@ -10,6 +10,7 @@ export const en = {
             dependencies: 'Dependencies',
             custom_types: 'Custom Types',
             visuals: 'Visuals',
+            versions: 'Versions',
         },
         menu: {
             actions: {
@@ -246,6 +247,23 @@ export const en = {
                 tabs: {
                     areas: 'Areas',
                     notes: 'Notes',
+                },
+            },
+
+            versions_section: {
+                versions: 'Versions',
+                filter: 'Filter versions',
+                add_version: 'Create Version',
+                clear: 'Clear Filter',
+                no_results: 'No versions found matching your filter.',
+                tabs: {
+                    version: 'Snapshots',
+                    changelog: 'Workflow',
+                },
+                empty_state: {
+                    title: 'No versions',
+                    description:
+                        'Create an immutable snapshot to review or restore later.',
                 },
             },
 

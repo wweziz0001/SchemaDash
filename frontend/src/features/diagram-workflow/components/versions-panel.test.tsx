@@ -4,16 +4,28 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VersionsPanel } from './versions-panel';
 import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
+import { useLayout } from '@/hooks/use-layout';
 
 vi.mock('../context/diagram-workflow-context', () => ({
     useOptionalDiagramWorkflow: vi.fn(),
 }));
+vi.mock('@/hooks/use-layout', () => ({
+    useLayout: vi.fn(),
+}));
 
 const mockedUseOptionalDiagramWorkflow = vi.mocked(useOptionalDiagramWorkflow);
+const mockedUseLayout = vi.mocked(useLayout);
 
 describe('versions panel', () => {
     beforeEach(() => {
         mockedUseOptionalDiagramWorkflow.mockReset();
+        mockedUseLayout.mockReset();
+        mockedUseLayout.mockReturnValue({
+            selectSidebarSection: vi.fn(),
+            selectedSidebarSection: 'tables',
+            selectVersionsTab: vi.fn(),
+            showSidePanel: vi.fn(),
+        } as never);
     });
 
     it('stays hidden until a workflow diagram is loaded', () => {
@@ -24,10 +36,18 @@ describe('versions panel', () => {
         expect(screen.queryByRole('button', { name: 'Versions' })).toBeNull();
     });
 
-    it('lists versions and routes open and compare actions', async () => {
+    it('routes the toolbar button into the versions side panel', async () => {
         const user = userEvent.setup();
-        const openVersion = vi.fn();
-        const compareVersionToDevelopment = vi.fn();
+        const selectSidebarSection = vi.fn();
+        const selectVersionsTab = vi.fn();
+        const showSidePanel = vi.fn();
+
+        mockedUseLayout.mockReturnValue({
+            selectSidebarSection,
+            selectedSidebarSection: 'tables',
+            selectVersionsTab,
+            showSidePanel,
+        } as never);
 
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
@@ -49,34 +69,17 @@ describe('versions panel', () => {
                     },
                 },
             ],
-            workflow: {
-                diagramAccess: 'edit',
-            },
-            activeMode: 'development',
-            compareSourceKind: null,
-            compareVersion: undefined,
-            selectedVersion: undefined,
-            openVersion,
-            compareVersionToDevelopment,
-            refreshWorkflow: vi.fn(),
         } as never);
 
         render(<VersionsPanel />);
 
-        await user.click(screen.getByRole('button', { name: /Versions/i }));
+        const button = screen.getByRole('button', { name: /Versions/i });
+        expect(screen.getByText('1')).toBeTruthy();
 
-        expect(screen.getByText('Version 1')).toBeTruthy();
-        expect(screen.getByText('Before the refactor')).toBeTruthy();
+        await user.click(button);
 
-        await user.click(
-            screen.getByRole('button', { name: 'Open read-only' })
-        );
-        expect(openVersion).toHaveBeenCalledWith('version-1');
-
-        await user.click(screen.getByRole('button', { name: /Versions/i }));
-        await user.click(
-            screen.getByRole('button', { name: 'Compare to Development' })
-        );
-        expect(compareVersionToDevelopment).toHaveBeenCalledWith('version-1');
+        expect(showSidePanel).toHaveBeenCalledTimes(1);
+        expect(selectSidebarSection).toHaveBeenCalledWith('versions');
+        expect(selectVersionsTab).toHaveBeenCalledWith('version');
     });
 });

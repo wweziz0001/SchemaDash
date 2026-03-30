@@ -47,6 +47,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
         selectedSidebarSection,
         showSidePanel,
         selectVisualsTab,
+        selectVersionsTab,
     } = useLayout();
     const { t } = useTranslation();
     const { isMd: isDesktop } = useBreakpoint('md');
@@ -130,6 +131,16 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
                 },
                 active: selectedSidebarSection === 'visuals',
             },
+            {
+                title: t('editor_sidebar.versions'),
+                icon: Group,
+                onClick: () => {
+                    showSidePanel();
+                    selectSidebarSection('versions');
+                    selectVersionsTab('version');
+                },
+                active: selectedSidebarSection === 'versions',
+            },
         ],
         [
             selectSidebarSection,
@@ -138,6 +149,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
             showSidePanel,
             canShowCustomTypes,
             selectVisualsTab,
+            selectVersionsTab,
         ]
     );
 
