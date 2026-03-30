@@ -151,7 +151,6 @@ Important files intentionally not changed:
 - `backend/src/services/diagram-migration-service.ts`
 - `backend/src/services/diagram-workflow-service.ts`
 - `backend/src/services/diagram-version-restore-service.ts`
-- `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
 - `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
 - `frontend/src/context/storage-context/storage-provider.tsx`
 - `frontend/src/context/schemadash-context/schemadash-provider.tsx`
