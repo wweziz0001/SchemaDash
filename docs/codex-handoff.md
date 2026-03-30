@@ -128,6 +128,8 @@ Files created in this task:
   - records the implemented P0/P1 items, deferred work, and residual risk
 - `frontend/src/features/diagram-workflow/lib/version-canonical.ts`
   - derives authoritative version compare baselines from immutable stored diagram documents when available
+- `frontend/src/features/diagram-workflow/lib/version-canonical.test.ts`
+  - regression coverage for document-backed version compare baselines
 
 Files modified in this task:
 
@@ -137,6 +139,10 @@ Files modified in this task:
   - uses document-derived canonical schema for version compare baselines
 - `frontend/src/features/diagram-workflow/lib/restore-messages.ts`
   - adds resulting Development document version to restore success messaging
+- `frontend/src/features/diagram-workflow/components/migration-dialog.test.tsx`
+  - validates compatibility metadata sync and migration traceability rendering
+- `frontend/src/features/diagram-workflow/components/restore-version-dialog.test.tsx`
+  - validates the stronger restore success trace messaging
 - `docs/codex-handoff.md`
   - updated for the P0/P1 hardening task
 
@@ -187,19 +193,19 @@ Important workflow conclusions recorded by this task:
 
 Targeted automated validation run during this task:
 
-- Final validation is recorded in the dedicated `test:` commit for this task.
-- The target regression scenarios are:
-  - workflow migration apply advances compatibility metadata
-  - version compare uses immutable stored document baselines when available
-  - migration execution traceability renders expected references
-  - restore success messaging includes resulting Development document version
+- `npm run test:ci -w @schemadash/schema-sync-core -- src/__tests__/compare.test.ts src/__tests__/diff-column-matching.test.ts`
+- `npm run test:ci -w @schemadash/backend -- test/diagram-workflow-service.test.ts test/diagram-migration-service.test.ts test/diagram-version-restore-service.test.ts`
+- `npm run test:web:ci -- frontend/src/features/diagram-workflow/components/migration-dialog.test.tsx frontend/src/features/diagram-workflow/components/restore-version-dialog.test.tsx frontend/src/features/diagram-workflow/lib/version-canonical.test.ts frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx frontend/src/features/diagram-workflow/components/workflow-mode-switcher.test.tsx frontend/src/features/diagram-workflow/components/workflow-development-diagram-sync.test.tsx frontend/src/features/diagram-workflow/lib/compare-render-model.test.ts`
 
 What was verified:
 
 - compare classification and fallback matching behavior
 - workflow bind/refresh/version creation behavior
 - migration fallback hydration, success update, and failure log return behavior
-- restore safety snapshot behavior and stale-base rejection
+- workflow migration apply now advances the legacy compatibility metadata
+- version compare now prefers immutable stored document baselines when available
+- migration execution traceability renders expected identifiers
+- restore success messaging now includes the resulting Development document version
 - frontend workflow mode, compare, review, migration, versions, and restore UI behavior
 
 What remains unverified:
@@ -282,9 +288,11 @@ Where to continue implementation:
 - Working branch: `hardening/live-workflow-p0-p1-fixes`
 - Pull request title: `Implement P0 and P1 hardening fixes for live workflow release readiness`
 - Commit list created for this task:
-  - `ca45a31` `chore: extract and document live workflow p0 and p1 hardening scope`
-  - `178cf80` `fix: implement p0 safety and integrity fixes for live workflow`
-  - `59058c4` `fix: implement p1 correctness reliability and UX safety fixes`
+  - `chore: extract and document live workflow p0 and p1 hardening scope`
+  - `fix: implement p0 safety and integrity fixes for live workflow`
+  - `fix: implement p1 correctness reliability and UX safety fixes`
+  - `docs: document completed p0/p1 fixes and residual release risks`
+  - `test: validate hardened live workflow behavior`
 
 Brief explanation of the commit sequence:
 
@@ -294,7 +302,7 @@ Brief explanation of the commit sequence:
   - synchronize legacy compatibility metadata after workflow apply and prefer immutable document-backed version compare baselines
 - `fix: implement p1 correctness reliability and UX safety fixes`
   - add workflow execution traceability details and stronger restore success trace messaging
-- pending docs commit
-  - update the hardening docs and handoff with final status
-- pending test commit
-  - add/adjust regression coverage and record validation
+- `docs: document completed p0/p1 fixes and residual release risks`
+  - record implemented items, deferred items, and remaining risk
+- `test: validate hardened live workflow behavior`
+  - add/adjust regression coverage and record the targeted validation slice

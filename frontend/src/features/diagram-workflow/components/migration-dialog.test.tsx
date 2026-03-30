@@ -6,12 +6,14 @@ import { DatabaseType } from '@/lib/domain/database-type';
 import type { Diagram } from '@/lib/domain/diagram';
 import {
     createChangePlan,
+    hashCanonicalSchema,
     type CanonicalSchema,
 } from '@schemadash/schema-sync-core';
 import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
 import { MigrationDialog } from './migration-dialog';
 import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
 import { diagramMigrationClient } from '../api/diagram-migration-client';
+import { useStorage } from '@/hooks/use-storage';
 
 const toast = vi.fn();
 
@@ -27,6 +29,10 @@ vi.mock('../api/diagram-migration-client', () => ({
     },
 }));
 
+vi.mock('@/hooks/use-storage', () => ({
+    useStorage: vi.fn(),
+}));
+
 vi.mock('@/components/toast/use-toast', () => ({
     useToast: () => ({
         toast,
@@ -34,6 +40,7 @@ vi.mock('@/components/toast/use-toast', () => ({
 }));
 
 const mockedUseOptionalDiagramWorkflow = vi.mocked(useOptionalDiagramWorkflow);
+const mockedUseStorage = vi.mocked(useStorage);
 const mockedPreviewMigration = vi.mocked(
     diagramMigrationClient.previewMigration
 );
@@ -154,6 +161,21 @@ const basePlan = createChangePlan({
     target: targetSchema,
 });
 
+const storedDevelopmentDiagram: Diagram = {
+    ...developmentDiagram,
+    schemaSync: {
+        connectionId: 'connection-1',
+        baselineSnapshotId: 'baseline-1',
+        baselineFingerprint: hashCanonicalSchema(baselineSchema),
+        importedSchemas: ['public'],
+        lastImportedAt: '2026-03-28T18:00:00.000Z',
+        lastPreviewPlanId: 'plan-1',
+        lastPreviewedAt: '2026-03-29T17:59:00.000Z',
+        lastAuditId: null,
+        lastPostApplySnapshotId: null,
+    },
+};
+
 const buildPreview = (
     overrides?: Partial<
         (typeof diagramMigrationClient)['previewMigration'] extends (
@@ -211,6 +233,7 @@ describe('migration dialog', () => {
     beforeEach(() => {
         toast.mockReset();
         mockedUseOptionalDiagramWorkflow.mockReset();
+        mockedUseStorage.mockReset();
         mockedPreviewMigration.mockReset();
         mockedValidateMigration.mockReset();
         mockedApplyMigration.mockReset();
@@ -219,8 +242,14 @@ describe('migration dialog', () => {
             developmentDiagram,
             workflow: {
                 liveSnapshotId: 'workflow-live-1',
+                connectionId: 'connection-1',
+                importedSchemas: ['public'],
             },
             refreshWorkflow: vi.fn().mockResolvedValue(undefined),
+        } as never);
+        mockedUseStorage.mockReturnValue({
+            getDiagram: vi.fn().mockResolvedValue(storedDevelopmentDiagram),
+            addDiagram: vi.fn().mockResolvedValue(undefined),
         } as never);
     });
 
@@ -309,13 +338,20 @@ describe('migration dialog', () => {
     it('shows successful apply results and refreshes workflow state', async () => {
         const user = userEvent.setup();
         const refreshWorkflow = vi.fn().mockResolvedValue(undefined);
+        const addDiagram = vi.fn().mockResolvedValue(undefined);
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
             developmentDiagram,
             workflow: {
                 liveSnapshotId: 'workflow-live-1',
+                connectionId: 'connection-1',
+                importedSchemas: ['public'],
             },
             refreshWorkflow,
+        } as never);
+        mockedUseStorage.mockReturnValue({
+            getDiagram: vi.fn().mockResolvedValue(storedDevelopmentDiagram),
+            addDiagram,
         } as never);
         mockedPreviewMigration.mockResolvedValue({
             preview: buildPreview(),
@@ -353,8 +389,29 @@ describe('migration dialog', () => {
         );
 
         expect(await screen.findByText('Migration succeeded')).toBeTruthy();
+        expect(await screen.findByText('job-1')).toBeTruthy();
+        expect(screen.getAllByText('audit-1').length).toBeGreaterThan(0);
+        expect(screen.getByText('post-apply-1')).toBeTruthy();
+        expect(screen.getByText('workflow-live-2')).toBeTruthy();
         await waitFor(() => {
             expect(refreshWorkflow).toHaveBeenCalledTimes(1);
+        });
+        await waitFor(() => {
+            expect(addDiagram).toHaveBeenCalledWith({
+                diagram: expect.objectContaining({
+                    id: 'diagram-1',
+                    schemaSync: expect.objectContaining({
+                        connectionId: 'connection-1',
+                        importedSchemas: ['public'],
+                        baselineSnapshotId: 'post-apply-1',
+                        baselineFingerprint: basePlan.targetFingerprint,
+                        lastPreviewPlanId: null,
+                        lastPreviewedAt: null,
+                        lastAuditId: 'audit-1',
+                        lastPostApplySnapshotId: 'post-apply-1',
+                    }),
+                }),
+            });
         });
     });
 

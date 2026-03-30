@@ -23,11 +23,7 @@ export const getAuthoritativeVersionCanonicalSchema = (
 
     return {
         ...canonicalFromDocument,
-        fingerprint:
-            version.snapshot.canonicalSchema.fingerprint ??
-            hashCanonicalSchema(canonicalFromDocument),
-        importedAt:
-            version.snapshot.canonicalSchema.importedAt ??
-            version.snapshot.createdAt,
+        fingerprint: hashCanonicalSchema(canonicalFromDocument),
+        importedAt: version.snapshot.createdAt,
     };
 };

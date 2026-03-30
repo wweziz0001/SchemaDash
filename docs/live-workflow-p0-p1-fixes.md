@@ -113,7 +113,15 @@ Modified:
 
 ## Validation Summary
 
-Validation for the hardened paths is tracked in the final `test:` commit for this task. The main target scenarios are:
+Targeted validation run for the hardened paths:
+
+- `npm run test:ci -w @schemadash/schema-sync-core -- src/__tests__/compare.test.ts src/__tests__/diff-column-matching.test.ts`
+- `npm run test:ci -w @schemadash/backend -- test/diagram-workflow-service.test.ts test/diagram-migration-service.test.ts test/diagram-version-restore-service.test.ts`
+- `npm run test:web:ci -- frontend/src/features/diagram-workflow/components/migration-dialog.test.tsx frontend/src/features/diagram-workflow/components/restore-version-dialog.test.tsx frontend/src/features/diagram-workflow/lib/version-canonical.test.ts frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx frontend/src/features/diagram-workflow/components/workflow-mode-switcher.test.tsx frontend/src/features/diagram-workflow/components/workflow-development-diagram-sync.test.tsx frontend/src/features/diagram-workflow/lib/compare-render-model.test.ts`
+
+All targeted suites passed.
+
+The validated regression scenarios were:
 
 - workflow migration apply advances legacy compatibility metadata
 - version compare prefers immutable stored diagram documents
