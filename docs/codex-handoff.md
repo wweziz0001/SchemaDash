@@ -102,6 +102,7 @@ What was actually implemented:
 - Added `docs/live-workflow-final-audit.md`
 - Added `docs/live-workflow-release-readiness-checklist.md`
 - Rewrote `docs/codex-handoff.md` for a future fresh Codex session
+- Added mobile access to the existing Review / Migration dropdown by updating `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
 - Audited the integrated implementation across:
   - Live Database
   - Development
@@ -140,6 +141,8 @@ Files modified in this task:
 
 - `docs/codex-handoff.md`
   - replaced older restore-focused handoff with an audit-focused workflow handoff for future sessions
+- `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
+  - exposed the existing review/migration entry point on mobile so the structured workflow is not desktop-only
 
 Important files intentionally not changed:
 
@@ -183,6 +186,7 @@ Targeted automated validation run during this task:
 - `npm run test:ci -w @schemadash/schema-sync-core -- src/__tests__/compare.test.ts src/__tests__/diff-column-matching.test.ts`
 - `npm run test:ci -w @schemadash/backend -- test/diagram-workflow-service.test.ts test/diagram-migration-service.test.ts test/diagram-version-restore-service.test.ts`
 - `npm run test:web:ci -- frontend/src/features/diagram-workflow/components/workflow-mode-switcher.test.tsx frontend/src/features/diagram-workflow/components/live-status-chip.test.tsx frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx frontend/src/features/diagram-workflow/components/review-changes-dialog.test.tsx frontend/src/features/diagram-workflow/components/migration-dialog.test.tsx frontend/src/features/diagram-workflow/components/versions-panel.test.tsx frontend/src/features/diagram-workflow/components/restore-version-dialog.test.tsx frontend/src/features/diagram-workflow/components/workflow-development-diagram-sync.test.tsx frontend/src/features/diagram-workflow/components/version-view-badge.test.tsx frontend/src/features/diagram-workflow/lib/compare-render-model.test.ts`
+- `npm run test:web:ci -- frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx`
 
 What was verified:
 
@@ -202,7 +206,7 @@ Known limitations / risks confirmed by the audit:
 
 - workflow state and legacy `diagram.schemaSync` compatibility metadata can drift after workflow migration apply
 - version and restore safety snapshot canonical data is client-trusted
-- mobile workflow access is incomplete
+- mobile workflow entry parity improved on this branch, but real-device QA is still pending
 - workflow backup/export portability is not implemented
 - stored default compare source is not yet used by the frontend
 
@@ -274,13 +278,14 @@ Where to continue implementation:
 - Working branch: `audit/live-workflow-final-review`
 - Pull request title: `Audit live workflow feature set for readiness gaps risks and final improvements`
 - Commit list created for this task:
-  - None yet in the repository state at the time this handoff content was written; create the audit/docs commit first, then add any small audit-driven fix in a separate commit, then update the audit/handoff docs in a final docs commit if needed.
+  - `5250a4c` `docs: add final live workflow audit and readiness assessment`
+  - `b1ea801` `fix: add mobile access to review and migration workflow`
 
-Brief explanation of the intended commit sequence:
+Brief explanation of the commit sequence:
 
 - `docs: add final live workflow audit and readiness assessment`
   - add the audit, checklist, and updated handoff
-- optional `fix: ...`
-  - only for a very small audit-driven UX/safety correction
-- optional `docs: ...`
+- `fix: add mobile access to review and migration workflow`
+  - expose the existing review/migration workflow entry point in the mobile navbar
+- pending final docs commit
   - update the audit/handoff/checklist with post-fix notes

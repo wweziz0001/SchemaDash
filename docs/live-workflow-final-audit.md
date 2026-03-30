@@ -28,7 +28,7 @@ Targeted validation also came back healthy:
 - Version and safety-snapshot canonical payloads are still trusted from the client, which weakens snapshot integrity guarantees.
 - Some intended workflow persistence is only partial: default compare baseline is stored but not actually used by the frontend.
 - Backup/export compatibility for workflow snapshots and versions is still absent.
-- Mobile workflow access is incomplete: the review/migration entry point is missing from the mobile navbar.
+- Observability outside the migration flow is still relatively light, especially for restore and workflow-history traceability.
 
 ### Production-like use recommendation
 
@@ -38,9 +38,13 @@ The feature set is **ready for a guarded beta / feature-flagged release**, espec
 
 1. **Confirmed issue:** the new migration flow updates workflow live state, but the still-visible legacy Schema Sync flow continues to rely on `diagram.schemaSync` compatibility metadata that is not refreshed by the migration dialog.
 2. **Confirmed issue:** version creation and restore safety snapshots persist client-supplied canonical schema without server-side recomputation or authoritative validation against the stored diagram document.
-3. **Confirmed issue:** mobile users do not currently have a review/migration entry point even though the capability exists on desktop.
-4. **Confirmed issue:** workflow snapshots and versions are not represented in project backup/export compatibility.
+3. **Confirmed issue:** workflow snapshots and versions are not represented in project backup/export compatibility.
+4. **Confirmed issue:** the stored default compare baseline is persisted but not actually honored by the frontend workflow.
 5. **Likely issue:** performance will degrade on large diagrams because compare/review work repeatedly recomputes canonical conversions and derived render/grouping models on the client.
+
+### Post-fix note
+
+The mobile workflow-entry gap identified during this audit was addressed on this branch by exposing the existing `ReviewDropdown` in `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`. That improves workflow parity, but real-device usability of the review and migration dialogs on mobile still needs manual QA.
 
 ## Feature-by-Feature Audit
 
@@ -153,8 +157,8 @@ The feature set is **ready for a guarded beta / feature-flagged release**, espec
 
 #### What is missing
 
-- Mobile access to Review/Migration is missing from `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`.
 - There is no search, filtering, or collapse strategy for very large review sets.
+- Real-device/mobile QA is still missing for the review and migration dialog experience after the mobile navbar entry was added.
 
 #### What is fragile
 
@@ -278,7 +282,7 @@ The feature set is **ready for a guarded beta / feature-flagged release**, espec
 ### Toolbar / chrome clarity
 
 - Desktop chrome is coherent: mode switcher, compare summary, live status, review, versions, and schema-sync entry points are all discoverable.
-- Mobile chrome is incomplete because Review/Migration is not exposed even though Compare and Versions are.
+- Mobile chrome now exposes the same main workflow entry points, but the dialog-heavy review/migration experience still needs manual QA on real devices.
 
 ### Mode switching clarity
 
@@ -504,9 +508,9 @@ The feature set is **ready for a guarded beta / feature-flagged release**, espec
 ### P1: should fix soon
 
 - **Restore mobile parity for Review / Migration entry points**
-  - Category: UX / workflow access
+  - Category: UX / mobile QA
   - Affected files/modules: `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
-  - Why it matters: compare is present on mobile, but the structured review and migration workflow is desktop-only right now
+  - Why it matters: the mobile entry point is now present on this branch, but the dialog-heavy workflow still needs real-device validation before claiming parity
   - Implementation risk: Low
   - Recommended timing: Immediate hardening pass
 
