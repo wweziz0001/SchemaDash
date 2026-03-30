@@ -93,56 +93,52 @@ Relevant frontend/backend/shared package relationships:
 
 What this task was trying to achieve:
 
-- Perform a final release-readiness audit of the full live workflow implementation.
-- Compare implementation against the design docs.
-- Produce a concrete go/no-go assessment, prioritized backlog, and future-session handoff.
+- Implement only the P0 and P1 hardening fixes from the final live workflow audit.
+- Preserve the existing workflow architecture while reducing release-critical and near-release-critical risk.
+- Leave P2/P3 work out of scope unless a tiny prerequisite was unavoidable.
 
 What was actually implemented:
 
-- Added `docs/live-workflow-final-audit.md`
-- Added `docs/live-workflow-release-readiness-checklist.md`
-- Rewrote `docs/codex-handoff.md` for a future fresh Codex session
-- Added mobile access to the existing Review / Migration dropdown by updating `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
-- Audited the integrated implementation across:
-  - Live Database
-  - Development
-  - Compare
-  - Review Changes
-  - Migration
-  - Versions / Snapshots
-  - Restore to Development
-- Ran targeted validation across shared core, backend workflow services, and frontend workflow UI/tests
+- Added `docs/live-workflow-p0-p1-fixes.md` to track the exact hardening scope and the implemented/deferred items.
+- Implemented P0 baseline-consistency hardening in `frontend/src/features/diagram-workflow/components/migration-dialog.tsx` so workflow apply now advances the older `diagram.schemaSync` compatibility metadata instead of leaving the legacy Schema Sync toolbar path stale.
+- Implemented P0 canonical-integrity hardening by adding `frontend/src/features/diagram-workflow/lib/version-canonical.ts` and switching version compare in `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx` to prefer canonical schema derived from the immutable stored `diagramDocument` when available.
+- Implemented P1 traceability improvements by surfacing migration execution identifiers in `frontend/src/features/diagram-workflow/components/migration-dialog.tsx` and by improving restore success messaging in `frontend/src/features/diagram-workflow/lib/restore-messages.ts`.
+- Updated `docs/codex-handoff.md` for a future fresh Codex session after the hardening work.
 
 Decisions made in this task:
 
-- This was kept audit-first and documentation-first.
+- The hardening work stayed limited to the P0/P1 items that could be addressed safely in-repo.
 - No broad refactor was attempted.
-- The audit recommends **beta / feature-flagged release only**, not a wide full release.
-- The audit identifies two main full-release blockers:
-  - workflow/legacy baseline drift after workflow migration apply
-  - client-trusted canonical snapshot persistence for versions and restore safety snapshots
+- The highest-risk editor/storage/persistence files were intentionally avoided.
+- The client-supplied canonical snapshot payload is no longer treated as the authoritative version compare source when an immutable stored diagram document exists.
+- Legacy compatibility metadata was kept alive on purpose for this phase; it was synchronized instead of being removed because removing it would be a broader architectural change.
 
 Approach intentionally avoided and why:
 
-- Did not redesign the workflow architecture during the audit because the branch already has a mostly coherent layered implementation.
-- Did not refactor editor-core or persistence-core files because the task was release-readiness assessment, not a rewrite.
-- Did not invent missing behavior where the repo did not implement it; missing items were documented as confirmed gaps or inferred risks instead.
+- Did not redesign versions, restore, migration, or compare architecture.
+- Did not refactor `storage-provider`, `schemadash-provider`, `persistence-service`, `app-repository`, or `metadata-repository`.
+- Did not implement P2/P3 items such as backup/export support or default compare-source UX.
+- Did not move canonical conversion into the backend; instead, the product now prefers immutable stored diagram documents as the authoritative compare source where available.
 
 ## Files Changed
 
 Files created in this task:
 
-- `docs/live-workflow-final-audit.md`
-  - full release-readiness audit and architecture/product/safety assessment
-- `docs/live-workflow-release-readiness-checklist.md`
-  - condensed release status and blocker checklist
+- `docs/live-workflow-p0-p1-fixes.md`
+  - records the implemented P0/P1 items, deferred work, and residual risk
+- `frontend/src/features/diagram-workflow/lib/version-canonical.ts`
+  - derives authoritative version compare baselines from immutable stored diagram documents when available
 
 Files modified in this task:
 
+- `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
+  - synchronizes legacy compatibility metadata after workflow apply and surfaces execution trace identifiers
+- `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
+  - uses document-derived canonical schema for version compare baselines
+- `frontend/src/features/diagram-workflow/lib/restore-messages.ts`
+  - adds resulting Development document version to restore success messaging
 - `docs/codex-handoff.md`
-  - replaced older restore-focused handoff with an audit-focused workflow handoff for future sessions
-- `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
-  - exposed the existing review/migration entry point on mobile so the structured workflow is not desktop-only
+  - updated for the P0/P1 hardening task
 
 Important files intentionally not changed:
 
@@ -153,40 +149,50 @@ Important files intentionally not changed:
 - `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
 - `frontend/src/context/storage-context/storage-provider.tsx`
 - `frontend/src/context/schemadash-context/schemadash-provider.tsx`
+- `backend/src/services/persistence-service.ts`
+- `backend/src/repositories/app-repository.ts`
+- `backend/src/repositories/metadata-repository.ts`
 
-Brief purpose of the important changed docs:
+Brief purpose of the important changed docs/files:
 
-- `docs/live-workflow-final-audit.md`
-  - source of truth for readiness decision, strengths, weaknesses, risks, and backlog
-- `docs/live-workflow-release-readiness-checklist.md`
-  - quick operator/reviewer summary of what passes, what is partial, and what blocks full release
+- `docs/live-workflow-p0-p1-fixes.md`
+  - source of truth for what this hardening pass actually implemented
+- `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
+  - central hardening point for apply-result compatibility sync and workflow traceability
+- `frontend/src/features/diagram-workflow/lib/version-canonical.ts`
+  - encapsulates the document-backed version-baseline authority rule
 - `docs/codex-handoff.md`
   - fresh-session continuation context for future Codex work in this area
 
 ## Data / API / Workflow Changes
 
-This task did **not** add new models, routes, services, migrations, env vars, or config.
+This task did **not** add new backend models, routes, services, migrations, env vars, or config.
 
 What changed instead:
 
-- Documentation now records the current workflow architecture, current release posture, and the specific blockers/non-blockers found in the repository state.
+- Frontend workflow migration apply now also persists the older `diagram.schemaSync` compatibility baseline/audit fields so the legacy Schema Sync path does not continue from stale state after a hardened workflow apply.
+- Version compare now derives canonical schema from the immutable stored version document when available, instead of treating the stored canonical payload as the authoritative compare truth.
+- Migration execution UI now shows operator-useful trace identifiers: job ID, audit ID, post-apply snapshot ID, and updated workflow live snapshot ID.
+- Restore success messaging now includes the resulting Development document version.
 
 Important workflow conclusions recorded by this task:
 
 - Development remains the mutable head.
 - Live / Compare / Version views remain layered around it.
-- Versions are immutable.
-- Restore copies into Development rather than mutating versions.
-- The most important unfinished work is around state consistency and canonical snapshot integrity, not around the basic workflow model.
+- Versions remain immutable.
+- Restore still copies into Development rather than mutating versions.
+- The main remaining risks have shifted away from the original P0 blockers and toward deferred portability/product-completeness/manual-QA work.
 
 ## Validation Performed
 
 Targeted automated validation run during this task:
 
-- `npm run test:ci -w @schemadash/schema-sync-core -- src/__tests__/compare.test.ts src/__tests__/diff-column-matching.test.ts`
-- `npm run test:ci -w @schemadash/backend -- test/diagram-workflow-service.test.ts test/diagram-migration-service.test.ts test/diagram-version-restore-service.test.ts`
-- `npm run test:web:ci -- frontend/src/features/diagram-workflow/components/workflow-mode-switcher.test.tsx frontend/src/features/diagram-workflow/components/live-status-chip.test.tsx frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx frontend/src/features/diagram-workflow/components/review-changes-dialog.test.tsx frontend/src/features/diagram-workflow/components/migration-dialog.test.tsx frontend/src/features/diagram-workflow/components/versions-panel.test.tsx frontend/src/features/diagram-workflow/components/restore-version-dialog.test.tsx frontend/src/features/diagram-workflow/components/workflow-development-diagram-sync.test.tsx frontend/src/features/diagram-workflow/components/version-view-badge.test.tsx frontend/src/features/diagram-workflow/lib/compare-render-model.test.ts`
-- `npm run test:web:ci -- frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx`
+- Final validation is recorded in the dedicated `test:` commit for this task.
+- The target regression scenarios are:
+  - workflow migration apply advances compatibility metadata
+  - version compare uses immutable stored document baselines when available
+  - migration execution traceability renders expected references
+  - restore success messaging includes resulting Development document version
 
 What was verified:
 
@@ -204,60 +210,58 @@ What remains unverified:
 
 Known limitations / risks confirmed by the audit:
 
-- workflow state and legacy `diagram.schemaSync` compatibility metadata can drift after workflow migration apply
-- version and restore safety snapshot canonical data is client-trusted
-- mobile workflow entry parity improved on this branch, but real-device QA is still pending
-- workflow backup/export portability is not implemented
-- stored default compare source is not yet used by the frontend
+- mobile workflow entry parity improved, but real-device QA is still pending
+- workflow backup/export portability is still not implemented
+- stored default compare source is still not used by the frontend
+- snapshots without stored diagram documents still fall back to the stored canonical payload
+- restore/workflow traceability is improved, but there is still no dedicated restore-history screen
 
 ## Outstanding Work
 
 What is not done yet:
 
-- full-release blocker fixes
 - manual end-to-end workflow QA
 - workflow backup/export portability
 - compare default-baseline UX completion
 - performance/scalability hardening for large diagrams and version histories
+- optional deeper restore audit/history UI if operators need more than versions + result messaging
 
 Next recommended implementation phase:
 
-1. Fix workflow baseline consistency across migration and the still-visible legacy Schema Sync path.
-2. Make version and safety snapshot canonical data server-authoritative or server-validated.
-3. Close the workflow UX parity gap on mobile.
-4. Decide and implement workflow snapshot/version backup behavior.
-5. Then run a manual integrated QA pass over live sync, compare, review, migration, versions, and restore together.
+1. Run a manual integrated QA pass over live sync, compare, review, migration, versions, and restore together, including mobile.
+2. Decide and implement workflow snapshot/version backup behavior.
+3. Address stored default compare-source UX if product completeness becomes a near-release need.
+4. Revisit whether snapshots without stored diagram documents need stronger integrity handling.
 
 Blockers, risks, or dependencies for the next phase:
 
-- The biggest safety work spans both backend services and frontend compatibility state.
-- Any canonical-integrity fix will likely need a server-safe diagram-to-canonical boundary or validation strategy.
-- Removing or demoting the legacy Schema Sync path may require a product decision, not just code changes.
+- Backup/export support still requires broader persistence/product decisions.
+- Default compare-source UX is still intentionally out of scope.
+- A fully backend-authoritative canonical conversion path is still absent; the current hardening instead prefers immutable stored diagram documents where they exist.
 
 ## Instructions for the Next Codex Session
 
 Exact reading order for future work:
 
-1. `docs/live-workflow-final-audit.md`
-2. `docs/live-workflow-release-readiness-checklist.md`
-3. `docs/live-database-development-compare-versions-design.md`
-4. `docs/live-db-compare-feature-map.md`
-5. `docs/codex-handoff.md`
-6. `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
+1. `docs/live-workflow-p0-p1-fixes.md`
+2. `docs/live-workflow-final-audit.md`
+3. `docs/live-workflow-release-readiness-checklist.md`
+4. `docs/live-database-development-compare-versions-design.md`
+5. `docs/live-db-compare-feature-map.md`
+6. `docs/codex-handoff.md`
 7. `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
-8. `backend/src/services/diagram-migration-service.ts`
-9. `backend/src/services/diagram-workflow-service.ts`
-10. `backend/src/services/diagram-version-restore-service.ts`
+8. `frontend/src/features/diagram-workflow/lib/version-canonical.ts`
+9. `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
+10. `frontend/src/features/diagram-workflow/lib/restore-messages.ts`
 
 What to inspect first if continuing implementation:
 
-- For the P0 baseline-drift issue:
-  - `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
+- For compatibility-metadata follow-up work:
   - `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
-  - any legacy Schema Sync surfaces that still use `currentDiagram.schemaSync`
-- For the canonical-integrity issue:
-  - `backend/src/services/diagram-workflow-service.ts`
-  - `backend/src/services/diagram-version-restore-service.ts`
+  - `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
+- For version/snapshot integrity follow-up work:
+  - `frontend/src/features/diagram-workflow/lib/version-canonical.ts`
+  - `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
   - canonical adapter boundaries in `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
 
 What to avoid breaking:
@@ -270,22 +274,27 @@ What to avoid breaking:
 
 Where to continue implementation:
 
-- Start with the P0 baseline consistency issue because it affects release safety most directly.
-- If that is solved, move next to canonical snapshot integrity.
+- Start with manual integrated QA of the hardened flows.
+- If additional integrity work is needed afterward, inspect snapshots without stored diagram documents and the deferred backup/export/default-compare items.
 
 ## Git Summary
 
-- Working branch: `audit/live-workflow-final-review`
-- Pull request title: `Audit live workflow feature set for readiness gaps risks and final improvements`
+- Working branch: `hardening/live-workflow-p0-p1-fixes`
+- Pull request title: `Implement P0 and P1 hardening fixes for live workflow release readiness`
 - Commit list created for this task:
-  - `5250a4c` `docs: add final live workflow audit and readiness assessment`
-  - `b1ea801` `fix: add mobile access to review and migration workflow`
+  - `ca45a31` `chore: extract and document live workflow p0 and p1 hardening scope`
+  - `178cf80` `fix: implement p0 safety and integrity fixes for live workflow`
+  - `59058c4` `fix: implement p1 correctness reliability and UX safety fixes`
 
 Brief explanation of the commit sequence:
 
-- `docs: add final live workflow audit and readiness assessment`
-  - add the audit, checklist, and updated handoff
-- `fix: add mobile access to review and migration workflow`
-  - expose the existing review/migration workflow entry point in the mobile navbar
-- pending final docs commit
-  - update the audit/handoff/checklist with post-fix notes
+- `chore: extract and document live workflow p0 and p1 hardening scope`
+  - freeze the hardening scope before code changes
+- `fix: implement p0 safety and integrity fixes for live workflow`
+  - synchronize legacy compatibility metadata after workflow apply and prefer immutable document-backed version compare baselines
+- `fix: implement p1 correctness reliability and UX safety fixes`
+  - add workflow execution traceability details and stronger restore success trace messaging
+- pending docs commit
+  - update the hardening docs and handoff with final status
+- pending test commit
+  - add/adjust regression coverage and record validation
