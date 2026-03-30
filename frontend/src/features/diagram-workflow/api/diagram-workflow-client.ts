@@ -87,6 +87,17 @@ export interface WorkflowCompatibilitySyncMetadata {
     lastImportedAt: string;
 }
 
+export interface DiagramWorkflowVersionRestoreResult {
+    diagramId: string;
+    restoredVersion: DiagramWorkflowVersionSummary;
+    safetySnapshotVersion: DiagramWorkflowVersionSummary;
+    development: {
+        name: string;
+        documentVersion: number;
+        updatedAt: string;
+    };
+}
+
 export const diagramWorkflowClient = {
     getWorkflow: async (diagramId: string) =>
         requestJson<{ workflow: DiagramWorkflowRecord }>(
@@ -133,6 +144,23 @@ export const diagramWorkflowClient = {
     ) =>
         requestJson<{ version: DiagramWorkflowVersionRecord }>(
             `/api/diagrams/${diagramId}/workflow/versions`,
+            {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            }
+        ),
+    restoreVersionToDevelopment: async (
+        diagramId: string,
+        versionId: string,
+        payload: {
+            confirmationText: string;
+            baseVersion: number;
+            sessionId?: string;
+            currentDevelopmentCanonicalSchema: CanonicalSchema;
+        }
+    ) =>
+        requestJson<{ result: DiagramWorkflowVersionRestoreResult }>(
+            `/api/diagrams/${diagramId}/workflow/versions/${versionId}/restore-to-development`,
             {
                 method: 'POST',
                 body: JSON.stringify(payload),

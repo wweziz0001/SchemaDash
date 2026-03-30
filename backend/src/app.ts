@@ -10,6 +10,7 @@ import type { MetadataRepository } from './repositories/metadata-repository.js';
 import { registerAdminRoutes } from './routes/admin-routes.js';
 import { registerAuthRoutes } from './routes/auth-routes.js';
 import { registerDiagramMigrationRoutes } from './routes/diagram-migration-routes.js';
+import { registerDiagramVersionRestoreRoutes } from './routes/diagram-version-restore-routes.js';
 import { registerDiagramWorkflowRoutes } from './routes/diagram-workflow-routes.js';
 import { registerHealthRoutes } from './routes/health-routes.js';
 import { registerPersistenceRoutes } from './routes/persistence-routes.js';
@@ -109,6 +110,7 @@ export const buildApp = (options?: {
     registerHealthRoutes(app, context);
     registerPersistenceRoutes(app, context);
     registerDiagramWorkflowRoutes(app, context);
+    registerDiagramVersionRestoreRoutes(app, context);
     registerDiagramMigrationRoutes(app, context);
     registerSchemaSyncRoutes(app, context);
 

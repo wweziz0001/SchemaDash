@@ -9,14 +9,18 @@ import {
     SheetTitle,
 } from '@/components/sheet/sheet';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
+import type { DiagramWorkflowVersionSummary } from '../api/diagram-workflow-client';
 import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
 import { VersionListItem } from './version-list-item';
 import { CreateVersionDialog } from './create-version-dialog';
+import { RestoreVersionDialog } from './restore-version-dialog';
 
 export const VersionsPanel: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();
     const [open, setOpen] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
+    const [restoreVersion, setRestoreVersion] =
+        useState<DiagramWorkflowVersionSummary>();
 
     if (!workflow?.diagramId) {
         return null;
@@ -93,6 +97,16 @@ export const VersionsPanel: React.FC = () => {
                                             );
                                             setOpen(false);
                                         }}
+                                        onRestore={
+                                            canCreateVersion
+                                                ? () => {
+                                                      setRestoreVersion(
+                                                          version
+                                                      );
+                                                      setOpen(false);
+                                                  }
+                                                : undefined
+                                        }
                                     />
                                 ))}
                             </div>
@@ -106,6 +120,16 @@ export const VersionsPanel: React.FC = () => {
                 onOpenChange={setCreateOpen}
                 onCreated={async () => {
                     await workflow.refreshWorkflow();
+                }}
+            />
+
+            <RestoreVersionDialog
+                open={!!restoreVersion}
+                version={restoreVersion}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setRestoreVersion(undefined);
+                    }
                 }}
             />
         </>
