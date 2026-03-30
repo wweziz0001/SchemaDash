@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/button/button';
 import {
     DropdownMenu,
@@ -28,7 +28,12 @@ export const ReviewDropdown: React.FC = () => {
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 rounded-lg bg-background/80 shadow-sm"
+                    >
+                        <ClipboardList className="size-4" />
                         Review
                         <ChevronDown className="size-4" />
                     </Button>

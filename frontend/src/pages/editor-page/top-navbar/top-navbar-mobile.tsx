@@ -25,6 +25,7 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
     const { enabled, user, logout } = useAuth();
     const workflow = useOptionalDiagramWorkflow();
     const isAdmin = enabled && user?.role === 'admin';
+    const showWorkflowChrome = !!workflow?.diagramId;
     const renderStars = useCallback(() => {
         return (
             <iframe
@@ -39,7 +40,7 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
     const { toggleSidebar } = useSidebar();
 
     return (
-        <nav className="flex flex-col justify-between border-b px-3 md:h-12 md:flex-row md:items-center md:px-4">
+        <nav className="flex flex-col justify-between border-b bg-background/95 px-3 backdrop-blur md:h-12 md:flex-row md:items-center md:px-4">
             <div className="flex flex-1 flex-col justify-between gap-x-1 md:flex-row md:justify-normal">
                 <div className="flex items-center justify-between pt-[8px] font-primary md:py-0">
                     <div className="flex items-center gap-2">
@@ -98,18 +99,20 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
             <div className="flex flex-1 justify-center pb-2 pt-1">
                 <DiagramName />
             </div>
-            <div className="flex justify-center pb-2">
-                <WorkflowModeSwitcher />
-            </div>
-            <div className="flex justify-center px-2 pb-2">
-                <CompareSummaryChip />
-            </div>
-            <div className="flex justify-center px-2 pb-2">
-                <LiveStatusChip />
-            </div>
-            <div className="flex justify-center px-2 pb-2">
-                <VersionViewBadge />
-            </div>
+            {showWorkflowChrome ? (
+                <div className="pb-3">
+                    <div className="rounded-xl border bg-muted/15 p-2 shadow-sm">
+                        <div className="flex justify-center pb-2">
+                            <WorkflowModeSwitcher />
+                        </div>
+                        <div className="flex flex-wrap justify-center gap-2">
+                            <CompareSummaryChip />
+                            <LiveStatusChip />
+                            <VersionViewBadge />
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </nav>
     );
 };

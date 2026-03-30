@@ -27,6 +27,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
     const { enabled, user, logout } = useAuth();
     const workflow = useOptionalDiagramWorkflow();
     const isAdmin = enabled && user?.role === 'admin';
+    const showWorkflowChrome = !!workflow?.diagramId;
 
     const renderStars = useCallback(() => {
         return (
@@ -40,7 +41,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
     }, []);
 
     return (
-        <nav className="flex flex-col justify-between border-b px-3 md:h-12 md:flex-row md:items-center md:px-4">
+        <nav className="flex flex-col justify-between border-b bg-background/95 px-3 backdrop-blur md:min-h-12 md:flex-row md:items-center md:px-4">
             <div className="flex flex-1 flex-col justify-between gap-x-1 md:flex-row md:justify-normal">
                 <div className="flex items-center justify-between pt-[8px] font-primary md:py-0">
                     <a
@@ -62,45 +63,54 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                 <Menu />
             </div>
             <DiagramName />
-            <div className="hidden flex-1 items-center justify-end gap-2 sm:flex">
-                <WorkflowModeSwitcher />
-                <CompareSummaryChip />
-                <LiveStatusChip />
-                <VersionViewBadge />
-                <ReviewDropdown />
-                <VersionsPanel />
-                {workflow?.activeMode === 'development' ? (
-                    <SchemaSyncToolbarButton />
+            <div className="hidden flex-1 items-center justify-end gap-3 py-2 sm:flex md:py-0">
+                {showWorkflowChrome ? (
+                    <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                        <WorkflowModeSwitcher />
+                        <CompareSummaryChip />
+                        <LiveStatusChip />
+                        <VersionViewBadge />
+                    </div>
                 ) : null}
-                <LastSaved />
-                <ActiveDiagramParticipants />
-                <CurrentDiagramShareButton />
-                <Button asChild variant="outline" size="sm">
-                    <Link to="/">Library</Link>
-                </Button>
-                {enabled ? (
-                    <>
-                        <span className="max-w-40 truncate text-sm text-muted-foreground">
-                            {user?.displayName ??
-                                user?.email ??
-                                'Authenticated'}
-                        </span>
-                        {isAdmin ? (
-                            <Button asChild variant="outline" size="sm">
-                                <Link to="/admin">Admin</Link>
+                {showWorkflowChrome ? (
+                    <div className="h-6 w-px shrink-0 bg-border" />
+                ) : null}
+                <div className="flex items-center gap-2">
+                    <ReviewDropdown />
+                    <VersionsPanel />
+                    {workflow?.activeMode === 'development' ? (
+                        <SchemaSyncToolbarButton />
+                    ) : null}
+                    <LastSaved />
+                    <ActiveDiagramParticipants />
+                    <CurrentDiagramShareButton />
+                    <Button asChild variant="outline" size="sm">
+                        <Link to="/">Library</Link>
+                    </Button>
+                    {enabled ? (
+                        <>
+                            <span className="max-w-40 truncate text-sm text-muted-foreground">
+                                {user?.displayName ??
+                                    user?.email ??
+                                    'Authenticated'}
+                            </span>
+                            {isAdmin ? (
+                                <Button asChild variant="outline" size="sm">
+                                    <Link to="/admin">Admin</Link>
+                                </Button>
+                            ) : null}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => void logout()}
+                            >
+                                Log out
                             </Button>
-                        ) : null}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => void logout()}
-                        >
-                            Log out
-                        </Button>
-                    </>
-                ) : null}
-                {renderStars()}
-                <LanguageNav />
+                        </>
+                    ) : null}
+                    {renderStars()}
+                    <LanguageNav />
+                </div>
             </div>
         </nav>
     );

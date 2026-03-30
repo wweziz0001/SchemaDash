@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Badge } from '@/components/badge/badge';
+import { DatabaseZap } from 'lucide-react';
 import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
 
 const formatTimestamp = (value: string) =>
@@ -29,7 +30,7 @@ export const LiveStatusChip: React.FC = () => {
             : workflow.workflow.connectionStatus === 'failed'
               ? {
                     variant: 'destructive' as const,
-                    label: `Disconnected: ${connectionName}`,
+                    label: `${connectionName} failed`,
                     title:
                         workflow.workflow.lastSyncError ??
                         'The last live connection attempt failed.',
@@ -38,12 +39,12 @@ export const LiveStatusChip: React.FC = () => {
                   workflow.workflow.liveSnapshotId
                 ? {
                       variant: 'secondary' as const,
-                      label: `Connected: ${connectionName}`,
+                      label: `${connectionName} linked`,
                       title: `Bound to ${connectionName}.`,
                   }
                 : {
                       variant: 'outline' as const,
-                      label: `Bound: ${connectionName}`,
+                      label: `${connectionName} bound`,
                       title: `Bound to ${connectionName} but not synced yet.`,
                   };
 
@@ -51,7 +52,7 @@ export const LiveStatusChip: React.FC = () => {
             workflow.workflow?.syncStatus === 'error'
                 ? {
                       variant: 'destructive' as const,
-                      label: 'Sync failed',
+                      label: 'Failed',
                       title:
                           workflow.workflow.lastSyncError ??
                           'The last live sync failed.',
@@ -65,7 +66,7 @@ export const LiveStatusChip: React.FC = () => {
                   : workflow.workflow?.lastSyncedAt
                     ? {
                           variant: 'outline' as const,
-                          label: `Last synced ${formatTimestamp(
+                          label: `Synced ${formatTimestamp(
                               workflow.workflow.lastSyncedAt
                           )}`,
                           title: workflow.workflow.lastSyncedAt,
@@ -84,7 +85,7 @@ export const LiveStatusChip: React.FC = () => {
             workflow.activeMode === 'version'
                 ? {
                       variant: 'secondary' as const,
-                      label: 'Version read-only',
+                      label: 'Snapshot read-only',
                       title: 'Historical version views are immutable and read-only.',
                   }
                 : workflow.activeMode === 'compare'
@@ -96,12 +97,12 @@ export const LiveStatusChip: React.FC = () => {
                   : workflow.activeMode === 'live'
                     ? {
                           variant: 'secondary' as const,
-                          label: 'Read-only',
+                          label: 'Live read-only',
                           title: 'Live Database mode is read-only.',
                       }
                     : {
                           variant: 'outline' as const,
-                          label: 'Editable',
+                          label: 'Development editable',
                           title: 'Development mode remains editable.',
                       };
 
@@ -117,7 +118,11 @@ export const LiveStatusChip: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border bg-muted/20 px-2 py-1 shadow-sm">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                <DatabaseZap className="size-3" />
+                Live
+            </span>
             <Badge
                 variant={status.connectionBadge.variant}
                 title={status.connectionBadge.title}
