@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Badge } from '@/components/badge/badge';
 import type { ChangePlan, SchemaChange } from '@schemadash/schema-sync-core';
+import { WorkflowMetricCard } from './workflow-metric-card';
 
 const summarizeKinds = (changes: SchemaChange[]) => {
     const labels = new Map<string, number>();
@@ -31,42 +32,43 @@ export const MigrationSummary: React.FC<{
     return (
         <div className="space-y-4">
             <div className="grid gap-3 md:grid-cols-4">
-                <div className="rounded-lg border p-4">
-                    <div className="text-sm text-muted-foreground">
-                        Planned changes
-                    </div>
-                    <div className="mt-2 text-2xl font-semibold">
-                        {plan.summary.totalChanges}
-                    </div>
-                </div>
-                <div className="rounded-lg border p-4">
-                    <div className="text-sm text-muted-foreground">
-                        Warnings
-                    </div>
-                    <div className="mt-2 text-2xl font-semibold">
-                        {plan.summary.warningChanges +
-                            plan.summary.destructiveChanges}
-                    </div>
-                </div>
-                <div className="rounded-lg border p-4">
-                    <div className="text-sm text-muted-foreground">
-                        Blocking
-                    </div>
-                    <div className="mt-2 text-2xl font-semibold">
-                        {plan.summary.blockedChanges}
-                    </div>
-                </div>
-                <div className="rounded-lg border p-4">
-                    <div className="text-sm text-muted-foreground">SQL</div>
-                    <div className="mt-2 text-2xl font-semibold">
-                        {plan.sqlStatements.length}
-                    </div>
-                </div>
+                <WorkflowMetricCard
+                    label="Planned changes"
+                    value={plan.summary.totalChanges}
+                    detail="Canonical operations in the current migration plan."
+                />
+                <WorkflowMetricCard
+                    label="Warnings"
+                    value={
+                        plan.summary.warningChanges +
+                        plan.summary.destructiveChanges
+                    }
+                    detail="Warning and destructive changes that deserve extra review."
+                />
+                <WorkflowMetricCard
+                    label="Blocking"
+                    value={plan.summary.blockedChanges}
+                    detail="Blocked changes that must be resolved before apply."
+                />
+                <WorkflowMetricCard
+                    label="SQL"
+                    value={plan.sqlStatements.length}
+                    detail="Generated statements in the current preview."
+                />
             </div>
 
-            <div className="rounded-lg border p-4">
-                <div className="mb-3 text-sm font-medium">
-                    Planned action categories
+            <div className="rounded-xl border bg-card/60 p-4 shadow-sm">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-sm font-medium">
+                        Planned action categories
+                    </div>
+                    <Badge variant="outline">
+                        {changeKinds.length} categor
+                        {changeKinds.length === 1 ? 'y' : 'ies'}
+                    </Badge>
+                </div>
+                <div className="mb-3 text-sm text-muted-foreground">
+                    Most frequent canonical change kinds in this preview.
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {changeKinds.map((item) => (
