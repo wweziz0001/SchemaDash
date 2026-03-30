@@ -5,63 +5,65 @@
 SchemaDash is a full-stack schema design and schema workflow product with:
 
 - a React/Tailwind frontend for diagram editing and review
-- a Fastify backend for persistence, collaboration, workflow state, and schema-sync APIs
-- a shared `packages/schema-sync-core` package for canonical schema types, hashing, diffing, compare, and migration planning
+- a Fastify backend for persistence, collaboration, workflow state, migration, and schema-sync APIs
+- a shared `packages/schema-sync-core` package for canonical schema types, hashing, diffing, compare, risk analysis, and SQL planning
 
-Relevant architecture for this task:
+Relevant product/architecture context for this task:
 
-- `Development` is the only mutable diagram head.
-- `Live Database` is a stored read-only canonical snapshot.
-- `Compare` is a derived read-only view.
-- `Versions / Snapshots` are immutable historical captures of Development.
-- Restoring a version must copy that immutable version back into Development, never mutate the stored snapshot.
+- `Development` is the only mutable head.
+- `Live Database` is a stored read-only canonical snapshot bound to a saved connection.
+- `Compare` is a derived read-only visualization between a baseline and Development.
+- `Versions / Snapshots` are immutable historical captures.
+- `Restore to Development` copies an immutable version back into Development instead of mutating the stored version.
+- The repo still contains an older `Schema Sync` compatibility path that uses `diagram.schemaSync` metadata alongside the newer workflow state.
 
-Key concepts for this area:
+Key concepts needed for this system area:
 
-- The editable diagram document still lives in app persistence and collaboration stays attached to that one document.
-- Workflow snapshots and user-facing versions live beside the mutable Development document in `diagram_workflow_snapshots` and `diagram_versions`.
-- Compare/review/migration logic depends on canonical schema integrity, but the editor itself still operates on one mutable Development diagram.
+- The authoritative editable diagram document still lives in app persistence and collaboration layers.
+- Workflow state, workflow snapshots, and diagram versions live beside that diagram in the app DB through `diagram_workflow_state`, `diagram_workflow_snapshots`, and `diagram_versions`.
+- Canonical schema integrity matters because compare, review, migration, version compare, and restore safety all depend on it.
 
 ## Current Architectural Context
 
-Read these first:
+Read these first for any future work in this area:
 
 1. `docs/live-database-development-compare-versions-design.md`
 2. `docs/live-db-compare-feature-map.md`
-3. `docs/codex-handoff.md`
+3. `docs/live-workflow-final-audit.md`
+4. `docs/live-workflow-release-readiness-checklist.md`
+5. `docs/codex-handoff.md`
 
-System areas that matter most for restore:
+Parts of the system that matter most:
 
-- Backend workflow persistence:
+- Backend workflow persistence and APIs:
   - `backend/src/repositories/diagram-workflow-repository.ts`
-- Backend version/snapshot creation and read APIs:
   - `backend/src/services/diagram-workflow-service.ts`
-  - `backend/src/routes/diagram-workflow-routes.ts`
-- Backend restore workflow added in this task:
+  - `backend/src/services/diagram-migration-service.ts`
   - `backend/src/services/diagram-version-restore-service.ts`
+  - `backend/src/routes/diagram-workflow-routes.ts`
+  - `backend/src/routes/diagram-migration-routes.ts`
   - `backend/src/routes/diagram-version-restore-routes.ts`
-  - `backend/src/schemas/diagram-workflow.ts`
-- Frontend versions UI and restore UX:
-  - `frontend/src/features/diagram-workflow/components/versions-panel.tsx`
-  - `frontend/src/features/diagram-workflow/components/version-list-item.tsx`
-  - `frontend/src/features/diagram-workflow/components/restore-version-dialog.tsx`
-  - `frontend/src/features/diagram-workflow/components/restore-warning-panel.tsx`
-  - `frontend/src/features/diagram-workflow/lib/restore-messages.ts`
-- Frontend workflow/editor glue:
+- Shared compare / canonical logic:
+  - `packages/schema-sync-core/src/compare.ts`
+  - `packages/schema-sync-core/src/compare-types.ts`
+  - `packages/schema-sync-core/src/diff.ts`
+- Frontend workflow state and UI:
   - `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
+  - `frontend/src/features/diagram-workflow/lib/compare-render-model.ts`
+  - `frontend/src/features/diagram-workflow/lib/review-grouping.ts`
+  - `frontend/src/features/diagram-workflow/components/review-dropdown.tsx`
+  - `frontend/src/features/diagram-workflow/components/review-changes-dialog.tsx`
+  - `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
+  - `frontend/src/features/diagram-workflow/components/versions-panel.tsx`
+  - `frontend/src/features/diagram-workflow/components/restore-version-dialog.tsx`
+- Editor integration points:
   - `frontend/src/pages/editor-page/workflow-editor-page.tsx`
-
-Important service/module boundaries:
-
-- `diagram-workflow-repository` owns workflow state, workflow snapshots, and version rows in the app DB.
-- `diagram-workflow-service` still owns version creation, version list/detail, and live snapshot refresh.
-- `diagram-version-restore-service` now owns restore-only behavior:
-  - permission validation
-  - version lookup and diagram ownership checks
-  - automatic safety snapshot creation
-  - Development replacement via normal persistence semantics
-- `diagram-workflow-context` still decides which read-only surface is open in the editor, but it is not a multi-branch editor.
-- `storage-provider` and `schemadash-provider` remain the authoritative client-side persistence/editor layers and were intentionally not rewritten.
+  - `frontend/src/pages/editor-page/editor-page.tsx`
+  - `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
+  - `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
+- Legacy compatibility path that still matters:
+  - `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
+  - `frontend/src/features/schema-sync/dialogs/schema-sync-dialog.tsx`
 
 Important high-risk files:
 
@@ -71,261 +73,214 @@ Important high-risk files:
 - `backend/src/repositories/app-repository.ts`
 - `backend/src/repositories/metadata-repository.ts`
 - `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
-- `packages/schema-sync-core/src/types.ts`
 
-Frontend/backend/shared relationships relevant to restore:
+Important service/module boundaries:
 
-- Frontend sends restore confirmation plus the current Development canonical schema and current document version.
-- Backend validates that `baseVersion` still matches the authoritative Development document before creating the safety snapshot.
-- Backend creates the safety snapshot/version from the current Development state, then restores the selected immutable version by writing a copied diagram document back through normal Development persistence.
-- Frontend refreshes the authoritative diagram through the storage layer and reloads it into the editor, keeping the editor on Development after restore.
+- `diagram-workflow-repository` owns workflow state, workflow snapshots, and version rows in the app DB.
+- `diagram-workflow-service` owns workflow view, live binding/refresh, and version create/list/get.
+- `diagram-migration-service` owns migration preview/validate/apply and workflow live-snapshot advancement after success.
+- `diagram-version-restore-service` owns restore-only safety behavior.
+- `schema-sync-context` is still the bridge to the older Schema Sync toolbar flow and updates `diagram.schemaSync` compatibility metadata.
+- `diagram-workflow-context` drives mode selection and compare/version/live read-only data for the editor.
+
+Relevant frontend/backend/shared package relationships:
+
+- Frontend converts Development diagrams to canonical schema for compare, review, migration, version creation, and restore safety payloads.
+- Backend persists workflow snapshots/versions and revalidates migration plans against live state.
+- Shared compare/migration logic lives in `packages/schema-sync-core`; the backend and frontend both depend on it.
 
 ## Task Completed
 
 What this task was trying to achieve:
 
-- Add a controlled restore-to-Development workflow for immutable diagram versions.
-- Keep versions immutable forever.
-- Create a safety snapshot before replacement.
-- Make restore explicit, confirmed, server-validated, and understandable in the UI.
+- Perform a final release-readiness audit of the full live workflow implementation.
+- Compare implementation against the design docs.
+- Produce a concrete go/no-go assessment, prioritized backlog, and future-session handoff.
 
 What was actually implemented:
 
-- Added `Restore to Development` actions to the versions UI for editable diagrams.
-- Added a dedicated restore confirmation dialog with high-risk messaging and explicit confirmation text.
-- Added a dedicated backend restore service and route:
-  - validates edit access
-  - validates version existence and diagram scope
-  - validates confirmation text
-  - validates the caller’s `baseVersion` against the current Development document
-  - creates a `before_restore` safety snapshot/version
-  - copies the selected immutable version’s stored diagram document into Development
-- Added client restore wiring that:
-  - calls the new restore API
-  - refreshes the authoritative diagram through `storage.getDiagram(...)`
-  - reloads the restored Development document into the editor
-  - switches the UI back to Development mode
-  - shows explicit success/failure feedback
+- Added `docs/live-workflow-final-audit.md`
+- Added `docs/live-workflow-release-readiness-checklist.md`
+- Rewrote `docs/codex-handoff.md` for a future fresh Codex session
+- Audited the integrated implementation across:
+  - Live Database
+  - Development
+  - Compare
+  - Review Changes
+  - Migration
+  - Versions / Snapshots
+  - Restore to Development
+- Ran targeted validation across shared core, backend workflow services, and frontend workflow UI/tests
 
-Key decisions made:
+Decisions made in this task:
 
-- The restore workflow was kept isolated in `diagram-version-restore-service.ts` instead of folding more risk into `diagram-workflow-service.ts`.
-- The backend safety snapshot uses the current server-side Development document plus client-supplied canonical schema, but only after a strict `baseVersion` match. This avoided redesigning the versions model or moving canonical conversion logic across packages.
-- Restore preserves the current Development `schemaSync` compatibility payload rather than reviving potentially stale sync metadata from the historical version document.
-- Restore uses the normal Development persistence path (`persistenceService.upsertDiagram(...)`) so document versioning/concurrency still advances normally.
+- This was kept audit-first and documentation-first.
+- No broad refactor was attempted.
+- The audit recommends **beta / feature-flagged release only**, not a wide full release.
+- The audit identifies two main full-release blockers:
+  - workflow/legacy baseline drift after workflow migration apply
+  - client-trusted canonical snapshot persistence for versions and restore safety snapshots
 
 Approach intentionally avoided and why:
 
-- Did not turn `SchemaDashProvider` into a multi-head or multi-branch editor because the design docs explicitly reject that.
-- Did not mutate stored version or snapshot rows during restore; restore always copies into Development.
-- Did not modify `persistence-service`, `app-repository`, `metadata-repository`, `storage-provider`, or `schemadash-provider` because the restore flow could be layered on top of existing boundaries.
-- Did not redesign versions into editable branches; versions remain read-only before and after restore.
+- Did not redesign the workflow architecture during the audit because the branch already has a mostly coherent layered implementation.
+- Did not refactor editor-core or persistence-core files because the task was release-readiness assessment, not a rewrite.
+- Did not invent missing behavior where the repo did not implement it; missing items were documented as confirmed gaps or inferred risks instead.
 
 ## Files Changed
 
 Files created in this task:
 
-- `backend/src/services/diagram-version-restore-service.ts`
-  - restore-only backend workflow with validation, safety snapshot creation, and Development replacement
-- `backend/src/routes/diagram-version-restore-routes.ts`
-  - restore HTTP entry point
-- `backend/test/diagram-version-restore-service.test.ts`
-  - backend safety/immutability/regression coverage for restore
-- `frontend/src/features/diagram-workflow/components/restore-version-dialog.tsx`
-  - explicit restore confirmation UI and client-side restore orchestration
-- `frontend/src/features/diagram-workflow/components/restore-warning-panel.tsx`
-  - reusable risk/consequence warning panel inside restore confirmation
-- `frontend/src/features/diagram-workflow/components/restore-version-dialog.test.tsx`
-  - frontend confirmation/success/failure restore coverage
-- `frontend/src/features/diagram-workflow/lib/restore-messages.ts`
-  - restore-specific confirmation/success/failure copy helpers
+- `docs/live-workflow-final-audit.md`
+  - full release-readiness audit and architecture/product/safety assessment
+- `docs/live-workflow-release-readiness-checklist.md`
+  - condensed release status and blocker checklist
 
 Files modified in this task:
 
-- `backend/src/app.ts`
-  - registered the restore route
-- `backend/src/context/app-context.ts`
-  - added and instantiated `DiagramVersionRestoreService`
-- `backend/src/schemas/diagram-workflow.ts`
-  - added restore request schema and restore confirmation constant
-- `frontend/src/features/diagram-workflow/api/diagram-workflow-client.ts`
-  - added typed restore API call/result model
-- `frontend/src/features/diagram-workflow/components/version-list-item.tsx`
-  - added `Restore to Development` action button
-- `frontend/src/features/diagram-workflow/components/versions-panel.tsx`
-  - wired restore dialog entry from the versions sheet
+- `docs/codex-handoff.md`
+  - replaced older restore-focused handoff with an audit-focused workflow handoff for future sessions
 
 Important files intentionally not changed:
 
+- `backend/src/services/diagram-migration-service.ts`
+- `backend/src/services/diagram-workflow-service.ts`
+- `backend/src/services/diagram-version-restore-service.ts`
+- `frontend/src/features/diagram-workflow/context/diagram-workflow-context.tsx`
+- `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
 - `frontend/src/context/storage-context/storage-provider.tsx`
 - `frontend/src/context/schemadash-context/schemadash-provider.tsx`
-- `backend/src/services/persistence-service.ts`
-- `backend/src/repositories/app-repository.ts`
-- `backend/src/repositories/metadata-repository.ts`
-- `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
-- `packages/schema-sync-core/src/types.ts`
 
-Why those avoided files matter:
+Brief purpose of the important changed docs:
 
-- They are the highest-blast-radius editor/persistence/shared-model files.
-- This restore implementation stays additive and isolated by using their public behavior instead of refactoring them.
+- `docs/live-workflow-final-audit.md`
+  - source of truth for readiness decision, strengths, weaknesses, risks, and backlog
+- `docs/live-workflow-release-readiness-checklist.md`
+  - quick operator/reviewer summary of what passes, what is partial, and what blocks full release
+- `docs/codex-handoff.md`
+  - fresh-session continuation context for future Codex work in this area
 
 ## Data / API / Workflow Changes
 
-New backend route:
+This task did **not** add new models, routes, services, migrations, env vars, or config.
 
-- `POST /api/diagrams/:id/workflow/versions/:versionId/restore-to-development`
-  - request payload:
-    - `confirmationText`
-    - `baseVersion`
-    - `sessionId` optional
-    - `currentDevelopmentCanonicalSchema`
-  - response payload:
-    - `restoredVersion`
-    - `safetySnapshotVersion`
-    - `development` name/version/updatedAt summary
+What changed instead:
 
-Restore workflow behavior:
+- Documentation now records the current workflow architecture, current release posture, and the specific blockers/non-blockers found in the repository state.
 
-- Restore requires explicit confirmation text: `RESTORE DEVELOPMENT`.
-- Restore fails fast if the current Development document version no longer matches the caller’s `baseVersion`.
-- Restore creates an automatic safety snapshot row with:
-  - `snapshotKind: 'system'`
-  - `sourceKind: 'development'`
-- Restore also creates a user-facing safety version row with:
-  - `origin: 'before_restore'`
-  - generated label and descriptive name/note
-- Restore writes the selected version’s stored diagram document back into the Development document.
-- The selected immutable version remains unchanged.
-- The current Development `schemaSync` metadata is preserved during restore so live/compare/migration compatibility pointers are not silently rolled back to stale version-local values.
+Important workflow conclusions recorded by this task:
 
-Client workflow behavior:
-
-- Versions UI now exposes `Restore to Development`.
-- Restore dialog requires explicit confirmation text before enabling the destructive action.
-- After a successful restore, the client:
-  - refreshes the authoritative diagram from the server through storage
-  - reloads that Development diagram into the editor
-  - returns the UI to Development mode
-  - shows a success toast naming the restored version and the safety snapshot
-- On failure, the dialog shows the error inline and a destructive toast.
-
-Compatibility/config changes:
-
-- No env var changes.
-- No metadata DB changes.
-- No shared package type changes.
-- No backup/export schema changes.
+- Development remains the mutable head.
+- Live / Compare / Version views remain layered around it.
+- Versions are immutable.
+- Restore copies into Development rather than mutating versions.
+- The most important unfinished work is around state consistency and canonical snapshot integrity, not around the basic workflow model.
 
 ## Validation Performed
 
-Targeted tests run:
+Targeted automated validation run during this task:
 
-- `npm run test -w @schemadash/backend -- diagram-version-restore-service.test.ts diagram-workflow-service.test.ts`
-- `npm run test:web -- --run frontend/src/features/diagram-workflow/components/restore-version-dialog.test.tsx frontend/src/features/diagram-workflow/components/versions-panel.test.tsx frontend/src/features/diagram-workflow/components/version-view-badge.test.tsx frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx`
+- `npm run test:ci -w @schemadash/schema-sync-core -- src/__tests__/compare.test.ts src/__tests__/diff-column-matching.test.ts`
+- `npm run test:ci -w @schemadash/backend -- test/diagram-workflow-service.test.ts test/diagram-migration-service.test.ts test/diagram-version-restore-service.test.ts`
+- `npm run test:web:ci -- frontend/src/features/diagram-workflow/components/workflow-mode-switcher.test.tsx frontend/src/features/diagram-workflow/components/live-status-chip.test.tsx frontend/src/features/diagram-workflow/components/review-dropdown.test.tsx frontend/src/features/diagram-workflow/components/review-changes-dialog.test.tsx frontend/src/features/diagram-workflow/components/migration-dialog.test.tsx frontend/src/features/diagram-workflow/components/versions-panel.test.tsx frontend/src/features/diagram-workflow/components/restore-version-dialog.test.tsx frontend/src/features/diagram-workflow/components/workflow-development-diagram-sync.test.tsx frontend/src/features/diagram-workflow/components/version-view-badge.test.tsx frontend/src/features/diagram-workflow/lib/compare-render-model.test.ts`
 
 What was verified:
 
-- a stored version can be selected for restore through the versions UI
-- restore requires explicit confirmation text before the button enables
-- backend restore creates a `before_restore` safety snapshot/version
-- restoring a version replaces Development through the server workflow
-- the original immutable version remains unchanged after restore
-- stale `baseVersion` restores fail before mutating Development or creating a safety snapshot
-- versions list/open/compare UI behavior still works
-- version read-only badge still works
-- live-only review controls remain hidden for version-based compare mode
-
-What was verified manually:
-
-- no manual browser QA was run in this session
+- compare classification and fallback matching behavior
+- workflow bind/refresh/version creation behavior
+- migration fallback hydration, success update, and failure log return behavior
+- restore safety snapshot behavior and stale-base rejection
+- frontend workflow mode, compare, review, migration, versions, and restore UI behavior
 
 What remains unverified:
 
-- end-to-end manual restore in a running browser session with real collaboration events
-- share-token/read-only permission matrix around restore attempts
-- full repo-wide test/build sweep on this branch
+- full manual browser QA of the end-to-end workflow
+- live database integration against a real PostgreSQL instance in this session
+- full repo-wide build/test sweep on this branch
 
-Known limitations / risks:
+Known limitations / risks confirmed by the audit:
 
-- Restore currently accepts `sessionId` from the client but intentionally does not pass it into `persistenceService.upsertDiagram(...)`; this avoids failing restores on stale/missing session metadata. If session attribution becomes important later, add a dedicated validated session handoff rather than blindly passing the ID through.
-- Safety snapshot canonical schema is supplied by the client and protected by `baseVersion` validation. If the product later needs fully server-derived canonical snapshots, add a shared server-safe diagram-to-canonical conversion path rather than changing the versions model.
+- workflow state and legacy `diagram.schemaSync` compatibility metadata can drift after workflow migration apply
+- version and restore safety snapshot canonical data is client-trusted
+- mobile workflow access is incomplete
+- workflow backup/export portability is not implemented
+- stored default compare source is not yet used by the frontend
 
 ## Outstanding Work
 
-Not done yet:
+What is not done yet:
 
-- manual browser QA of restore and post-restore editing
-- broader route/integration coverage beyond the focused restore service tests
-- backup/export portability for restore-generated safety snapshots
-- richer system-version UX such as filtering, pinning, or separate grouping for `before_restore`
+- full-release blocker fixes
+- manual end-to-end workflow QA
+- workflow backup/export portability
+- compare default-baseline UX completion
+- performance/scalability hardening for large diagrams and version histories
 
-Recommended next implementation phase:
+Next recommended implementation phase:
 
-- run a broader integration/manual validation pass covering:
-  - restore from version view and from Development view
-  - editing immediately after restore
-  - compare/live/migration behavior after restore
-  - multi-user collaboration expectations after restore
+1. Fix workflow baseline consistency across migration and the still-visible legacy Schema Sync path.
+2. Make version and safety snapshot canonical data server-authoritative or server-validated.
+3. Close the workflow UX parity gap on mobile.
+4. Decide and implement workflow snapshot/version backup behavior.
+5. Then run a manual integrated QA pass over live sync, compare, review, migration, versions, and restore together.
 
-Blockers/risks/dependencies for future work:
+Blockers, risks, or dependencies for the next phase:
 
-- do not break the invariant that Development is the only mutable head
-- do not let restore overwrite or mutate stored immutable version rows
-- do not “fix” restore by widening editor providers into multi-branch state
+- The biggest safety work spans both backend services and frontend compatibility state.
+- Any canonical-integrity fix will likely need a server-safe diagram-to-canonical boundary or validation strategy.
+- Removing or demoting the legacy Schema Sync path may require a product decision, not just code changes.
 
 ## Instructions for the Next Codex Session
 
-Exact reading order:
+Exact reading order for future work:
 
-1. `docs/live-database-development-compare-versions-design.md`
-2. `docs/live-db-compare-feature-map.md`
-3. `docs/codex-handoff.md`
-4. `backend/src/services/diagram-version-restore-service.ts`
-5. `backend/test/diagram-version-restore-service.test.ts`
-6. `frontend/src/features/diagram-workflow/components/restore-version-dialog.tsx`
-7. `frontend/src/features/diagram-workflow/components/restore-version-dialog.test.tsx`
-8. `frontend/src/features/diagram-workflow/components/versions-panel.tsx`
+1. `docs/live-workflow-final-audit.md`
+2. `docs/live-workflow-release-readiness-checklist.md`
+3. `docs/live-database-development-compare-versions-design.md`
+4. `docs/live-db-compare-feature-map.md`
+5. `docs/codex-handoff.md`
+6. `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
+7. `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
+8. `backend/src/services/diagram-migration-service.ts`
+9. `backend/src/services/diagram-workflow-service.ts`
+10. `backend/src/services/diagram-version-restore-service.ts`
 
-Inspect first if continuing restore work:
+What to inspect first if continuing implementation:
 
-- `backend/src/services/diagram-version-restore-service.ts`
-- `backend/src/schemas/diagram-workflow.ts`
-- `frontend/src/features/diagram-workflow/components/restore-version-dialog.tsx`
-- `frontend/src/features/diagram-workflow/lib/restore-messages.ts`
+- For the P0 baseline-drift issue:
+  - `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
+  - `frontend/src/features/diagram-workflow/components/migration-dialog.tsx`
+  - any legacy Schema Sync surfaces that still use `currentDiagram.schemaSync`
+- For the canonical-integrity issue:
+  - `backend/src/services/diagram-workflow-service.ts`
+  - `backend/src/services/diagram-version-restore-service.ts`
+  - canonical adapter boundaries in `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
 
 What to avoid breaking:
 
-- Development must stay the only mutable/collaborative head.
-- Stored versions and snapshots must remain immutable forever.
-- Current Development `schemaSync` metadata should survive restore.
-- High-risk persistence/editor files should remain untouched unless absolutely necessary.
+- Development must remain the only editable head.
+- Compare, Live, and Version must remain read-only.
+- Versions must remain immutable.
+- Restore must continue creating a safety snapshot before replacing Development.
+- Do not introduce a multi-head editor or broad persistence rewrite unless explicitly requested.
 
 Where to continue implementation:
 
-- add manual/integration coverage around restore if more confidence is needed
-- add future UX refinements in the restore dialog or versions list
-- if server-derived canonical safety snapshots are required later, add that as a new isolated helper/service instead of rewriting version storage
+- Start with the P0 baseline consistency issue because it affects release safety most directly.
+- If that is solved, move next to canonical snapshot integrity.
 
 ## Git Summary
 
-Working branch:
+- Working branch: `audit/live-workflow-final-review`
+- Pull request title: `Audit live workflow feature set for readiness gaps risks and final improvements`
+- Commit list created for this task:
+  - None yet in the repository state at the time this handoff content was written; create the audit/docs commit first, then add any small audit-driven fix in a separate commit, then update the audit/handoff docs in a final docs commit if needed.
 
-- `feature/restore-version-to-development`
+Brief explanation of the intended commit sequence:
 
-Pull request title:
-
-- `Add controlled restore of immutable version into Development`
-
-Commit list created for this task:
-
-- `feat: add restore to development action and confirmation flow`
-  - added restore entry point in the versions UI, confirmation dialog, warning panel, and restore-specific messaging helpers
-- `feat: add server-controlled restore workflow and safety snapshot support`
-  - added backend restore route/service, restore request schema, and typed client restore API
-- `feat: apply restored version into development while preserving immutability`
-  - wired restore completion back through storage/editor refresh so the editor cleanly resumes on restored Development
-- `feat: add restore success and failure UX`
-  - added explicit success toasts and actionable failure messaging for restore
-- `test: validate restore safety immutability and development replacement behavior`
-  - added focused backend/frontend restore tests and updated this handoff for the next session
+- `docs: add final live workflow audit and readiness assessment`
+  - add the audit, checklist, and updated handoff
+- optional `fix: ...`
+  - only for a very small audit-driven UX/safety correction
+- optional `docs: ...`
+  - update the audit/handoff/checklist with post-fix notes
