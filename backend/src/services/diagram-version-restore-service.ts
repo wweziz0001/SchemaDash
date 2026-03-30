@@ -171,7 +171,11 @@ export class DiagramVersionRestoreService {
             connectionId: workflowState?.connectionId ?? null,
             fingerprint,
             canonicalSchema,
-            diagramDocument: diagram.diagram,
+            diagramDocument: {
+                ...diagram.diagram,
+                createdAt: new Date(diagram.diagram.createdAt),
+                updatedAt: new Date(diagram.diagram.updatedAt),
+            },
             layoutSource: 'captured',
             basedOnSnapshotId: null,
             createdByUserId: actor?.id ?? null,

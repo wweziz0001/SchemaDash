@@ -817,10 +817,7 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
 
             if (readonly) {
                 changesToApply = changesToApply.filter(
-                    (change) =>
-                        change.type !== 'remove' &&
-                        change.type !== 'position' &&
-                        change.type !== 'dimensions'
+                    (change) => change.type !== 'remove'
                 );
             }
 
