@@ -137,6 +137,12 @@ describe('schema sync core', () => {
         expect(firstHash).toBe(secondHash);
     });
 
+    it('keeps the sha256 fingerprint stable across environments', () => {
+        expect(hashCanonicalSchema(baseline)).toBe(
+            '9a83350033a1ada14cd6cb5d086f6a39ea34ec977629d1e788e933bb2b3d185e'
+        );
+    });
+
     it('recomputes plan fingerprints from schema content instead of trusting stored values', () => {
         const expectedBaselineFingerprint = hashCanonicalSchema({
             ...baseline,
