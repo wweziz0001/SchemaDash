@@ -9,6 +9,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/card/card';
+import { DashboardPageHeader } from '@/components/dashboard-page/dashboard-page-header';
 import { useAuth } from '@/hooks/use-auth';
 import { useStorage } from '@/hooks/use-storage';
 
@@ -41,23 +42,10 @@ export const ProfilePage: React.FC = () => {
                 <title>SchemaDash - Profile</title>
             </Helmet>
 
-            <section className="rounded-[28px] border border-stone-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,245,244,0.92))] p-6 shadow-sm dark:border-stone-800/80 dark:bg-[linear-gradient(135deg,rgba(28,25,23,0.94),rgba(12,10,9,0.9))]">
-                <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="flex size-16 items-center justify-center rounded-3xl bg-stone-950 text-stone-50 dark:bg-amber-300 dark:text-stone-950">
-                            <UserRound className="size-7" />
-                        </div>
-                        <div className="space-y-2">
-                            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                                Profile
-                            </h1>
-                            <p className="text-sm leading-6 text-stone-600 dark:text-stone-300">
-                                Account identity, self-hosted access mode, and
-                                the workspace scope currently attached to this
-                                SchemaDash session.
-                            </p>
-                        </div>
-                    </div>
+            <DashboardPageHeader
+                title="Profile"
+                description="Account identity, self-hosted access mode, and the workspace scope currently attached to this SchemaDash session."
+                badge={
                     <Badge
                         variant="outline"
                         className="w-fit border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
@@ -66,8 +54,14 @@ export const ProfilePage: React.FC = () => {
                             ? 'Authenticated deployment'
                             : 'Local workspace'}
                     </Badge>
+                }
+            >
+                <div className="hidden items-center gap-4 md:flex">
+                    <div className="flex size-16 items-center justify-center rounded-3xl bg-stone-950 text-stone-50 dark:bg-amber-300 dark:text-stone-950">
+                        <UserRound className="size-7" />
+                    </div>
                 </div>
-            </section>
+            </DashboardPageHeader>
 
             <section className="grid gap-4 lg:grid-cols-[1.5fr,1fr]">
                 <Card className="border-stone-200/80 bg-white/80 shadow-sm dark:border-stone-800/80 dark:bg-stone-900/80">

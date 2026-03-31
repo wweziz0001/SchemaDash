@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { FolderKanban, Search } from 'lucide-react';
+import { FolderKanban } from 'lucide-react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { Input } from '@/components/input/input';
 import {
     Card,
     CardContent,
@@ -11,6 +10,9 @@ import {
     CardTitle,
 } from '@/components/card/card';
 import { Button } from '@/components/button/button';
+import { DashboardFeedbackPanel } from '@/components/dashboard-page/dashboard-feedback-panel';
+import { DashboardPageHeader } from '@/components/dashboard-page/dashboard-page-header';
+import { DashboardSearchToolbar } from '@/components/dashboard-page/dashboard-search-toolbar';
 import type { DashboardShellContextValue } from './dashboard-shell-context';
 import { normalizeSearchTerm } from './use-library-catalog';
 
@@ -43,57 +45,32 @@ export const CollectionsPage: React.FC = () => {
                 <title>SchemaDash - Collections</title>
             </Helmet>
 
-            <section className="rounded-[28px] border border-stone-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,245,244,0.92))] p-6 shadow-sm dark:border-stone-800/80 dark:bg-[linear-gradient(135deg,rgba(28,25,23,0.94),rgba(12,10,9,0.9))]">
-                <div className="space-y-3">
-                    <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                        Collections
-                    </h1>
-                    <p className="max-w-3xl text-sm leading-6 text-stone-600 dark:text-stone-300 sm:text-base">
-                        Collections give your saved projects a durable
-                        information architecture, making it easier to browse
-                        teams, domains, and long-lived schema work.
-                    </p>
-                </div>
-            </section>
+            <DashboardPageHeader
+                contentClassName="gap-3"
+                title="Collections"
+                description="Collections give your saved projects a durable information architecture, making it easier to browse teams, domains, and long-lived schema work."
+            />
 
-            <section className="rounded-[24px] border border-stone-200/80 bg-white/80 p-4 shadow-sm dark:border-stone-800/80 dark:bg-stone-900/80">
-                <div className="relative">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
-                    <Input
-                        aria-label="Collections search"
-                        className="h-11 rounded-xl border-stone-200 bg-white pl-10 dark:border-stone-700 dark:bg-stone-950/70"
-                        onChange={(event) => setSearch(event.target.value)}
-                        placeholder="Search collections"
-                        value={search}
-                    />
-                </div>
-            </section>
+            <DashboardSearchToolbar
+                inputLabel="Collections search"
+                onSearchChange={setSearch}
+                placeholder="Search collections"
+                search={search}
+            />
 
             {loadingCollections ? (
-                <Card className="border-dashed border-stone-200/80 bg-white/70 dark:border-stone-800/80 dark:bg-stone-900/70">
-                    <CardContent className="py-16 text-center text-sm uppercase tracking-[0.24em] text-stone-400">
-                        Loading collections
-                    </CardContent>
-                </Card>
+                <DashboardFeedbackPanel
+                    state="loading"
+                    title="Loading collections"
+                />
             ) : null}
 
             {!loadingCollections && filteredCollections.length === 0 ? (
-                <Card className="border-dashed border-stone-200/80 bg-white/70 dark:border-stone-800/80 dark:bg-stone-900/70">
-                    <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                        <div className="rounded-2xl bg-stone-100 p-4 dark:bg-stone-800">
-                            <FolderKanban className="size-6 text-stone-500" />
-                        </div>
-                        <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">
-                                No collections found
-                            </h2>
-                            <p className="max-w-xl text-sm leading-6 text-stone-500">
-                                Collections created through the saved project
-                                flows will show up here automatically.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+                <DashboardFeedbackPanel
+                    title="No collections found"
+                    description="Collections created through the saved project flows will show up here automatically."
+                    icon={<FolderKanban className="size-6 text-stone-500" />}
+                />
             ) : null}
 
             {!loadingCollections && filteredCollections.length > 0 ? (

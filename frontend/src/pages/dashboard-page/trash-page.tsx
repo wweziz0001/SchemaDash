@@ -8,6 +8,8 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/card/card';
+import { DashboardFeedbackPanel } from '@/components/dashboard-page/dashboard-feedback-panel';
+import { DashboardPageHeader } from '@/components/dashboard-page/dashboard-page-header';
 import { useLibraryCatalog } from './use-library-catalog';
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -26,18 +28,11 @@ export const TrashPage: React.FC = () => {
                 <title>SchemaDash - Trash</title>
             </Helmet>
 
-            <section className="rounded-[28px] border border-stone-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,245,244,0.92))] p-6 shadow-sm dark:border-stone-800/80 dark:bg-[linear-gradient(135deg,rgba(28,25,23,0.94),rgba(12,10,9,0.9))]">
-                <div className="space-y-3">
-                    <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                        Trash
-                    </h1>
-                    <p className="max-w-3xl text-sm leading-6 text-stone-600 dark:text-stone-300 sm:text-base">
-                        Deleted projects stay visible here so you can audit what
-                        has been removed from the main library without losing
-                        context about its saved diagram inventory.
-                    </p>
-                </div>
-            </section>
+            <DashboardPageHeader
+                contentClassName="gap-3"
+                title="Trash"
+                description="Deleted projects stay visible here so you can audit what has been removed from the main library without losing context about its saved diagram inventory."
+            />
 
             <section className="grid gap-4 md:grid-cols-3">
                 <Card className="border-stone-200/80 bg-white/80 shadow-sm dark:border-stone-800/80 dark:bg-stone-900/80">
@@ -93,30 +88,15 @@ export const TrashPage: React.FC = () => {
             ) : null}
 
             {loading ? (
-                <Card className="border-dashed border-stone-200/80 bg-white/70 dark:border-stone-800/80 dark:bg-stone-900/70">
-                    <CardContent className="py-16 text-center text-sm uppercase tracking-[0.24em] text-stone-400">
-                        Loading trash
-                    </CardContent>
-                </Card>
+                <DashboardFeedbackPanel state="loading" title="Loading trash" />
             ) : null}
 
             {!loading && projects.length === 0 ? (
-                <Card className="border-dashed border-stone-200/80 bg-white/70 dark:border-stone-800/80 dark:bg-stone-900/70">
-                    <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                        <div className="rounded-2xl bg-stone-100 p-4 dark:bg-stone-800">
-                            <Trash2 className="size-6 text-stone-500" />
-                        </div>
-                        <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">
-                                Trash is empty
-                            </h2>
-                            <p className="max-w-xl text-sm leading-6 text-stone-500">
-                                Deleted projects will appear here when they are
-                                removed from the main library.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+                <DashboardFeedbackPanel
+                    title="Trash is empty"
+                    description="Deleted projects will appear here when they are removed from the main library."
+                    icon={<Trash2 className="size-6 text-stone-500" />}
+                />
             ) : null}
 
             {!loading && projects.length > 0 ? (
