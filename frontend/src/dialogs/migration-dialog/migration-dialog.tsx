@@ -14,18 +14,18 @@ import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { Separator } from '@/components/separator/separator';
 import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
 import { useToast } from '@/components/toast/use-toast';
-import { useStorage } from '@/hooks/use-storage';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
+import { MetricCard } from '@/components/metric-card/metric-card';
 import {
     diagramMigrationClient,
     type DiagramMigrationApplyResponse,
     type DiagramMigrationPreview,
     type DiagramMigrationValidation,
     type DiagramMigrationWorkflowFallback,
-} from '../api/diagram-migration-client';
+} from '@/features/diagram-workflow/api/diagram-migration-client';
+import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
+import { useStorage } from '@/hooks/use-storage';
 import { MigrationSummary } from './migration-summary';
 import { MigrationWarningList } from './migration-warning-list';
-import { WorkflowMetricCard } from './workflow-metric-card';
 
 export interface MigrationDialogProps {
     open: boolean;
@@ -438,7 +438,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                     </div>
 
                                     <div className="mt-4 grid gap-3 md:grid-cols-4">
-                                        <WorkflowMetricCard
+                                        <MetricCard
                                             label="Connection"
                                             value={
                                                 preview?.connectionName ??
@@ -446,7 +446,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                             }
                                             detail="Saved connection bound to this workflow."
                                         />
-                                        <WorkflowMetricCard
+                                        <MetricCard
                                             label="Live snapshot"
                                             value={
                                                 preview?.workflowLiveSnapshotId
@@ -455,12 +455,12 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                             }
                                             detail="A live baseline is required to produce a reliable plan."
                                         />
-                                        <WorkflowMetricCard
+                                        <MetricCard
                                             label="Blocking issues"
                                             value={blockingPreviewIssues}
                                             detail="Blocking findings that prevent the preview from being actionable."
                                         />
-                                        <WorkflowMetricCard
+                                        <MetricCard
                                             label="Generated"
                                             value={
                                                 preview?.generatedAt
@@ -517,7 +517,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                         </Badge>
                                     </div>
                                     <div className="mt-4 grid gap-3 md:grid-cols-4">
-                                        <WorkflowMetricCard
+                                        <MetricCard
                                             label="Connection"
                                             value={
                                                 preview.connectionName ??
@@ -525,7 +525,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                             }
                                             detail="Target database connection for this migration."
                                         />
-                                        <WorkflowMetricCard
+                                        <MetricCard
                                             label="Live snapshot"
                                             value={
                                                 preview.workflowLiveSnapshotId
@@ -534,12 +534,12 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                             }
                                             detail="The live baseline used to build this canonical plan."
                                         />
-                                        <WorkflowMetricCard
+                                        <MetricCard
                                             label="Blocking issues"
                                             value={blockingPreviewIssues}
                                             detail="Blocking findings currently attached to the preview."
                                         />
-                                        <WorkflowMetricCard
+                                        <MetricCard
                                             label="Generated"
                                             value={new Date(
                                                 preview.generatedAt
@@ -701,7 +701,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                             </Alert>
 
                                             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                                                <WorkflowMetricCard
+                                                <MetricCard
                                                     label="Job ID"
                                                     value={
                                                         execution.result
@@ -709,7 +709,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                                         'Not recorded'
                                                     }
                                                 />
-                                                <WorkflowMetricCard
+                                                <MetricCard
                                                     label="Audit ID"
                                                     value={
                                                         execution.result
@@ -717,7 +717,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                                         'Not recorded'
                                                     }
                                                 />
-                                                <WorkflowMetricCard
+                                                <MetricCard
                                                     label="Post-apply snapshot"
                                                     value={
                                                         execution.result
@@ -725,7 +725,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                                         'Not recorded'
                                                     }
                                                 />
-                                                <WorkflowMetricCard
+                                                <MetricCard
                                                     label="Workflow live snapshot"
                                                     value={
                                                         execution.result

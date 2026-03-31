@@ -7,9 +7,9 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/dropdown-menu/dropdown-menu';
+import { MigrationDialog } from '@/dialogs/migration-dialog/migration-dialog';
+import { ReviewChangesDialog } from '@/dialogs/review-changes-dialog/review-changes-dialog';
 import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
-import { MigrationDialog } from './migration-dialog';
-import { ReviewChangesDialog } from './review-changes-dialog';
 
 export const ReviewDropdown: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();

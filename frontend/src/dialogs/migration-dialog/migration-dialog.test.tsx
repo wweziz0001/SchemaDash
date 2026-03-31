@@ -10,18 +10,18 @@ import {
     type CanonicalSchema,
 } from '@schemadash/schema-sync-core';
 import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
+import { diagramMigrationClient } from '@/features/diagram-workflow/api/diagram-migration-client';
+import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
 import { MigrationDialog } from './migration-dialog';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
-import { diagramMigrationClient } from '../api/diagram-migration-client';
 import { useStorage } from '@/hooks/use-storage';
 
 const toast = vi.fn();
 
-vi.mock('../context/diagram-workflow-context', () => ({
+vi.mock('@/features/diagram-workflow/context/diagram-workflow-context', () => ({
     useOptionalDiagramWorkflow: vi.fn(),
 }));
 
-vi.mock('../api/diagram-migration-client', () => ({
+vi.mock('@/features/diagram-workflow/api/diagram-migration-client', () => ({
     diagramMigrationClient: {
         previewMigration: vi.fn(),
         validateMigration: vi.fn(),

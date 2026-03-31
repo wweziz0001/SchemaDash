@@ -1,14 +1,14 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export interface WorkflowMetricCardProps {
+export interface MetricCardProps {
     label: string;
     value: React.ReactNode;
     detail?: React.ReactNode;
     className?: string;
 }
 
-export const WorkflowMetricCard: React.FC<WorkflowMetricCardProps> = ({
+export const MetricCard: React.FC<MetricCardProps> = ({
     label,
     value,
     detail,

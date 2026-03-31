@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Badge } from '@/components/badge/badge';
+import { MetricCard } from '@/components/metric-card/metric-card';
 import type { ChangePlan, SchemaChange } from '@schemadash/schema-sync-core';
-import { WorkflowMetricCard } from './workflow-metric-card';
 
 const summarizeKinds = (changes: SchemaChange[]) => {
     const labels = new Map<string, number>();
@@ -32,12 +32,12 @@ export const MigrationSummary: React.FC<{
     return (
         <div className="space-y-4">
             <div className="grid gap-3 md:grid-cols-4">
-                <WorkflowMetricCard
+                <MetricCard
                     label="Planned changes"
                     value={plan.summary.totalChanges}
                     detail="Canonical operations in the current migration plan."
                 />
-                <WorkflowMetricCard
+                <MetricCard
                     label="Warnings"
                     value={
                         plan.summary.warningChanges +
@@ -45,12 +45,12 @@ export const MigrationSummary: React.FC<{
                     }
                     detail="Warning and destructive changes that deserve extra review."
                 />
-                <WorkflowMetricCard
+                <MetricCard
                     label="Blocking"
                     value={plan.summary.blockedChanges}
                     detail="Blocked changes that must be resolved before apply."
                 />
-                <WorkflowMetricCard
+                <MetricCard
                     label="SQL"
                     value={plan.sqlStatements.length}
                     detail="Generated statements in the current preview."

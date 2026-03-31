@@ -8,12 +8,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/dialog/dialog';
+import { MetricCard } from '@/components/metric-card/metric-card';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { Separator } from '@/components/separator/separator';
+import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
+import { buildReviewGrouping } from '@/features/diagram-workflow/lib/review-grouping';
 import { cn } from '@/lib/utils';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
-import { buildReviewGrouping } from '../lib/review-grouping';
-import { WorkflowMetricCard } from './workflow-metric-card';
 
 const badgeVariantByStatus = {
     added: 'default',
@@ -112,7 +112,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                             </div>
 
                             <div className="grid gap-3 md:grid-cols-3">
-                                <WorkflowMetricCard
+                                <MetricCard
                                     label="Tables"
                                     value={
                                         reviewGrouping.compareResult.summary
@@ -120,7 +120,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                     }
                                     detail={`+${reviewGrouping.compareResult.summary.tables.added} added, ~${reviewGrouping.compareResult.summary.tables.changed} changed, -${reviewGrouping.compareResult.summary.tables.removed} removed`}
                                 />
-                                <WorkflowMetricCard
+                                <MetricCard
                                     label="Fields"
                                     value={
                                         reviewGrouping.compareResult.summary
@@ -128,7 +128,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                     }
                                     detail={`+${reviewGrouping.compareResult.summary.fields.added} added, ~${reviewGrouping.compareResult.summary.fields.changed} changed, -${reviewGrouping.compareResult.summary.fields.removed} removed`}
                                 />
-                                <WorkflowMetricCard
+                                <MetricCard
                                     label="Relationships"
                                     value={
                                         reviewGrouping.compareResult.summary
