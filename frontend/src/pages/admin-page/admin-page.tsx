@@ -11,6 +11,12 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/button/button';
 import { Badge } from '@/components/badge/badge';
+import { MetricCard } from '@/components/metric-card/metric-card';
+import { SummaryList } from '@/components/summary-list/summary-list';
+import {
+    StatusBadge,
+    type StatusBadgeTone,
+} from '@/components/status-badge/status-badge';
 import {
     Card,
     CardContent,
@@ -48,18 +54,16 @@ const formatDateTime = (value: string | null) => {
 
 const statusBadgeClassNames: Record<
     'provisioned' | 'active' | 'disabled',
-    string
+    StatusBadgeTone
 > = {
-    provisioned:
-        'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/10',
-    active: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-200 dark:hover:bg-emerald-500/10',
-    disabled:
-        'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-50 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/10',
+    provisioned: 'warning',
+    active: 'success',
+    disabled: 'danger',
 };
 
-const roleBadgeClassNames: Record<'member' | 'admin', string> = {
-    member: 'border-stone-200 bg-stone-100 text-stone-700 hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-800',
-    admin: 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-50 dark:border-sky-400/30 dark:bg-sky-500/10 dark:text-sky-200 dark:hover:bg-sky-500/10',
+const roleBadgeClassNames: Record<'member' | 'admin', StatusBadgeTone> = {
+    member: 'neutral',
+    admin: 'info',
 };
 
 const authProviderLabels: Record<'placeholder' | 'local' | 'oidc', string> = {
@@ -70,53 +74,6 @@ const authProviderLabels: Record<'placeholder' | 'local' | 'oidc', string> = {
 
 const surfaceCardClassName =
     'border-stone-200/80 bg-white/80 shadow-sm dark:border-stone-800/80 dark:bg-stone-900/80';
-const insetSurfaceClassName =
-    'flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-stone-100/80 px-4 py-3 dark:border-stone-800 dark:bg-stone-950/60';
-
-const MetricCard = ({
-    title,
-    value,
-    description,
-    icon: Icon,
-}: {
-    title: string;
-    value: number | string;
-    description: string;
-    icon: React.ComponentType<{ className?: string }>;
-}) => (
-    <Card className={surfaceCardClassName}>
-        <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
-            <div>
-                <CardDescription>{title}</CardDescription>
-                <CardTitle className="mt-2 text-3xl">{value}</CardTitle>
-            </div>
-            <div className="rounded-full border border-stone-200 bg-stone-100 p-3 dark:border-stone-700 dark:bg-stone-950/80">
-                <Icon className="size-4 text-amber-500 dark:text-amber-300" />
-            </div>
-        </CardHeader>
-        <CardContent>
-            <p className="text-sm text-stone-500">{description}</p>
-        </CardContent>
-    </Card>
-);
-
-const SummaryList = ({
-    items,
-}: {
-    items: Array<{ label: string; value: string | number }>;
-}) => (
-    <dl className="space-y-3">
-        {items.map((item) => (
-            <div key={item.label} className={insetSurfaceClassName}>
-                <dt className="text-sm text-stone-500">{item.label}</dt>
-                <dd className="text-sm font-medium text-stone-950 dark:text-stone-100">
-                    {item.value}
-                </dd>
-            </div>
-        ))}
-    </dl>
-);
-
 export const AdminPage: React.FC = () => {
     const { user } = useAuth();
     const [overview, setOverview] = useState<AdminOverviewResponse | null>(
@@ -221,34 +178,54 @@ export const AdminPage: React.FC = () => {
                 <>
                     <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                         <MetricCard
-                            title="Users"
+                            label="Users"
                             value={overview.metrics.users}
-                            description={`${overview.users.byStatus.active} active accounts`}
-                            icon={Users}
+                            detail={`${overview.users.byStatus.active} active accounts`}
+                            icon={
+                                <Users className="size-4 text-amber-500 dark:text-amber-300" />
+                            }
+                            className={surfaceCardClassName}
+                            valueClassName="text-3xl"
                         />
                         <MetricCard
-                            title="Admins"
+                            label="Admins"
                             value={overview.metrics.admins}
-                            description="Administrators with access to this deployment"
-                            icon={Shield}
+                            detail="Administrators with access to this deployment"
+                            icon={
+                                <Shield className="size-4 text-amber-500 dark:text-amber-300" />
+                            }
+                            className={surfaceCardClassName}
+                            valueClassName="text-3xl"
                         />
                         <MetricCard
-                            title="Collections"
+                            label="Collections"
                             value={overview.metrics.collections}
-                            description="Top-level project groupings"
-                            icon={FolderKanban}
+                            detail="Top-level project groupings"
+                            icon={
+                                <FolderKanban className="size-4 text-amber-500 dark:text-amber-300" />
+                            }
+                            className={surfaceCardClassName}
+                            valueClassName="text-3xl"
                         />
                         <MetricCard
-                            title="Projects"
+                            label="Projects"
                             value={overview.metrics.projects}
-                            description="Saved workspaces persisted in SchemaDash"
-                            icon={LayoutPanelTop}
+                            detail="Saved workspaces persisted in SchemaDash"
+                            icon={
+                                <LayoutPanelTop className="size-4 text-amber-500 dark:text-amber-300" />
+                            }
+                            className={surfaceCardClassName}
+                            valueClassName="text-3xl"
                         />
                         <MetricCard
-                            title="Diagrams"
+                            label="Diagrams"
                             value={overview.metrics.diagrams}
-                            description={`${overview.metrics.activeSessions} active sessions right now`}
-                            icon={Database}
+                            detail={`${overview.metrics.activeSessions} active sessions right now`}
+                            icon={
+                                <Database className="size-4 text-amber-500 dark:text-amber-300" />
+                            }
+                            className={surfaceCardClassName}
+                            valueClassName="text-3xl"
                         />
                     </section>
 
@@ -448,9 +425,8 @@ export const AdminPage: React.FC = () => {
                                                                 'No email'}
                                                         </TableCell>
                                                         <TableCell>
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={
+                                                            <StatusBadge
+                                                                tone={
                                                                     roleBadgeClassNames[
                                                                         account
                                                                             .role
@@ -458,12 +434,11 @@ export const AdminPage: React.FC = () => {
                                                                 }
                                                             >
                                                                 {account.role}
-                                                            </Badge>
+                                                            </StatusBadge>
                                                         </TableCell>
                                                         <TableCell>
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={
+                                                            <StatusBadge
+                                                                tone={
                                                                     statusBadgeClassNames[
                                                                         account
                                                                             .status
@@ -471,7 +446,7 @@ export const AdminPage: React.FC = () => {
                                                                 }
                                                             >
                                                                 {account.status}
-                                                            </Badge>
+                                                            </StatusBadge>
                                                         </TableCell>
                                                         <TableCell className="text-stone-600 dark:text-stone-300">
                                                             {
