@@ -2,178 +2,185 @@
 
 ## 1. Project Overview
 
-SchemaDash is a full-stack schema design and review product.
+SchemaDash is a full-stack schema design, persistence, sharing, and review product.
 
-- `frontend/` is a Vite + React + Tailwind application for the authenticated library shell, editor, shared viewers, templates/examples, auth flows, and admin surfaces.
-- `backend/` is a Fastify API that owns auth, persistence, sharing, collaboration, schema-sync, health, and admin routes.
-- `packages/schema-sync-core/` is the shared schema engine used by both frontend and backend.
+- `frontend/` is a Vite + React + Tailwind application for the authenticated dashboard/library shell, editor, shared viewers, templates/examples, auth flows, and admin surfaces.
+- `backend/` is a Fastify API that owns auth, persistence, sharing, collaboration, schema sync, health, and admin routes.
+- `packages/schema-sync-core/` contains shared schema/diff logic used by both frontend and backend.
 
 Relevant product context for this task:
 
-- The admin surface is intentionally small and read-only.
-- Admin frontend behavior belongs inside the native SchemaDash structure:
-  - reusable UI in `frontend/src/components/`
-  - route integration in `frontend/src/pages/admin-page/`
-  - admin HTTP transport in `frontend/src/lib/api/`
-  - stable admin DTOs/helpers in `frontend/src/lib/admin/`
-- The admin page must visually match the authenticated library/settings/profile pages instead of introducing an admin-only design language.
-
-Current admin product scope:
-
-- Protected `/admin` route for authenticated admin users only.
-- Overview metrics for users, admins, collections, projects, diagrams, and active sessions.
-- Platform health summary from `GET /api/admin/overview`.
-- Read-only user table with status, role, auth provider, and activity visibility.
+- The authenticated dashboard is the main saved-workspace surface for browsing diagrams, collections, shared items, profile/settings, and trash.
+- Native frontend ownership in this area should be:
+  - reusable dashboard widgets in `frontend/src/components/`
+  - page composition and route-local hooks in `frontend/src/pages/dashboard-page/`
+  - reusable non-UI catalog/search logic in `frontend/src/lib/`
+  - dashboard-adjacent dialogs in `frontend/src/dialogs/`
+- `frontend/src/features/dashboard` and `frontend/src/features` must remain absent.
 
 ## 2. Current Architectural Context
 
-Read these first for future admin work:
+Read these first for future dashboard work:
 
 1. `docs/codex-handoff.md`
-2. `docs/admin-frontend-rebuild-plan.md`
-3. `docs/audits/admin-frontend-methodology-drift.md`
-4. `docs/operations/admin-dashboard.md`
+2. `docs/dashboard-hooks-rebuild-plan.md`
+3. `docs/audits/dashboard-hooks-methodology-drift.md`
+4. `docs/architecture/project-collections.md`
 5. `docs/CODEBASE_STRUCTURE.md`
 
 Important frontend files for this area:
 
-- `frontend/src/pages/admin-page/admin-page.tsx`
-- `frontend/src/pages/admin-page/admin-route-guard.tsx`
-- `frontend/src/lib/api/admin-client.ts`
-- `frontend/src/lib/admin/admin-overview.ts`
-- `frontend/src/components/status-badge/status-badge.tsx`
-- `frontend/src/components/summary-list/summary-list.tsx`
-- `frontend/src/components/metric-card/metric-card.tsx`
+- `frontend/src/pages/dashboard-page/use-library-catalog.ts`
+- `frontend/src/lib/dashboard/library-catalog.ts`
+- `frontend/src/lib/utils/search.ts`
+- `frontend/src/pages/dashboard-page/library-page.tsx`
+- `frontend/src/pages/dashboard-page/collections-page.tsx`
+- `frontend/src/pages/dashboard-page/trash-page.tsx`
+- `frontend/src/pages/dashboard-page/profile-page.tsx`
+- `frontend/src/pages/dashboard-page/settings-page.tsx`
+- `frontend/src/components/dashboard-page/dashboard-page-header.tsx`
+- `frontend/src/components/dashboard-page/dashboard-feedback-panel.tsx`
+- `frontend/src/components/dashboard-page/dashboard-search-toolbar.tsx`
+- `frontend/src/components/dashboard-page/dashboard-setting-option-card.tsx`
+- `frontend/src/components/dashboard-page/library-diagram-card.tsx`
+- `frontend/src/dialogs/open-diagram-dialog/open-diagram-dialog.tsx`
+
+High-risk files and boundaries:
+
 - `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx`
+  - Shared authenticated shell and sidebar routing surface. Intentionally not changed in this task.
+- `frontend/src/pages/dashboard-page/use-library-catalog.ts`
+  - Route-local hook that loads dashboard catalog data from storage.
+- `frontend/src/pages/dashboard-page/library-page.tsx`
+  - Main library composition surface. Visual changes here affect multiple routed views.
+- `frontend/src/dialogs/open-diagram-dialog/open-diagram-dialog.tsx`
+  - Dashboard-adjacent dialog that now shares the new search helper.
 - `frontend/src/router.tsx`
-
-Important backend files for this area:
-
-- `backend/src/routes/admin-routes.ts`
-- `backend/src/routes/health-routes.ts`
-- `backend/src/services/admin-service.ts`
-
-High-risk files:
-
-- `frontend/src/pages/admin-page/admin-page.tsx`
-- `frontend/src/pages/admin-page/admin-route-guard.tsx`
-- `frontend/src/lib/api/admin-client.ts`
-- `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx`
-- `frontend/src/router.tsx`
+  - Route ownership is already correct and was intentionally not changed.
 
 Important service/module boundaries:
 
-- `frontend/src/lib/api/admin-client.ts` is now transport-only.
-- `frontend/src/lib/admin/admin-overview.ts` owns stable admin DTOs plus pure view-model helpers and formatting helpers.
-- `frontend/src/pages/admin-page/admin-page.tsx` is now primarily page composition.
-- `frontend/src/pages/admin-page/admin-route-guard.tsx` remains the route protection boundary.
-- `backend/src/routes/admin-routes.ts` exposes `GET /api/admin/overview`.
-- `backend/src/services/admin-service.ts` remains the authoritative source of the overview payload shape.
+- `frontend/src/lib/dashboard/library-catalog.ts` now owns pure dashboard catalog types and helpers.
+- `frontend/src/pages/dashboard-page/use-library-catalog.ts` now owns React state, deferred search, storage calls, and hook orchestration only.
+- `frontend/src/lib/utils/search.ts` now owns normalized dashboard search behavior reused by page and dialog code.
+- `frontend/src/components/dashboard-page/*` now owns reusable dashboard page widgets.
+- `frontend/src/dialogs/open-diagram-dialog/open-diagram-dialog.tsx` remains the dialog entrypoint; only helper reuse changed here.
 
 Relevant frontend/backend relationship:
 
-- `frontend/src/lib/api/admin-client.ts` fetches `GET /api/admin/overview`.
-- `backend/src/routes/admin-routes.ts` guards the route with `requireAdminUser`.
-- `backend/src/services/admin-service.ts` assembles the overview metrics, platform summary, and user/project/diagram breakdowns consumed by the page.
+- Dashboard/library pages still read from the frontend storage layer via `useStorage()`.
+- No backend routes, persistence DTOs, or environment contracts changed in this task.
 
 ## 3. Task Completed
 
 Task objective:
 
-- Correct the admin frontend methodology drift.
-- Keep admin aligned with native SchemaDash structure instead of a feature-island pattern.
-- Make the admin page visually match the rest of SchemaDash.
+- Correct the dashboard hooks methodology drift.
+- Keep dashboard code aligned with SchemaDash's native responsibility-based structure.
+- Ensure dashboard-related UI matches the existing SchemaDash system style instead of behaving like a dashboard-only UI island.
 
 What was implemented:
 
-- Added an audit doc:
-  - `docs/audits/admin-frontend-methodology-drift.md`
-- Added a rebuild plan doc:
-  - `docs/admin-frontend-rebuild-plan.md`
-- Confirmed the historical `frontend/src/features/admin` subtree is already absent on this branch and kept it absent.
-- Extracted reusable presentational pieces out of `frontend/src/pages/admin-page/admin-page.tsx`:
-  - `frontend/src/components/status-badge/status-badge.tsx`
-  - `frontend/src/components/summary-list/summary-list.tsx`
-- Generalized the shared metric card so admin can reuse native metric surfaces:
-  - `frontend/src/components/metric-card/metric-card.tsx`
-- Split stable admin types/helpers out of the transport module:
-  - `frontend/src/lib/admin/admin-overview.ts`
-  - `frontend/src/lib/api/admin-client.ts`
-- Rebuilt `frontend/src/pages/admin-page/admin-page.tsx` around native components/helpers instead of page-local UI primitives.
-- Aligned admin visuals with the existing authenticated page language:
-  - same hero rhythm as library/settings/profile
-  - same amber outline badge treatment
-  - same top-level CTA style
-  - native alert/loading surface treatment
-  - native card/table/spacing/typography patterns
-- Updated the admin page test harness to wrap the page in `HelmetProvider`.
-- Updated one stale audit reference that still pointed at the removed admin feature subtree.
+- Added the required audit:
+  - `docs/audits/dashboard-hooks-methodology-drift.md`
+- Added the required rebuild plan:
+  - `docs/dashboard-hooks-rebuild-plan.md`
+- Confirmed the historical dashboard feature subtree was already absent on this branch lineage and kept it absent.
+- Extracted reusable dashboard page widgets into native components:
+  - `frontend/src/components/dashboard-page/dashboard-page-header.tsx`
+  - `frontend/src/components/dashboard-page/dashboard-feedback-panel.tsx`
+  - `frontend/src/components/dashboard-page/dashboard-search-toolbar.tsx`
+  - `frontend/src/components/dashboard-page/dashboard-setting-option-card.tsx`
+  - `frontend/src/components/dashboard-page/library-diagram-card.tsx`
+- Split pure dashboard catalog logic out of the page hook:
+  - `frontend/src/lib/dashboard/library-catalog.ts`
+  - `frontend/src/lib/utils/search.ts`
+- Rebuilt `frontend/src/pages/dashboard-page/use-library-catalog.ts` so it stays page-local but delegates pure sorting/filtering/query logic to `lib/`.
+- Updated `frontend/src/dialogs/open-diagram-dialog/open-diagram-dialog.tsx` to reuse the shared search helper instead of defining its own dashboard-specific normalization function.
+- Rebuilt the dashboard page surfaces around shared SchemaDash components and styling patterns:
+  - shared `MetricCard`
+  - shared `StatusBadge`
+  - shared `SummaryList`
+  - shared `Alert`
+  - native empty-state primitives via `DashboardFeedbackPanel`
 
 Key decisions:
 
-- Keep route-level admin wiring under `frontend/src/pages/admin-page/` and `frontend/src/router.tsx`.
-- Keep backend contracts unchanged.
-- Avoid introducing any admin-only provider/context layer because the current admin surface does not justify one.
-- Reuse existing SchemaDash primitives instead of inventing a separate admin component library.
+- Keep route ownership under `frontend/src/pages/dashboard-page/`.
+- Keep the dashboard shell and router unchanged because their structure was already correct and they are high-risk integration points.
+- Generalize pure catalog/search logic into `frontend/src/lib/` instead of leaving it inside the page hook.
+- Generalize repeated dashboard page widgets into `frontend/src/components/dashboard-page/` instead of keeping page-local clones.
 
 Approach intentionally avoided:
 
-- No backend admin redesign.
-- No broad dashboard-shell refactor.
-- No compatibility stubs under `frontend/src/features/admin`.
-- No admin-specific theme or design language.
+- No mechanical recreation of a feature-first subtree.
+- No compatibility stubs under `frontend/src/features/dashboard`.
+- No route reshuffle in `frontend/src/router.tsx`.
+- No broad edits to `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx`.
 - No unrelated changes to `frontend/vite.config.ts`.
 
 ## 4. Files Changed
 
 Files created:
 
-- `docs/audits/admin-frontend-methodology-drift.md`
-  - Audit of structural drift, visual mismatches, and native reuse targets.
-- `docs/admin-frontend-rebuild-plan.md`
-  - Required path mapping, classification, risk notes, and implementation plan.
-- `frontend/src/components/status-badge/status-badge.tsx`
-  - Reusable wrapper around the native `Badge` component for consistent status/role tones.
-- `frontend/src/components/summary-list/summary-list.tsx`
-  - Reusable key/value summary row list for admin overview panels.
-- `frontend/src/lib/admin/admin-overview.ts`
-  - Stable admin overview types plus pure format/summary helpers.
+- `docs/audits/dashboard-hooks-methodology-drift.md`
+  - Audit of the historical hook drift, current runtime drift, and style mismatches.
+- `docs/dashboard-hooks-rebuild-plan.md`
+  - Required mapping, classifications, native reuse targets, and risk notes.
+- `frontend/src/components/dashboard-page/dashboard-page-header.tsx`
+  - Shared dashboard hero/header surface.
+- `frontend/src/components/dashboard-page/dashboard-feedback-panel.tsx`
+  - Shared loading/empty dashboard surface built from native empty-state primitives.
+- `frontend/src/components/dashboard-page/dashboard-search-toolbar.tsx`
+  - Shared dashboard search/filter toolbar wrapper.
+- `frontend/src/components/dashboard-page/dashboard-setting-option-card.tsx`
+  - Shared settings preference tile.
+- `frontend/src/components/dashboard-page/library-diagram-card.tsx`
+  - Shared library diagram card surface.
+- `frontend/src/lib/dashboard/library-catalog.ts`
+  - Pure dashboard catalog types and helpers.
+- `frontend/src/lib/utils/search.ts`
+  - Shared search normalization/matching helpers.
+- `frontend/src/lib/dashboard/__tests__/library-catalog.test.ts`
+  - Tests for catalog query/filter/shared-item behavior.
+- `frontend/src/lib/utils/__tests__/search.test.ts`
+  - Tests for shared search normalization/matching.
 
 Files modified:
 
 - `docs/codex-handoff.md`
-  - Rewritten for this admin task so future sessions start with the right context.
-- `docs/audits/authenticated-layout-audit.md`
-  - Updated stale admin path references away from the removed feature subtree.
-- `frontend/src/components/metric-card/metric-card.tsx`
-  - Made the shared metric card more flexible so admin could reuse it instead of defining a local duplicate.
-- `frontend/src/lib/api/admin-client.ts`
-  - Reduced to transport-only responsibility.
-- `frontend/src/pages/admin-page/admin-page.tsx`
-  - Main admin page rebuilt around native components/helpers and native styling patterns.
-- `frontend/src/pages/admin-page/admin-page.test.tsx`
-  - Updated to use `HelmetProvider` after adding a page title.
-- `frontend/src/pages/dashboard-page/dashboard-shell-layout.test.tsx`
-  - Updated imports to use the new admin type module.
+  - Rewritten for this dashboard refactor so a fresh session can continue safely.
+- `frontend/src/pages/dashboard-page/use-library-catalog.ts`
+  - Reduced to page-owned hook orchestration and storage loading.
+- `frontend/src/pages/dashboard-page/library-page.tsx`
+  - Uses shared dashboard widgets plus native `Alert`/`MetricCard`.
+- `frontend/src/pages/dashboard-page/collections-page.tsx`
+  - Uses shared dashboard page header/search/feedback components and shared search helper.
+- `frontend/src/pages/dashboard-page/trash-page.tsx`
+  - Uses shared dashboard header/feedback components plus native `MetricCard` and `Alert`.
+- `frontend/src/pages/dashboard-page/profile-page.tsx`
+  - Uses shared dashboard header and `SummaryList`.
+- `frontend/src/pages/dashboard-page/settings-page.tsx`
+  - Uses shared dashboard header, settings option card, and `SummaryList`.
+- `frontend/src/dialogs/open-diagram-dialog/open-diagram-dialog.tsx`
+  - Reuses the shared search helper.
 
 Important files intentionally not changed:
 
-- `frontend/src/pages/admin-page/admin-route-guard.tsx`
-  - Already in the correct native location and behaviorally stable.
 - `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx`
-  - High-risk shared shell; left unchanged because admin integration did not require runtime nav changes.
+  - High-risk authenticated shell. Left untouched.
 - `frontend/src/router.tsx`
-  - Already reflects the correct page boundary for `/admin`.
-- `backend/src/routes/admin-routes.ts`
-  - Backend route contract kept stable.
-- `backend/src/services/admin-service.ts`
-  - Payload assembly kept stable.
+  - Route ownership was already correct. Left untouched.
+- `frontend/src/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api.ts`
+  - Already sits in a reasonable dialog-native boundary for this scope.
+- `frontend/src/pages/editor-page/top-navbar/current-diagram-share-button.tsx`
+  - Consumed the existing sharing dialog API without needing structural changes.
 - `frontend/vite.config.ts`
-  - Had an unrelated pre-existing working-tree change and was intentionally avoided.
+  - Had a pre-existing unrelated working-tree modification and was intentionally avoided.
 
 Files/directories intentionally absent:
 
-- `frontend/src/features/admin`
+- `frontend/src/features/dashboard`
 - `frontend/src/features`
 
 ## 5. Data / API / Workflow Changes
@@ -181,120 +188,126 @@ Files/directories intentionally absent:
 Behavioral/API changes:
 
 - No backend routes changed.
-- No admin overview payload shape changed.
-- No new environment variables, migrations, or config keys were introduced.
+- No storage contract changed.
+- No env vars, migrations, or config keys changed.
 
 Frontend structure/workflow changes:
 
-- Admin overview typing moved out of `frontend/src/lib/api/admin-client.ts` into `frontend/src/lib/admin/admin-overview.ts`.
-- Admin summary formatting and label helpers now live in `frontend/src/lib/admin/admin-overview.ts`.
-- Admin page rendering now relies on reusable presentational modules instead of page-local mini-components.
-- Admin page now sets a document title via `Helmet`.
+- Dashboard catalog DTOs and helper logic moved into `frontend/src/lib/dashboard/library-catalog.ts`.
+- Shared search normalization/matching moved into `frontend/src/lib/utils/search.ts`.
+- `frontend/src/pages/dashboard-page/use-library-catalog.ts` now focuses on page hook orchestration only.
+- `frontend/src/dialogs/open-diagram-dialog/open-diagram-dialog.tsx` now uses the same search helper as dashboard pages.
+- Dashboard empty/loading/header/search/settings/library-card UI now comes from shared components under `frontend/src/components/dashboard-page/`.
 
 Compatibility handling:
 
-- Existing tests were updated to import the moved admin types.
-- The standalone admin page test was updated to include `HelmetProvider`.
+- The library route behavior and storage query semantics were preserved.
+- Shared-item detection still uses the same ownership/access rules as before, now expressed through pure helpers with tests.
 
 ## 6. Validation Performed
 
 Validation completed:
 
+- `npx vitest run --config frontend/vitest.config.ts frontend/src/lib/dashboard/__tests__/library-catalog.test.ts frontend/src/lib/utils/__tests__/search.test.ts frontend/src/pages/dashboard-page/dashboard-shell-layout.test.tsx frontend/src/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api.test.tsx`
 - `npx tsc -p tsconfig.json --noEmit`
-- `npx vitest run --config frontend/vitest.config.ts frontend/src/pages/admin-page/admin-page.test.tsx frontend/src/pages/dashboard-page/dashboard-shell-layout.test.tsx`
 - `npm run build:web`
-- Confirmed `find frontend/src -type d | grep '/features\\(/\\|$\\)'` returns no matches
+- `find frontend/src -type d | grep '/features\\(/\\|$\\)' || true`
 
 What was verified:
 
-- TypeScript passes after the admin type/helper split.
-- Admin page tests pass with the new `Helmet` usage.
-- Dashboard shell admin route coverage still passes after the type import changes.
-- Frontend production build succeeds.
-- `frontend/src/features/admin` and `frontend/src/features` are absent.
+- New shared dashboard helper tests pass.
+- Existing dashboard shell behavior test still passes.
+- Existing sharing dialog API test still passes after shared search helper reuse.
+- TypeScript passes.
+- Frontend production build passes.
+- `frontend/src/features/dashboard` is absent.
+- `frontend/src/features` is absent.
 
 What remains unverified manually:
 
-- Browser-level visual QA of `/admin` against a live backend session.
-- Manual verification of the refresh action against a running deployment.
-- Manual dark-mode inspection of the admin page in a browser.
+- Browser-level QA of the dashboard/library pages in light and dark themes.
+- Manual verification of collections, trash, profile, and settings visuals against a running authenticated deployment.
+- Manual QA of open-diagram search behavior in the browser after helper consolidation.
 
 Known limitations / risks:
 
-- The admin page is still a single route component, even though it is substantially slimmer than before.
-- No end-to-end browser test was added for `/admin`.
-- Future admin feature growth may justify a dedicated `frontend/src/components/admin-overview/` folder, but it was not necessary yet.
+- Other historical docs in `docs/` still reference removed feature subtrees outside this dashboard scope.
+- The `shared-with-me` disabled-state card was left as-is because it already uses native primitives, but it was not given a dedicated shared dashboard widget in this task.
 
 ## 7. Outstanding Work
 
 Not done yet:
 
-- No admin action dialogs were added; the page remains intentionally read-only.
-- No manual browser QA against a live authenticated deployment was performed in this task.
-- No backend admin capabilities beyond the existing overview endpoint were expanded.
+- No browser screenshots or manual visual QA artifacts were captured.
+- No end-to-end tests were added for routed dashboard pages.
+- No broader documentation cleanup was done for unrelated feature-subtree references elsewhere in `docs/`.
 
 Recommended next step:
 
-1. Manually QA `/admin` in both light and dark themes against a running backend.
-2. If new admin widgets are added later, continue using `frontend/src/components/` for reusable surfaces and `frontend/src/lib/admin/` for stable admin helpers.
-3. If admin gains mutating actions in the future, route those through `frontend/src/dialogs/` rather than rebuilding page-local modal logic.
+1. Manually QA `/`, `/collections`, `/trash`, `/profile`, `/settings`, and `/shared-with-me` in both light and dark themes against a running app.
+2. If more dashboard views are added later, keep putting reusable view-model helpers in `frontend/src/lib/` and reusable dashboard widgets in `frontend/src/components/dashboard-page/`.
+3. If open-diagram browsing grows further, consider whether more of its row/search presentation should be shared with the library surfaces without coupling route and dialog concerns too tightly.
 
 Blockers/risks for future work:
 
-- Avoid broad edits to `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx` and `frontend/src/router.tsx` unless route behavior actually changes.
-- Keep `frontend/src/lib/admin/admin-overview.ts` aligned with `backend/src/services/admin-service.ts` whenever the payload evolves.
+- Avoid broad edits to `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx` unless dashboard navigation actually changes.
+- Keep `frontend/src/lib/dashboard/library-catalog.ts` aligned with storage-layer query semantics if `useStorage()` project filtering evolves.
+- Preserve `frontend/src/lib/utils/search.ts` normalization rules when reusing it elsewhere so dashboard and dialog search stay consistent.
 
 ## 8. Instructions for the Next Codex Session
 
 Read in this order:
 
 1. `docs/codex-handoff.md`
-2. `docs/admin-frontend-rebuild-plan.md`
-3. `docs/audits/admin-frontend-methodology-drift.md`
-4. `docs/operations/admin-dashboard.md`
-5. `frontend/src/lib/admin/admin-overview.ts`
-6. `frontend/src/lib/api/admin-client.ts`
-7. `frontend/src/pages/admin-page/admin-page.tsx`
-8. `frontend/src/pages/admin-page/admin-route-guard.tsx`
-9. `frontend/src/components/status-badge/status-badge.tsx`
-10. `frontend/src/components/summary-list/summary-list.tsx`
+2. `docs/dashboard-hooks-rebuild-plan.md`
+3. `docs/audits/dashboard-hooks-methodology-drift.md`
+4. `frontend/src/lib/dashboard/library-catalog.ts`
+5. `frontend/src/lib/utils/search.ts`
+6. `frontend/src/pages/dashboard-page/use-library-catalog.ts`
+7. `frontend/src/components/dashboard-page/dashboard-page-header.tsx`
+8. `frontend/src/components/dashboard-page/dashboard-feedback-panel.tsx`
+9. `frontend/src/components/dashboard-page/library-diagram-card.tsx`
+10. `frontend/src/pages/dashboard-page/library-page.tsx`
+11. `frontend/src/pages/dashboard-page/collections-page.tsx`
+12. `frontend/src/pages/dashboard-page/trash-page.tsx`
+13. `frontend/src/pages/dashboard-page/profile-page.tsx`
+14. `frontend/src/pages/dashboard-page/settings-page.tsx`
+15. `frontend/src/dialogs/open-diagram-dialog/open-diagram-dialog.tsx`
 
-Avoid breaking:
+What to avoid breaking:
 
-- `frontend/src/pages/admin-page/admin-route-guard.tsx`
-- `frontend/src/lib/api/admin-client.ts`
-- `frontend/src/lib/admin/admin-overview.ts`
-- `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx`
-- `frontend/src/router.tsx`
+- Storage-backed filtering for all/shared/unorganized/trash/collection views.
+- Shared-resource detection logic for owned vs shared diagrams/projects.
+- Dashboard shell routing and sidebar navigation.
+- Open-diagram search behavior.
+- The absence of `frontend/src/features/dashboard` and `frontend/src/features`.
 
-Continue implementation here if more admin work is requested:
+Where to continue implementation:
 
-- Start with `frontend/src/pages/admin-page/admin-page.tsx` for page composition changes.
-- Put pure admin helpers beside `frontend/src/lib/admin/admin-overview.ts`.
-- Put future reusable admin widgets in `frontend/src/components/`.
-- Put future admin dialogs in `frontend/src/dialogs/`.
+- Manual dashboard QA or any follow-up dashboard UI refinements should start from the shared widgets in `frontend/src/components/dashboard-page/`.
+- Any future non-UI dashboard logic should start in `frontend/src/lib/dashboard/` instead of going back into page files.
 
 ## 9. Git Summary
 
 Working branch:
 
-- `restructe/04-admin-to-native-structure-and-system-style`
+- `restructe/05-dashboard-hooks-to-native-structure-and-system-style`
 
 Pull request title:
 
-- `Rebuild admin frontend using native SchemaDash structure and native system styling`
+- `Rebuild dashboard hooks integration using native SchemaDash structure and native system styling`
 
 Commit list created for this task:
 
-- `chore: audit admin frontend methodology drift and style divergence`
-  - Added the admin methodology/style audit doc.
-- `docs: add admin frontend rebuild plan`
-  - Added the required rebuild plan with historical path mapping and implementation phases.
-- `refactor: move reusable admin ui and dialogs into native folders`
-  - Extracted reusable admin UI pieces into native `components/` modules and removed page-local UI duplication.
-- `refactor: move admin helpers and page integration into native structure`
-  - Split stable admin types/helpers into `frontend/src/lib/admin/` and updated runtime/tests to use the new boundary.
-- `refactor: align admin page with native SchemaDash visual system and remove admin feature subtree`
-  - Aligned admin hero/actions/loading/error surfaces with the native product language and cleared the stale admin feature-path reference.
-- `test: validate admin frontend behavior and style consistency after correction`
-  - Records the final validation pass and this updated handoff context.
+- `chore: audit dashboard hooks methodology drift and style divergence`
+  - Added the required methodology/style audit for the dashboard area.
+- `docs: add dashboard hooks rebuild plan`
+  - Added the required old-to-new path mapping and implementation plan.
+- `refactor: move reusable dashboard-related ui and hooks into native folders`
+  - Extracted shared dashboard page widgets into `frontend/src/components/dashboard-page/`.
+- `refactor: move dashboard helpers and page integration into native structure`
+  - Moved pure catalog/search logic into `frontend/src/lib/` and updated dashboard/dialog integration.
+- `refactor: align dashboard-related UI with native SchemaDash visual system and remove dashboard feature subtree`
+  - Swapped remaining dashboard surfaces to native MetricCard, StatusBadge, SummaryList, Alert, and empty-state patterns while keeping the feature subtree absent.
+- `test: validate dashboard frontend behavior and style consistency after correction`
+  - Adds focused helper tests, runs validation, and updates this handoff for the next session.
