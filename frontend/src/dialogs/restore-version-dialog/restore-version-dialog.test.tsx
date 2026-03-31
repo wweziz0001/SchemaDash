@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseType } from '@/lib/domain/database-type';
 import type { Diagram } from '@/lib/domain/diagram';
-import { diagramWorkflowClient } from '@/features/diagram-workflow/api/diagram-workflow-client';
-import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
+import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { RestoreVersionDialog } from './restore-version-dialog';
 import { useStorage } from '@/hooks/use-storage';
 import { useSchemaDash } from '@/hooks/use-schemadash';
@@ -13,7 +13,7 @@ import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-a
 
 const toast = vi.fn();
 
-vi.mock('@/features/diagram-workflow/context/diagram-workflow-context', () => ({
+vi.mock('@/context/diagram-workflow-context/diagram-workflow-context', () => ({
     useOptionalDiagramWorkflow: vi.fn(),
 }));
 
@@ -38,7 +38,7 @@ vi.mock('@/features/persistence/api/persistence-client', async () => {
     };
 });
 
-vi.mock('@/features/diagram-workflow/api/diagram-workflow-client', () => ({
+vi.mock('@/lib/api/diagram-workflow-client', () => ({
     diagramWorkflowClient: {
         restoreVersionToDevelopment: vi.fn(),
     },

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Badge } from '@/components/badge/badge';
 import { History } from 'lucide-react';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import {
     formatVersionTimestamp,
     getVersionDisplayLabel,
-} from '../lib/version-labels';
+} from '@/lib/diagram-workflow/version-labels';
 
 export const VersionViewBadge: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();

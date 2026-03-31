@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Badge } from '@/components/badge/badge';
 import { DatabaseZap } from 'lucide-react';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 
 const formatTimestamp = (value: string) =>
     new Intl.DateTimeFormat(undefined, {

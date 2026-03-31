@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DatabaseType } from '@/lib/domain/database-type';
-import type { DiagramWorkflowVersionRecord } from '../api/diagram-workflow-client';
+import type { DiagramWorkflowVersionRecord } from '@/lib/api/diagram-workflow-client';
 import { getAuthoritativeVersionCanonicalSchema } from './version-canonical';
 
 const versionWithDiagramDocument: DiagramWorkflowVersionRecord = {

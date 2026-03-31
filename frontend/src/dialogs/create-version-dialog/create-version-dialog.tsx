@@ -15,8 +15,8 @@ import { Textarea } from '@/components/textarea/textarea';
 import { useToast } from '@/components/toast/use-toast';
 import { serializeDiagram } from '@/features/persistence/api/persistence-client';
 import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
-import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
-import { diagramWorkflowClient } from '@/features/diagram-workflow/api/diagram-workflow-client';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';
 
 export interface CreateVersionDialogProps {
     open: boolean;

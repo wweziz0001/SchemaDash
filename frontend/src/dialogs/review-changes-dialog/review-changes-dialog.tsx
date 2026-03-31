@@ -11,8 +11,8 @@ import {
 import { MetricCard } from '@/components/metric-card/metric-card';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { Separator } from '@/components/separator/separator';
-import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
-import { buildReviewGrouping } from '@/features/diagram-workflow/lib/review-grouping';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { buildReviewGrouping } from '@/lib/diagram-workflow/review-grouping';
 import { cn } from '@/lib/utils';
 
 const badgeVariantByStatus = {

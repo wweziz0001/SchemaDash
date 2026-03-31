@@ -21,8 +21,8 @@ import {
     type DiagramMigrationPreview,
     type DiagramMigrationValidation,
     type DiagramMigrationWorkflowFallback,
-} from '@/features/diagram-workflow/api/diagram-migration-client';
-import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
+} from '@/lib/api/diagram-migration-client';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { useStorage } from '@/hooks/use-storage';
 import { MigrationSummary } from './migration-summary';
 import { MigrationWarningList } from './migration-warning-list';

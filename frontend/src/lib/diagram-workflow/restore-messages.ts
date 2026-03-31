@@ -1,7 +1,7 @@
 import type {
     DiagramWorkflowVersionRestoreResult,
     DiagramWorkflowVersionSummary,
-} from '../api/diagram-workflow-client';
+} from '@/lib/api/diagram-workflow-client';
 import { getVersionDisplayLabel } from './version-labels';
 
 export const RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT = 'RESTORE DEVELOPMENT';

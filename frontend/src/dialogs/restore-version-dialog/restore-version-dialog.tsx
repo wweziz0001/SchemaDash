@@ -15,16 +15,16 @@ import { useStorage } from '@/hooks/use-storage';
 import { persistenceClient } from '@/features/persistence/api/persistence-client';
 import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
 import { useToast } from '@/components/toast/use-toast';
-import type { DiagramWorkflowVersionSummary } from '@/features/diagram-workflow/api/diagram-workflow-client';
-import { diagramWorkflowClient } from '@/features/diagram-workflow/api/diagram-workflow-client';
-import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
+import type { DiagramWorkflowVersionSummary } from '@/lib/api/diagram-workflow-client';
+import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import {
     getRestoreConfirmationHint,
     getRestoreFailureMessage,
     getRestoreSuccessDescription,
     getRestoreVersionHeading,
     RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT,
-} from '@/features/diagram-workflow/lib/restore-messages';
+} from '@/lib/diagram-workflow/restore-messages';
 import { RestoreWarningPanel } from './restore-warning-panel';
 
 export interface RestoreVersionDialogProps {

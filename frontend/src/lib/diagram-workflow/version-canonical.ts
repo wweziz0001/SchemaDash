@@ -4,7 +4,7 @@ import {
 } from '@schemadash/schema-sync-core';
 import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
 import { deserializeDiagram } from '@/features/persistence/api/persistence-client';
-import type { DiagramWorkflowVersionRecord } from '../api/diagram-workflow-client';
+import type { DiagramWorkflowVersionRecord } from '@/lib/api/diagram-workflow-client';
 
 export const getAuthoritativeVersionCanonicalSchema = (
     version?: DiagramWorkflowVersionRecord

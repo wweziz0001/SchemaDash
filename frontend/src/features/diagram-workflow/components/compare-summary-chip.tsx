@@ -1,8 +1,8 @@
 import React from 'react';
 import { Badge } from '@/components/badge/badge';
 import { GitCompareArrows } from 'lucide-react';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
-import { getVersionDisplayLabel } from '../lib/version-labels';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { getVersionDisplayLabel } from '@/lib/diagram-workflow/version-labels';
 
 const formatSummary = ({
     added,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/badge/badge';
 import { cn } from '@/lib/utils';
-import type { DiagramMigrationIssue } from '../api/diagram-migration-client';
+import type { DiagramMigrationIssue } from '@/lib/api/diagram-migration-client';
 
 const severityVariant = {
     info: 'outline',

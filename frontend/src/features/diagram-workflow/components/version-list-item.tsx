@@ -1,12 +1,12 @@
 import React from 'react';
 import { Badge } from '@/components/badge/badge';
 import { Button } from '@/components/button/button';
-import type { DiagramWorkflowVersionSummary } from '../api/diagram-workflow-client';
+import type { DiagramWorkflowVersionSummary } from '@/lib/api/diagram-workflow-client';
 import {
     formatVersionTimestamp,
     getVersionDisplayLabel,
     getVersionOriginLabel,
-} from '../lib/version-labels';
+} from '@/lib/diagram-workflow/version-labels';
 
 export interface VersionListItemProps {
     version: DiagramWorkflowVersionSummary;

@@ -3,10 +3,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VersionsPanel } from './versions-panel';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { useLayout } from '@/hooks/use-layout';
 
-vi.mock('../context/diagram-workflow-context', () => ({
+vi.mock('@/context/diagram-workflow-context/diagram-workflow-context', () => ({
     useOptionalDiagramWorkflow: vi.fn(),
 }));
 vi.mock('@/hooks/use-layout', () => ({

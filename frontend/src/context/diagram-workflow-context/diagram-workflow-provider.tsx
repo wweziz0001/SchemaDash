@@ -1,12 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
-import React, {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Diagram } from '@/lib/domain/diagram';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { canonicalSchemaToDiagram } from '@/features/schema-sync/lib/canonical-adapters';
@@ -19,46 +11,14 @@ import {
     type DiagramWorkflowRecord,
     type DiagramWorkflowVersionRecord,
     type DiagramWorkflowVersionSummary,
-} from '../api/diagram-workflow-client';
+} from '@/lib/api/diagram-workflow-client';
+import { buildCompareRenderModel } from '@/lib/diagram-workflow/compare-render-model';
+import { getAuthoritativeVersionCanonicalSchema } from '@/lib/diagram-workflow/version-canonical';
 import {
-    buildCompareRenderModel,
-    type CompareRenderModel,
-} from '../lib/compare-render-model';
-import { getAuthoritativeVersionCanonicalSchema } from '../lib/version-canonical';
-
-export type DiagramWorkflowMode =
-    | 'development'
-    | 'live'
-    | 'compare'
-    | 'version';
-
-export interface DiagramWorkflowContextValue {
-    diagramId?: string;
-    workflow?: DiagramWorkflowRecord;
-    versions: DiagramWorkflowVersionSummary[];
-    developmentDiagram?: Diagram;
-    setDevelopmentDiagram: (diagram?: Diagram) => void;
-    loading: boolean;
-    requestedMode: DiagramWorkflowMode;
-    activeMode: DiagramWorkflowMode;
-    liveDiagram?: Diagram;
-    versionDiagram?: Diagram;
-    compareRenderModel?: CompareRenderModel;
-    compareSourceKind: 'live' | 'version' | null;
-    compareVersion?: DiagramWorkflowVersionRecord;
-    selectedVersion?: DiagramWorkflowVersionRecord;
-    liveModeEnabled: boolean;
-    compareModeEnabled: boolean;
-    refreshWorkflow: () => Promise<void>;
-    setWorkflowRecord: (workflow?: DiagramWorkflowRecord) => void;
-    setActiveMode: (mode: DiagramWorkflowMode) => void;
-    openVersion: (versionId: string) => void;
-    compareVersionToDevelopment: (versionId: string) => void;
-}
-
-const DiagramWorkflowContext = createContext<
-    DiagramWorkflowContextValue | undefined
->(undefined);
+    type DiagramWorkflowContextValue,
+    type DiagramWorkflowMode,
+    diagramWorkflowContext,
+} from './diagram-workflow-context';
 
 const mergeWorkflowRecord = (
     current: DiagramWorkflowRecord | undefined,
@@ -404,23 +364,8 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
     );
 
     return (
-        <DiagramWorkflowContext.Provider value={value}>
+        <diagramWorkflowContext.Provider value={value}>
             {children}
-        </DiagramWorkflowContext.Provider>
+        </diagramWorkflowContext.Provider>
     );
 };
-
-export const useDiagramWorkflow = () => {
-    const context = useContext(DiagramWorkflowContext);
-
-    if (!context) {
-        throw new Error(
-            'useDiagramWorkflow must be used within DiagramWorkflowProvider'
-        );
-    }
-
-    return context;
-};
-
-export const useOptionalDiagramWorkflow = () =>
-    useContext(DiagramWorkflowContext);

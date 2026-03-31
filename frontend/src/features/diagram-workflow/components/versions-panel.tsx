@@ -3,7 +3,7 @@ import { Badge } from '@/components/badge/badge';
 import { Button } from '@/components/button/button';
 import { useLayout } from '@/hooks/use-layout';
 import { History } from 'lucide-react';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 
 export const VersionsPanel: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();

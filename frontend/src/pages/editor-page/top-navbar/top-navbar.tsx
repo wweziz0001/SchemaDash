@@ -12,7 +12,7 @@ import { useAuth } from '@/features/auth/hooks/use-auth';
 import { Link } from 'react-router-dom';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { WorkflowModeSwitcher } from '@/features/diagram-workflow/components/workflow-mode-switcher';
-import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { ReviewDropdown } from '@/features/diagram-workflow/components/review-dropdown';
 import { VersionViewBadge } from '@/features/diagram-workflow/components/version-view-badge';
 

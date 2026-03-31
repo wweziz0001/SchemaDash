@@ -1,11 +1,11 @@
 import React from 'react';
 import { Badge } from '@/components/badge/badge';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
-import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import {
     formatVersionTimestamp,
     getVersionDisplayLabel,
-} from '@/features/diagram-workflow/lib/version-labels';
+} from '@/lib/diagram-workflow/version-labels';
 
 const getModeLabel = (mode: string | undefined) => {
     if (mode === 'live') {

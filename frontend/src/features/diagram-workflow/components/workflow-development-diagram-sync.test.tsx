@@ -2,10 +2,10 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkflowDevelopmentDiagramSync } from './workflow-development-diagram-sync';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { useSchemaDash } from '@/hooks/use-schemadash';
 
-vi.mock('../context/diagram-workflow-context', () => ({
+vi.mock('@/context/diagram-workflow-context/diagram-workflow-context', () => ({
     useOptionalDiagramWorkflow: vi.fn(),
 }));
 

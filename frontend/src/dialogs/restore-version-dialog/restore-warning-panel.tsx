@@ -1,10 +1,10 @@
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/alert/alert';
-import type { DiagramWorkflowVersionSummary } from '@/features/diagram-workflow/api/diagram-workflow-client';
+import type { DiagramWorkflowVersionSummary } from '@/lib/api/diagram-workflow-client';
 import {
     getRestoreVersionHeading,
     getRestoreWarningLines,
-} from '@/features/diagram-workflow/lib/restore-messages';
+} from '@/lib/diagram-workflow/restore-messages';
 
 export interface RestoreWarningPanelProps {
     version: Pick<DiagramWorkflowVersionSummary, 'name' | 'versionLabel'>;

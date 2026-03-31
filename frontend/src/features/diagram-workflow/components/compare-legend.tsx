@@ -8,8 +8,8 @@ import {
 } from '@/components/card/card';
 import { Badge } from '@/components/badge/badge';
 import { SquareDot, SquareMinus, SquarePlus } from 'lucide-react';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
-import { getVersionDisplayLabel } from '../lib/version-labels';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { getVersionDisplayLabel } from '@/lib/diagram-workflow/version-labels';
 
 const LegendRow: React.FC<{
     label: string;

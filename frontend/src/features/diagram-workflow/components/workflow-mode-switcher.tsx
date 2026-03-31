@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/button/button';
 import { cn } from '@/lib/utils';
 import { Database, GitBranch, GitCompareArrows } from 'lucide-react';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 
 export const WorkflowModeSwitcher: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();

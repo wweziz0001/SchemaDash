@@ -1,7 +1,7 @@
 import type {
     DiagramWorkflowVersionOrigin,
     DiagramWorkflowVersionSummary,
-} from '../api/diagram-workflow-client';
+} from '@/lib/api/diagram-workflow-client';
 
 export const getVersionDisplayLabel = (
     version: Pick<DiagramWorkflowVersionSummary, 'name' | 'versionLabel'>

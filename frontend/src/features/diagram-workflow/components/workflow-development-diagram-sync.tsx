@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useEffect } from 'react';
 import { useSchemaDash } from '@/hooks/use-schemadash';
-import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 
 export const WorkflowDevelopmentDiagramSync: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();
