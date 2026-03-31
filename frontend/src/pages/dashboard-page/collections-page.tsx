@@ -13,15 +13,15 @@ import { Button } from '@/components/button/button';
 import { DashboardFeedbackPanel } from '@/components/dashboard-page/dashboard-feedback-panel';
 import { DashboardPageHeader } from '@/components/dashboard-page/dashboard-page-header';
 import { DashboardSearchToolbar } from '@/components/dashboard-page/dashboard-search-toolbar';
+import { normalizeSearchTerm } from '@/lib/utils/search';
 import type { DashboardShellContextValue } from './dashboard-shell-context';
-import { normalizeSearchTerm } from './use-library-catalog';
 
 export const CollectionsPage: React.FC = () => {
     const { collections, loadingCollections } =
         useOutletContext<DashboardShellContextValue>();
     const [search, setSearch] = useState('');
     const normalizedSearch = useMemo(
-        () => normalizeSearchTerm(search)?.toLowerCase(),
+        () => normalizeSearchTerm(search, { lowerCase: true }),
         [search]
     );
 

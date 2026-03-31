@@ -16,7 +16,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/card/card';
-import type { LibraryDiagramItem } from '@/pages/dashboard-page/use-library-catalog';
+import type { LibraryDiagramItem } from '@/lib/dashboard/library-catalog';
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',

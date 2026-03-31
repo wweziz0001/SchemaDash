@@ -22,7 +22,10 @@ import { DashboardPageHeader } from '@/components/dashboard-page/dashboard-page-
 import { DashboardSearchToolbar } from '@/components/dashboard-page/dashboard-search-toolbar';
 import { LibraryDiagramCard } from '@/components/dashboard-page/library-diagram-card';
 import { MetricCard } from '@/components/metric-card/metric-card';
-import type { LibraryDiagramItem, LibrarySort } from './use-library-catalog';
+import type {
+    LibraryDiagramItem,
+    LibrarySort,
+} from '@/lib/dashboard/library-catalog';
 
 const sortOptions: Array<{ label: string; value: LibrarySort }> = [
     { label: 'Last updated', value: 'updated' },
