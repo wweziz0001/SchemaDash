@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -18,10 +18,21 @@ import { Badge } from '@/components/badge/badge';
 import { Separator } from '@/components/separator/separator';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { ChangePlanSummary } from '@/components/change-plan-summary/change-plan-summary';
-import { useSchemaSync } from '@/features/schema-sync/hooks/use-schema-sync';
-import type { ConnectionUpsert } from '@schemadash/schema-sync-core';
+import type {
+    ApplySchemaResponse,
+    ChangePlan,
+    ConnectionSummary,
+    ConnectionTestResponse,
+    ConnectionUpsert,
+} from '@schemadash/schema-sync-core';
 import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useToast } from '@/components/toast/use-toast';
+import { useDialog } from '@/hooks/use-dialog';
+import type { BaseDialogProps } from '@/dialogs/common/base-dialog-props';
+import { schemaSyncClient } from '@/lib/api/schema-sync-client';
+import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
+import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 
 const initialConnectionDraft: ConnectionUpsert = {
     name: '',
@@ -37,26 +48,24 @@ const initialConnectionDraft: ConnectionUpsert = {
     },
 };
 
-export const SchemaSyncDialog: React.FC = () => {
-    const {
-        open,
-        setOpen,
-        connections,
-        selectedConnectionId,
-        setSelectedConnectionId,
-        previewPlan,
-        applyResult,
-        lastConnectionTest,
-        saveConnection,
-        deleteConnection,
-        testConnectionDraft,
-        syncLiveDatabase,
-        refreshFromDatabase,
-        previewChanges,
-        applyChanges,
-    } = useSchemaSync();
-    const { currentDiagram } = useSchemaDash();
+export interface SchemaSyncDialogProps extends BaseDialogProps {}
+
+export const SchemaSyncDialog: React.FC<SchemaSyncDialogProps> = ({
+    dialog,
+}) => {
+    const { currentDiagram, updateDiagramData } = useSchemaDash();
     const { toast } = useToast();
+    const { closeSchemaSyncDialog } = useDialog();
+    const workflow = useOptionalDiagramWorkflow();
+    const [connections, setConnections] = useState<ConnectionSummary[]>([]);
+    const [connectionsLoading, setConnectionsLoading] = useState(false);
+    const [selectedConnectionId, setSelectedConnectionId] = useState<
+        string | undefined
+    >();
+    const [previewPlan, setPreviewPlan] = useState<ChangePlan>();
+    const [applyResult, setApplyResult] = useState<ApplySchemaResponse>();
+    const [lastConnectionTest, setLastConnectionTest] =
+        useState<ConnectionTestResponse>();
     const [draft, setDraft] = useState<ConnectionUpsert>(
         initialConnectionDraft
     );
@@ -64,6 +73,243 @@ export const SchemaSyncDialog: React.FC = () => {
     const [importSchemas, setImportSchemas] = useState('public');
     const [confirmationText, setConfirmationText] = useState('');
     const [busyAction, setBusyAction] = useState<string>();
+
+    const refreshConnections = useCallback(async () => {
+        setConnectionsLoading(true);
+        try {
+            const response = await schemaSyncClient.getConnections();
+            setConnections(response.items);
+            setSelectedConnectionId((current) => {
+                const preferredConnectionId =
+                    current ?? currentDiagram.schemaSync?.connectionId;
+                return (
+                    response.items.find(
+                        (connection) => connection.id === preferredConnectionId
+                    )?.id ?? response.items[0]?.id
+                );
+            });
+        } finally {
+            setConnectionsLoading(false);
+        }
+    }, [currentDiagram.schemaSync?.connectionId]);
+
+    useEffect(() => {
+        if (!dialog.open) {
+            return;
+        }
+
+        void refreshConnections();
+    }, [dialog.open, refreshConnections]);
+
+    const updateDiagramSyncMetadata = useCallback(
+        async (
+            attributes: Partial<NonNullable<typeof currentDiagram.schemaSync>>
+        ) => {
+            await updateDiagramData(
+                {
+                    ...currentDiagram,
+                    schemaSync: {
+                        ...(currentDiagram.schemaSync ?? {}),
+                        ...attributes,
+                    },
+                    updatedAt: new Date(),
+                },
+                { forceUpdateStorage: true }
+            );
+        },
+        [currentDiagram, updateDiagramData]
+    );
+
+    const saveConnection = useCallback(
+        async (payload: ConnectionUpsert, connectionId?: string) => {
+            if (connectionId) {
+                const response = await schemaSyncClient.updateConnection(
+                    connectionId,
+                    payload
+                );
+                setSelectedConnectionId(response.connection.id);
+                toast({
+                    title: 'Connection updated',
+                    description: `${response.connection.name} is ready to use.`,
+                });
+            } else {
+                const response =
+                    await schemaSyncClient.createConnection(payload);
+                setSelectedConnectionId(response.connection.id);
+                toast({
+                    title: 'Connection saved',
+                    description: `${response.connection.name} is ready to use.`,
+                });
+            }
+
+            await refreshConnections();
+        },
+        [refreshConnections, toast]
+    );
+
+    const deleteConnection = useCallback(
+        async (connectionId: string) => {
+            await schemaSyncClient.deleteConnection(connectionId);
+            setSelectedConnectionId((current) =>
+                current === connectionId ? undefined : current
+            );
+            setPreviewPlan(undefined);
+            setApplyResult(undefined);
+            toast({
+                title: 'Connection removed',
+            });
+            await refreshConnections();
+        },
+        [refreshConnections, toast]
+    );
+
+    const testConnectionDraft = useCallback(
+        async (payload: ConnectionUpsert, connectionId?: string) => {
+            const result =
+                connectionId && payload.secret.password.length === 0
+                    ? await schemaSyncClient.testConnection({
+                          connectionId,
+                      })
+                    : await schemaSyncClient.testConnection({
+                          connection: payload,
+                      });
+            setLastConnectionTest(result);
+        },
+        []
+    );
+
+    const syncLiveDatabase = useCallback(
+        async ({
+            connectionId,
+            schemas,
+        }: {
+            connectionId: string;
+            schemas: string[];
+        }) => {
+            if (!currentDiagram.id) {
+                throw new Error('Open a diagram before syncing live state.');
+            }
+
+            const normalizedSchemas = schemas.length > 0 ? schemas : ['public'];
+
+            await diagramWorkflowClient.bindConnection(currentDiagram.id, {
+                connectionId,
+                importedSchemas: normalizedSchemas,
+            });
+            const response = await diagramWorkflowClient.refreshLiveSnapshot(
+                currentDiagram.id
+            );
+
+            await updateDiagramSyncMetadata({
+                connectionId: response.compatibilitySync.connectionId,
+                baselineSnapshotId:
+                    response.compatibilitySync.baselineSnapshotId,
+                baselineFingerprint:
+                    response.compatibilitySync.baselineFingerprint,
+                importedSchemas: response.compatibilitySync.importedSchemas,
+                lastImportedAt: response.compatibilitySync.lastImportedAt,
+                lastPreviewPlanId: null,
+                lastPreviewedAt: null,
+                lastAuditId: null,
+                lastPostApplySnapshotId: null,
+            });
+
+            setSelectedConnectionId(connectionId);
+            setPreviewPlan(undefined);
+            setApplyResult(undefined);
+            workflow?.setWorkflowRecord(response.workflow);
+            toast({
+                title: 'Live database synced',
+                description:
+                    'Development stayed editable while Live Database updated separately.',
+            });
+        },
+        [currentDiagram.id, toast, updateDiagramSyncMetadata, workflow]
+    );
+
+    const refreshFromDatabase = useCallback(async () => {
+        const connectionId =
+            currentDiagram.schemaSync?.connectionId ?? selectedConnectionId;
+        if (!connectionId) {
+            throw new Error('Choose a connection before refreshing.');
+        }
+        await syncLiveDatabase({
+            connectionId,
+            schemas: currentDiagram.schemaSync?.importedSchemas ?? ['public'],
+        });
+    }, [currentDiagram.schemaSync, selectedConnectionId, syncLiveDatabase]);
+
+    const previewChanges = useCallback(async () => {
+        if (!currentDiagram.schemaSync?.baselineSnapshotId) {
+            throw new Error(
+                'Import a live baseline before previewing changes.'
+            );
+        }
+
+        const targetSchema = diagramToCanonicalSchema(currentDiagram);
+        const response = await schemaSyncClient.previewChanges({
+            baselineSnapshotId: currentDiagram.schemaSync.baselineSnapshotId,
+            targetSchema,
+        });
+        setPreviewPlan(response.plan);
+        setApplyResult(undefined);
+        await updateDiagramSyncMetadata({
+            lastPreviewPlanId: response.plan.id,
+            lastPreviewedAt: new Date().toISOString(),
+        });
+        toast({
+            title: 'Preview generated',
+            description: `${response.plan.summary.totalChanges} change(s) analyzed.`,
+        });
+    }, [currentDiagram, toast, updateDiagramSyncMetadata]);
+
+    const applyChanges = useCallback(
+        async (confirmationText: string) => {
+            if (!previewPlan) {
+                throw new Error('Preview changes before applying them.');
+            }
+
+            const result = await schemaSyncClient.applyChanges({
+                planId: previewPlan.id,
+                destructiveApproval: {
+                    confirmed: true,
+                    confirmationText,
+                },
+            });
+            setApplyResult(result);
+            const nextImportedAt = new Date().toISOString();
+            await updateDiagramSyncMetadata(
+                result.status === 'succeeded' && result.postApplySnapshotId
+                    ? {
+                          baselineSnapshotId: result.postApplySnapshotId,
+                          baselineFingerprint: previewPlan.targetFingerprint,
+                          lastImportedAt: nextImportedAt,
+                          lastPreviewPlanId: null,
+                          lastAuditId: result.auditId,
+                          lastPostApplySnapshotId: result.postApplySnapshotId,
+                      }
+                    : {
+                          lastAuditId: result.auditId,
+                          lastPostApplySnapshotId:
+                              result.postApplySnapshotId ?? null,
+                      }
+            );
+            if (result.status === 'succeeded') {
+                setPreviewPlan(undefined);
+            }
+            toast({
+                title:
+                    result.status === 'succeeded'
+                        ? 'Schema applied'
+                        : 'Schema apply failed',
+                description:
+                    result.status === 'succeeded'
+                        ? 'Baseline advanced to the applied schema snapshot.'
+                        : (result.error ?? 'The apply job did not succeed.'),
+            });
+        },
+        [previewPlan, toast, updateDiagramSyncMetadata]
+    );
 
     const selectedConnection = useMemo(
         () =>
@@ -74,7 +320,7 @@ export const SchemaSyncDialog: React.FC = () => {
     );
 
     useEffect(() => {
-        if (!open) {
+        if (!dialog.open) {
             return;
         }
 
@@ -103,7 +349,11 @@ export const SchemaSyncDialog: React.FC = () => {
             setDraft(initialConnectionDraft);
             setEditingConnectionId(undefined);
         }
-    }, [currentDiagram.schemaSync?.importedSchemas, open, selectedConnection]);
+    }, [
+        currentDiagram.schemaSync?.importedSchemas,
+        dialog.open,
+        selectedConnection,
+    ]);
 
     const schemaList = importSchemas
         .split(',')
@@ -138,7 +388,14 @@ export const SchemaSyncDialog: React.FC = () => {
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog
+            {...dialog}
+            onOpenChange={(open) => {
+                if (!open) {
+                    closeSchemaSyncDialog();
+                }
+            }}
+        >
             <DialogContent className="flex h-[85vh] w-[min(1100px,96vw)] max-w-none flex-col">
                 <DialogHeader>
                     <DialogTitle>Schema Sync</DialogTitle>
@@ -179,27 +436,37 @@ export const SchemaSyncDialog: React.FC = () => {
                                 </div>
                                 <ScrollArea className="h-[56vh]">
                                     <div className="flex flex-col p-2">
-                                        {connections.map((connection) => (
-                                            <button
-                                                key={connection.id}
-                                                type="button"
-                                                className={`rounded-md px-3 py-2 text-left text-sm ${selectedConnectionId === connection.id ? 'bg-secondary' : 'hover:bg-secondary/50'}`}
-                                                onClick={() =>
-                                                    setSelectedConnectionId(
-                                                        connection.id
-                                                    )
-                                                }
-                                            >
-                                                <div className="font-medium">
-                                                    {connection.name}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {connection.host}:
-                                                    {connection.port} /{' '}
-                                                    {connection.database}
-                                                </div>
-                                            </button>
-                                        ))}
+                                        {connectionsLoading ? (
+                                            <div className="px-3 py-6 text-sm text-muted-foreground">
+                                                Loading saved connections...
+                                            </div>
+                                        ) : connections.length === 0 ? (
+                                            <div className="px-3 py-6 text-sm text-muted-foreground">
+                                                No saved connections yet.
+                                            </div>
+                                        ) : (
+                                            connections.map((connection) => (
+                                                <button
+                                                    key={connection.id}
+                                                    type="button"
+                                                    className={`rounded-md px-3 py-2 text-left text-sm ${selectedConnectionId === connection.id ? 'bg-secondary' : 'hover:bg-secondary/50'}`}
+                                                    onClick={() =>
+                                                        setSelectedConnectionId(
+                                                            connection.id
+                                                        )
+                                                    }
+                                                >
+                                                    <div className="font-medium">
+                                                        {connection.name}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {connection.host}:
+                                                        {connection.port} /{' '}
+                                                        {connection.database}
+                                                    </div>
+                                                </button>
+                                            ))
+                                        )}
                                     </div>
                                 </ScrollArea>
                             </div>
@@ -449,6 +716,7 @@ export const SchemaSyncDialog: React.FC = () => {
                                         <select
                                             className="h-10 rounded-md border bg-background px-3 text-sm"
                                             value={selectedConnectionId ?? ''}
+                                            disabled={connectionsLoading}
                                             onChange={(event) =>
                                                 setSelectedConnectionId(
                                                     event.target.value ||

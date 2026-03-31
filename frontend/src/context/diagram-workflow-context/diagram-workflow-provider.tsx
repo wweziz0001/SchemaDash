@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Diagram } from '@/lib/domain/diagram';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { canonicalSchemaToDiagram } from '@/features/schema-sync/lib/canonical-adapters';
+import { canonicalSchemaToDiagram } from '@/lib/schema-sync/canonical-adapters';
 import {
     deserializeDiagram,
     persistenceClient,

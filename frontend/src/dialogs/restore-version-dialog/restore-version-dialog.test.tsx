@@ -9,7 +9,7 @@ import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/d
 import { RestoreVersionDialog } from './restore-version-dialog';
 import { useStorage } from '@/hooks/use-storage';
 import { useSchemaDash } from '@/hooks/use-schemadash';
-import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
+import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
 
 const toast = vi.fn();
 
@@ -44,7 +44,7 @@ vi.mock('@/lib/api/diagram-workflow-client', () => ({
     },
 }));
 
-vi.mock('@/features/schema-sync/lib/canonical-adapters', () => ({
+vi.mock('@/lib/schema-sync/canonical-adapters', () => ({
     diagramToCanonicalSchema: vi.fn(),
 }));
 

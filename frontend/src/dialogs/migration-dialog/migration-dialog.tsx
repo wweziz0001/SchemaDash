@@ -12,7 +12,7 @@ import {
 } from '@/components/dialog/dialog';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { Separator } from '@/components/separator/separator';
-import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
+import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
 import { useToast } from '@/components/toast/use-toast';
 import { MetricCard } from '@/components/metric-card/metric-card';
 import {

@@ -13,7 +13,7 @@ import { Label } from '@/components/label/label';
 import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useStorage } from '@/hooks/use-storage';
 import { persistenceClient } from '@/features/persistence/api/persistence-client';
-import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
+import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
 import { useToast } from '@/components/toast/use-toast';
 import type { DiagramWorkflowVersionSummary } from '@/lib/api/diagram-workflow-client';
 import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';

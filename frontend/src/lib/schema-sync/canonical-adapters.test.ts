@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     canonicalSchemaToDiagram,
     diagramToCanonicalSchema,
-} from '../canonical-adapters';
+} from './canonical-adapters';
 import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 import { DatabaseType } from '@/lib/domain/database-type';
 

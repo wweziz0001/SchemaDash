@@ -1,17 +1,17 @@
 import React from 'react';
 import { Button } from '@/components/button/button';
 import { DatabaseZap } from 'lucide-react';
-import { useSchemaSync } from '@/features/schema-sync/hooks/use-schema-sync';
+import { useDialog } from '@/hooks/use-dialog';
 
 export const SchemaSyncToolbarButton: React.FC = () => {
-    const { setOpen } = useSchemaSync();
+    const { openSchemaSyncDialog } = useDialog();
 
     return (
         <Button
             variant="outline"
             size="sm"
             className="h-8 gap-2 text-xs"
-            onClick={() => setOpen(true)}
+            onClick={() => openSchemaSyncDialog()}
         >
             <DatabaseZap className="size-4" />
             Schema Sync
