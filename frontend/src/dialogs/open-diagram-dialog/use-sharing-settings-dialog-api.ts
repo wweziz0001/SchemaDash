@@ -5,7 +5,7 @@ import type {
     PersistedUserSummary,
     SharingAccess,
     SharingScope,
-} from '@/lib/api/persistence-client';
+} from '@/lib/persistence/persistence-types';
 
 export interface SharingDialogSubject {
     type: 'project' | 'diagram';
@@ -13,11 +13,47 @@ export interface SharingDialogSubject {
     name: string;
 }
 
-export const useSharingDialogApi = () => {
+export type SharingDialogSubjectRef = Pick<SharingDialogSubject, 'type' | 'id'>;
+
+export interface SharingSettingsDialogApi {
+    loadSharing: (
+        subject: SharingDialogSubjectRef
+    ) => Promise<PersistedSharingSettings>;
+    searchUsers: (query: string) => Promise<PersistedUserSummary[]>;
+    addPerson: (
+        subject: SharingDialogSubjectRef,
+        params: {
+            userId: string;
+            access: SharingAccess;
+        }
+    ) => Promise<PersistedSharingSettings>;
+    updatePerson: (
+        subject: SharingDialogSubjectRef,
+        userId: string,
+        params: {
+            access: SharingAccess;
+        }
+    ) => Promise<PersistedSharingSettings>;
+    removePerson: (
+        subject: SharingDialogSubjectRef,
+        userId: string
+    ) => Promise<PersistedSharingSettings>;
+    updateGeneralAccess: (
+        subject: SharingDialogSubjectRef,
+        params: {
+            scope: SharingScope;
+            access: SharingAccess;
+            expiresAt?: string | null;
+            rotateLinkToken?: boolean;
+        }
+    ) => Promise<PersistedSharingSettings>;
+}
+
+export const useSharingSettingsDialogApi = (): SharingSettingsDialogApi => {
     const storage = useStorage();
 
     const loadSharing = useCallback(
-        async (subject: Pick<SharingDialogSubject, 'type' | 'id'>) =>
+        async (subject: SharingDialogSubjectRef) =>
             subject.type === 'project'
                 ? await storage.getProjectSharing(subject.id)
                 : await storage.getDiagramSharing(subject.id),
@@ -32,7 +68,7 @@ export const useSharingDialogApi = () => {
 
     const addPerson = useCallback(
         async (
-            subject: Pick<SharingDialogSubject, 'type' | 'id'>,
+            subject: SharingDialogSubjectRef,
             params: {
                 userId: string;
                 access: SharingAccess;
@@ -46,7 +82,7 @@ export const useSharingDialogApi = () => {
 
     const updatePerson = useCallback(
         async (
-            subject: Pick<SharingDialogSubject, 'type' | 'id'>,
+            subject: SharingDialogSubjectRef,
             userId: string,
             params: {
                 access: SharingAccess;
@@ -68,7 +104,7 @@ export const useSharingDialogApi = () => {
 
     const removePerson = useCallback(
         async (
-            subject: Pick<SharingDialogSubject, 'type' | 'id'>,
+            subject: SharingDialogSubjectRef,
             userId: string
         ): Promise<PersistedSharingSettings> =>
             subject.type === 'project'
@@ -79,7 +115,7 @@ export const useSharingDialogApi = () => {
 
     const updateGeneralAccess = useCallback(
         async (
-            subject: Pick<SharingDialogSubject, 'type' | 'id'>,
+            subject: SharingDialogSubjectRef,
             params: {
                 scope: SharingScope;
                 access: SharingAccess;

@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/button/button';
 import { SharingSettingsDialog } from '@/dialogs/open-diagram-dialog/sharing-settings-dialog';
+import { useSharingSettingsDialogApi } from '@/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api';
 import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useStorage } from '@/hooks/use-storage';
-import { useSharingDialogApi } from '@/hooks/use-sharing-dialog-api';
 import type { SavedDiagram } from '@/context/storage-context/storage-context';
 import { Share2 } from 'lucide-react';
 
 export const CurrentDiagramShareButton: React.FC = () => {
     const { currentDiagram } = useSchemaDash();
     const { getSavedDiagram } = useStorage();
-    const sharingApi = useSharingDialogApi();
+    const sharingApi = useSharingSettingsDialogApi();
     const [open, setOpen] = useState(false);
     const [savedDiagram, setSavedDiagram] = useState<
         SavedDiagram | undefined
