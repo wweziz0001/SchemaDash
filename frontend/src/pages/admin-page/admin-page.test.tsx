@@ -8,10 +8,8 @@ import {
 } from '@/context/auth-context/auth-context';
 import { AdminRouteGuard } from '@/pages/admin-page/admin-route-guard';
 import { AdminPage } from './admin-page';
-import {
-    adminClient,
-    type AdminOverviewResponse,
-} from '@/lib/api/admin-client';
+import { adminClient } from '@/lib/api/admin-client';
+import type { AdminOverviewResponse } from '@/lib/admin/admin-overview';
 
 vi.mock('@/lib/api/admin-client', () => ({
     adminClient: {

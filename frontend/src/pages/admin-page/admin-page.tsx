@@ -32,25 +32,17 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/table/table';
-import {
-    adminClient,
-    type AdminOverviewResponse,
-} from '@/lib/api/admin-client';
+import { adminClient } from '@/lib/api/admin-client';
 import { useAuth } from '@/hooks/use-auth';
 import { RequestError } from '@/lib/api/request';
-
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-});
-
-const formatDateTime = (value: string | null) => {
-    if (!value) {
-        return 'Never';
-    }
-
-    return dateTimeFormatter.format(new Date(value));
-};
+import {
+    adminAuthProviderLabels,
+    formatAdminDateTime,
+    getDiagramSummaryItems,
+    getPlatformSummaryItems,
+    getProjectSummaryItems,
+    type AdminOverviewResponse,
+} from '@/lib/admin/admin-overview';
 
 const statusBadgeClassNames: Record<
     'provisioned' | 'active' | 'disabled',
@@ -64,12 +56,6 @@ const statusBadgeClassNames: Record<
 const roleBadgeClassNames: Record<'member' | 'admin', StatusBadgeTone> = {
     member: 'neutral',
     admin: 'info',
-};
-
-const authProviderLabels: Record<'placeholder' | 'local' | 'oidc', string> = {
-    placeholder: 'Placeholder',
-    local: 'Password',
-    oidc: 'OIDC',
 };
 
 const surfaceCardClassName =
@@ -239,44 +225,7 @@ export const AdminPage: React.FC = () => {
                             </CardHeader>
                             <CardContent>
                                 <SummaryList
-                                    items={[
-                                        {
-                                            label: 'Environment',
-                                            value: overview.platform
-                                                .environment,
-                                        },
-                                        {
-                                            label: 'Auth mode',
-                                            value: overview.platform.authMode,
-                                        },
-                                        {
-                                            label: 'Bootstrap state',
-                                            value: overview.platform
-                                                .adminInitialized
-                                                ? 'Complete'
-                                                : overview.platform
-                                                        .bootstrapRequired
-                                                  ? 'Pending'
-                                                  : 'Not required',
-                                        },
-                                        {
-                                            label: 'OIDC config',
-                                            value: overview.platform
-                                                .oidcConfigured
-                                                ? 'Configured'
-                                                : 'Not configured',
-                                        },
-                                        {
-                                            label: 'Persistence',
-                                            value: `${overview.platform.persistence.app} / ${overview.platform.persistence.schemaSync}`,
-                                        },
-                                        {
-                                            label: 'Generated',
-                                            value: formatDateTime(
-                                                overview.generatedAt
-                                            ),
-                                        },
-                                    ]}
+                                    items={getPlatformSummaryItems(overview)}
                                 />
                             </CardContent>
                         </Card>
@@ -291,38 +240,7 @@ export const AdminPage: React.FC = () => {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <SummaryList
-                                    items={[
-                                        {
-                                            label: 'Active projects',
-                                            value: overview.projects.byStatus
-                                                .active,
-                                        },
-                                        {
-                                            label: 'Archived projects',
-                                            value: overview.projects.byStatus
-                                                .archived,
-                                        },
-                                        {
-                                            label: 'Deleted projects',
-                                            value: overview.projects.byStatus
-                                                .deleted,
-                                        },
-                                        {
-                                            label: 'Private visibility',
-                                            value: overview.projects
-                                                .byVisibility.private,
-                                        },
-                                        {
-                                            label: 'Workspace visibility',
-                                            value: overview.projects
-                                                .byVisibility.workspace,
-                                        },
-                                        {
-                                            label: 'Public visibility',
-                                            value: overview.projects
-                                                .byVisibility.public,
-                                        },
-                                    ]}
+                                    items={getProjectSummaryItems(overview)}
                                 />
                             </CardContent>
                         </Card>
@@ -337,40 +255,7 @@ export const AdminPage: React.FC = () => {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <SummaryList
-                                    items={[
-                                        {
-                                            label: 'Draft diagrams',
-                                            value: overview.diagrams.byStatus
-                                                .draft,
-                                        },
-                                        {
-                                            label: 'Active diagrams',
-                                            value: overview.diagrams.byStatus
-                                                .active,
-                                        },
-                                        {
-                                            label: 'Archived diagrams',
-                                            value: overview.diagrams.byStatus
-                                                .archived,
-                                        },
-                                        {
-                                            label: 'Public visibility',
-                                            value: overview.diagrams
-                                                .byVisibility.public,
-                                        },
-                                        {
-                                            label: 'Workspace visibility',
-                                            value: overview.diagrams
-                                                .byVisibility.workspace,
-                                        },
-                                        {
-                                            label: 'Sharing records',
-                                            value: overview.sharing.supported
-                                                ? (overview.sharing
-                                                      .totalRecords ?? 0)
-                                                : 'Not available',
-                                        },
-                                    ]}
+                                    items={getDiagramSummaryItems(overview)}
                                 />
                             </CardContent>
                         </Card>
@@ -415,7 +300,7 @@ export const AdminPage: React.FC = () => {
                                                             </div>
                                                             <div className="text-xs text-stone-500 dark:text-stone-400">
                                                                 Created{' '}
-                                                                {formatDateTime(
+                                                                {formatAdminDateTime(
                                                                     account.createdAt
                                                                 )}
                                                             </div>
@@ -450,14 +335,14 @@ export const AdminPage: React.FC = () => {
                                                         </TableCell>
                                                         <TableCell className="text-stone-600 dark:text-stone-300">
                                                             {
-                                                                authProviderLabels[
+                                                                adminAuthProviderLabels[
                                                                     account
                                                                         .authProvider
                                                                 ]
                                                             }
                                                         </TableCell>
                                                         <TableCell className="text-stone-600 dark:text-stone-300">
-                                                            {formatDateTime(
+                                                            {formatAdminDateTime(
                                                                 account.lastLoginAt
                                                             )}
                                                         </TableCell>
