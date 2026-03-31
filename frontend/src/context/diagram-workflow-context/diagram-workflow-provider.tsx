@@ -2,10 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Diagram } from '@/lib/domain/diagram';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { canonicalSchemaToDiagram } from '@/lib/schema-sync/canonical-adapters';
-import {
-    deserializeDiagram,
-    persistenceClient,
-} from '@/lib/api/persistence-client';
+import { persistenceClient } from '@/lib/api/persistence-client';
+import { deserializeDiagram } from '@/lib/persistence/diagram-serialization';
 import {
     diagramWorkflowClient,
     type DiagramWorkflowRecord,

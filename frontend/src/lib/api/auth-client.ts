@@ -1,5 +1,5 @@
 import { apiPath, requestJson } from '@/lib/api/request';
-import type { PersistedUserSummary } from '@/lib/api/persistence-client';
+import type { PersistedUserSummary } from '@/lib/persistence/persistence-types';
 
 export interface AuthSessionResponse {
     mode: 'disabled' | 'password' | 'oidc';
