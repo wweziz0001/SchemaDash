@@ -91,7 +91,7 @@ export const DiagramName: React.FC<DiagramNameProps> = () => {
     );
 
     return (
-        <div className="group">
+        <div className="absolute right-[calc(46.666667%+100px)] z-10 flex -translate-x-3/5 items-center group">
             <div
                 className={cn(
                     'flex flex-1 flex-row items-center justify-center px-2 py-1 whitespace-nowrap',
@@ -159,25 +159,6 @@ export const DiagramName: React.FC<DiagramNameProps> = () => {
                                     </TooltipContent>
                                 ) : null}
                             </Tooltip>
-                            {!readonly ? (
-                                <Button
-                                    variant="ghost"
-                                    className="ml-1 hidden size-5 p-0 hover:bg-background/50 group-hover:flex"
-                                    onClick={enterEditMode}
-                                >
-                                    <Pencil
-                                        strokeWidth="1.5"
-                                        className="!size-3.5 text-slate-600 dark:text-slate-400"
-                                    />
-                                </Button>
-                            ) : (
-                                <Badge
-                                    variant="outline"
-                                    className="ml-2 px-2 py-0 text-[10px] uppercase tracking-[0.16em]"
-                                >
-                                    View only
-                                </Badge>
-                            )}
                             {activeCollaboratorCount > 1 ? (
                                 <Badge
                                     variant="secondary"

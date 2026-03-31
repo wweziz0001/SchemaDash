@@ -15,6 +15,7 @@ import {
     Group,
     FileType,
     Plus,
+    History,
     FolderOpen,
     CodeXml,
 } from 'lucide-react';
@@ -22,6 +23,7 @@ import { Table, Workflow } from 'lucide-react';
 import { useLayout } from '@/hooks/use-layout';
 import { useTranslation } from 'react-i18next';
 import { DiscordLogoIcon, TwitterLogoIcon } from '@radix-ui/react-icons';
+import { CurrentDiagramShareButton } from '../top-navbar/current-diagram-share-button';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import SchemaDashLogo from '@/assets/logo-light.png';
 import SchemaDashDarkLogo from '@/assets/logo-dark.png';
@@ -133,7 +135,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
             },
             {
                 title: t('editor_sidebar.versions'),
-                icon: Group,
+                icon: History,
                 onClick: () => {
                     showSidePanel();
                     selectSidebarSection('versions');
@@ -170,13 +172,6 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
                         'https://x.com/intent/follow?screen_name=jonathanfishner',
                         '_blank'
                     ),
-                active: false,
-            },
-            {
-                title: 'Docs',
-                icon: BookOpen,
-                onClick: () =>
-                    window.open('https://docs.schemadash.io', '_blank'),
                 active: false,
             },
         ],
@@ -265,7 +260,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
-
+            <CurrentDiagramShareButton />
             <SidebarFooter>
                 <SidebarMenu>
                     {footerItems.map((item) => (

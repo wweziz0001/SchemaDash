@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/button/button';
 import { cn } from '@/lib/utils';
-import { Database, GitCompareArrows, PencilLine } from 'lucide-react';
+import { Database, GitBranch, GitCompareArrows, PencilLine } from 'lucide-react';
 import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
 
 export const WorkflowModeSwitcher: React.FC = () => {
@@ -12,39 +12,22 @@ export const WorkflowModeSwitcher: React.FC = () => {
     }
 
     return (
-        <div className="flex items-center gap-2 rounded-xl border bg-muted/20 p-1 shadow-sm">
-            <span className="hidden pl-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground xl:inline-flex">
-                Workflow
-            </span>
-            <div className="flex items-center gap-1">
+        <div className="absolute right-1/3 z-10 flex -translate-x-3/5 items-center">
+            <div data-orientation="vertical" role="none" className="mx-2 h-6 w-px shrink-0 bg-border">
+            </div>
+            <div className="flex h-fit max-h-7 items-center rounded-md border bg-muted/30 p-0">
                 <Button
                     size="sm"
                     variant={
-                        workflow.activeMode === 'development'
+                        workflow.activeMode === 'live'
                             ? 'secondary'
                             : 'ghost'
                     }
                     className={cn(
-                        'h-8 gap-1.5 rounded-lg px-2.5 text-xs font-medium shadow-none',
-                        workflow.activeMode === 'development'
-                            ? 'bg-background text-foreground ring-1 ring-border'
-                            : 'text-muted-foreground hover:text-foreground'
-                    )}
-                    onClick={() => workflow.setActiveMode('development')}
-                >
-                    <PencilLine className="size-3.5" />
-                    <span>Development</span>
-                </Button>
-                <Button
-                    size="sm"
-                    variant={
-                        workflow.activeMode === 'live' ? 'secondary' : 'ghost'
-                    }
-                    className={cn(
-                        'h-8 gap-1.5 rounded-lg px-2.5 text-xs font-medium shadow-none',
+                        'h-6 gap-1.5 rounded-none rounded-l-[5px] px-2.5 text-xs font-medium shadow-none',
                         workflow.activeMode === 'live'
                             ? 'bg-background text-foreground ring-1 ring-border'
-                            : 'text-muted-foreground hover:text-foreground'
+                            : 'text-muted-foreground hover:text-accent-foreground'
                     )}
                     onClick={() => workflow.setActiveMode('live')}
                     disabled={!workflow.liveModeEnabled}
@@ -54,9 +37,43 @@ export const WorkflowModeSwitcher: React.FC = () => {
                             : 'Bind and sync a live database to enable this view'
                     }
                 >
-                    <Database className="size-3.5" />
+                    <Database 
+                    className={cn(
+                        'size-3.5',
+                        workflow.activeMode === 'live'
+                        ? 'lucide lucide-git-branch size-3.5 text-teal-600 dark:text-teal-400'
+                        : 'text-muted-foreground'
+                    )} />
                     <span>Live Database</span>
                 </Button>
+                <Button
+                    size="sm"
+                    variant={
+                        workflow.activeMode === 'development'
+                            ? 'secondary'
+                            : 'ghost'
+                    }
+                    className={cn(
+                        'h-6 gap-1.5 rounded-none rounded-r-[5px] px-2.5 text-xs font-medium shadow-none',
+                        workflow.activeMode === 'development'
+                            ? 'bg-background text-foreground ring-1 ring-border'
+                            : 'text-muted-foreground hover:text-accent-foreground'
+                    )}
+                    onClick={() => workflow.setActiveMode('development')}
+                >
+                    <GitBranch
+                    className={cn(
+                        'size-3.5',
+                        workflow.activeMode === 'development'
+                        ? 'lucide lucide-git-branch size-3.5 text-teal-600 dark:text-teal-400'
+                        : 'text-muted-foreground'
+                    )} />
+                    <span>Development</span>
+                </Button>
+            </div>
+            <div data-orientation="vertical" role="none" className="mx-2 h-6 w-px shrink-0 bg-border">
+            </div>
+            <div className="flex items-center gap-0">
                 <Button
                     size="sm"
                     variant={
@@ -65,7 +82,7 @@ export const WorkflowModeSwitcher: React.FC = () => {
                             : 'ghost'
                     }
                     className={cn(
-                        'h-8 gap-1.5 rounded-lg px-2.5 text-xs font-medium shadow-none',
+                        'h-6 gap-1.5 rounded-lg px-2.5 text-xs font-medium shadow-none',
                         workflow.activeMode === 'compare'
                             ? 'bg-background text-foreground ring-1 ring-border'
                             : 'text-muted-foreground hover:text-foreground'
@@ -78,7 +95,13 @@ export const WorkflowModeSwitcher: React.FC = () => {
                             : 'Sync a live database and load a development diagram to enable compare'
                     }
                 >
-                    <GitCompareArrows className="size-3.5" />
+                    <GitCompareArrows
+                    className={cn(
+                        'size-3.5',
+                        workflow.activeMode === 'compare'
+                        ? 'lucide lucide-git-branch size-3.5 text-teal-600 dark:text-teal-400'
+                        : 'text-muted-foreground'
+                    )} />
                     <span>Compare</span>
                 </Button>
             </div>

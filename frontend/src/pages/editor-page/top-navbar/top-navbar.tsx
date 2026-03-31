@@ -10,14 +10,10 @@ import { SchemaSyncToolbarButton } from '@/features/schema-sync/components/schem
 import { Button } from '@/components/button/button';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { Link } from 'react-router-dom';
-import { CurrentDiagramShareButton } from './current-diagram-share-button';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { WorkflowModeSwitcher } from '@/features/diagram-workflow/components/workflow-mode-switcher';
 import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
-import { LiveStatusChip } from '@/features/diagram-workflow/components/live-status-chip';
-import { CompareSummaryChip } from '@/features/diagram-workflow/components/compare-summary-chip';
 import { ReviewDropdown } from '@/features/diagram-workflow/components/review-dropdown';
-import { VersionsPanel } from '@/features/diagram-workflow/components/versions-panel';
 import { VersionViewBadge } from '@/features/diagram-workflow/components/version-view-badge';
 
 export interface TopNavbarProps {}
@@ -33,8 +29,8 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
         return (
             <iframe
                 src={`https://ghbtns.com/github-btn.html?user=wweziz0001&repo=SchemaDash&type=star&size=large&text=false`}
-                width="40"
-                height="30"
+                width="10"
+                height="10"
                 title="GitHub"
             ></iframe>
         );
@@ -67,8 +63,6 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                 {showWorkflowChrome ? (
                     <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
                         <WorkflowModeSwitcher />
-                        <CompareSummaryChip />
-                        <LiveStatusChip />
                         <VersionViewBadge />
                     </div>
                 ) : null}
@@ -77,13 +71,11 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                 ) : null}
                 <div className="flex items-center gap-2">
                     <ReviewDropdown />
-                    <VersionsPanel />
                     {workflow?.activeMode === 'development' ? (
                         <SchemaSyncToolbarButton />
                     ) : null}
                     <LastSaved />
                     <ActiveDiagramParticipants />
-                    <CurrentDiagramShareButton />
                     <Button asChild variant="outline" size="sm">
                         <Link to="/">Library</Link>
                     </Button>

@@ -9,13 +9,9 @@ import { MenuIcon } from 'lucide-react';
 import { SchemaSyncToolbarButton } from '@/features/schema-sync/components/schema-sync-toolbar-button';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { Link } from 'react-router-dom';
-import { CurrentDiagramShareButton } from './current-diagram-share-button';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { WorkflowModeSwitcher } from '@/features/diagram-workflow/components/workflow-mode-switcher';
 import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
-import { LiveStatusChip } from '@/features/diagram-workflow/components/live-status-chip';
-import { CompareSummaryChip } from '@/features/diagram-workflow/components/compare-summary-chip';
-import { VersionsPanel } from '@/features/diagram-workflow/components/versions-panel';
 import { VersionViewBadge } from '@/features/diagram-workflow/components/version-view-badge';
 import { ReviewDropdown } from '@/features/diagram-workflow/components/review-dropdown';
 
@@ -30,8 +26,8 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
         return (
             <iframe
                 src="https://ghbtns.com/github-btn.html?user=wweziz0001&repo=SchemaDash&type=star&size=small&text=false"
-                width="25"
-                height="20"
+                width="10"
+                height="10"
                 title="GitHub"
             ></iframe>
         );
@@ -65,13 +61,11 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <VersionsPanel />
                         <ReviewDropdown />
                         {workflow?.activeMode === 'development' ? (
                             <SchemaSyncToolbarButton />
                         ) : null}
                         <ActiveDiagramParticipants />
-                        <CurrentDiagramShareButton />
                         <Button asChild size="sm" variant="outline">
                             <Link to="/">Library</Link>
                         </Button>
@@ -106,8 +100,6 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                             <WorkflowModeSwitcher />
                         </div>
                         <div className="flex flex-wrap justify-center gap-2">
-                            <CompareSummaryChip />
-                            <LiveStatusChip />
                             <VersionViewBadge />
                         </div>
                     </div>
