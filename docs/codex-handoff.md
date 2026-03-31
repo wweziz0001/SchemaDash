@@ -2,336 +2,292 @@
 
 ## 1. Project Overview
 
-SchemaDash is a full-stack database schema design product.
+SchemaDash is a full-stack database schema design and review product.
 
-- The frontend is a Vite + React + Tailwind editor for diagram authoring, review, compare, versions, restore, and migration workflows.
-- The backend is a Fastify API for persistence, collaboration, workflow state, migration orchestration, restore flows, and schema-sync operations.
-- `packages/schema-sync-core/` holds shared canonical schema types, compare logic, hashing, diffing, SQL planning, and risk analysis used by both frontend and backend.
+- The frontend is a Vite + React + Tailwind application for diagram authoring, library management, sharing, collaboration, live database review, versioning, and migration workflows.
+- The backend is a Fastify API that owns auth, persistence, collaboration state, live database connectivity, migration/apply orchestration, and audit history.
+- `packages/schema-sync-core/` is the shared canonical schema engine used by both frontend and backend for canonical types, diffing, compare output, hashing, warnings, and SQL planning.
 
 Relevant product context for this task:
 
-- `Development` is the only mutable editor head.
-- `Live Database` is a read-only synced snapshot attached to a saved connection.
-- `Compare` is a read-only derived view between a baseline and Development.
-- `Versions / Snapshots` are immutable captures that can be reviewed, compared, and restored into Development.
-- `Restore to Development` copies a stored snapshot back into the mutable document instead of mutating the snapshot itself.
+- `Development` is the mutable editor head.
+- `Live Database` is a read-only synced snapshot.
+- `Compare` is a read-only derived view between Live and Development.
+- `Schema Sync` manages saved connections, live import/bind, diff preview, and apply/migration safety.
+- Native frontend structure now matters more than feature ownership:
+  - `frontend/src/components/`
+  - `frontend/src/context/`
+  - `frontend/src/dialogs/`
+  - `frontend/src/pages/`
+  - `frontend/src/lib/`
 
-This task was specifically about frontend architecture correction: removing the feature-first `frontend/src/features/diagram-workflow` subtree and rebuilding that area into SchemaDash's native structure.
+Important state after this task:
+
+- `frontend/src/features/schema-sync` is gone.
+- `frontend/src/features` is gone.
+- Former `auth`, `admin`, `dashboard`, and `persistence` frontend files were also relocated so the parent `features` folder could be removed completely.
 
 ## 2. Current Architectural Context
 
-Read these first for any future work in this area:
+Read these first for work in this area:
 
-1. `docs/diagram-workflow-frontend-rebuild-plan.md`
-2. `docs/diagram-workflow-frontend-audit.md`
-3. `docs/live-database-development-compare-versions-design.md`
-4. `docs/live-db-compare-feature-map.md`
-5. `docs/CODEBASE_STRUCTURE.md`
+1. `docs/schema-sync-frontend-audit.md`
+2. `docs/schema-sync-frontend-rebuild-plan.md`
+3. `docs/architecture/schema-sync-architecture.md`
+4. `docs/live-database-development-compare-versions-design.md`
+5. `docs/diagram-workflow-frontend-rebuild-plan.md`
 6. `docs/codex-handoff.md`
 
-The frontend modules that now matter most:
+Important frontend modules after the refactor:
 
-- Workflow provider and hooks:
-  - `frontend/src/context/diagram-workflow-context/diagram-workflow-context.tsx`
+- Schema sync dialog and editor entry:
+  - `frontend/src/dialogs/schema-sync-dialog/schema-sync-dialog.tsx`
+  - `frontend/src/pages/editor-page/top-navbar/workflow/schema-sync-toolbar-button.tsx`
+  - `frontend/src/context/dialog-context/dialog-context.tsx`
+  - `frontend/src/context/dialog-context/dialog-provider.tsx`
+- Canonical/frontend schema-sync helpers:
+  - `frontend/src/lib/schema-sync/canonical-adapters.ts`
+  - `frontend/src/lib/schema-sync/canonical-adapters.test.ts`
+  - `frontend/src/lib/api/schema-sync-client.ts`
+- Workflow integrations that depend on those adapters:
   - `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
-  - `frontend/src/context/diagram-workflow-context/use-diagram-workflow.ts`
-- Workflow API clients and DTOs:
-  - `frontend/src/lib/api/diagram-workflow-client.ts`
-  - `frontend/src/lib/api/diagram-migration-client.ts`
-- Workflow helpers:
   - `frontend/src/lib/diagram-workflow/compare-render-model.ts`
   - `frontend/src/lib/diagram-workflow/review-grouping.ts`
-  - `frontend/src/lib/diagram-workflow/restore-messages.ts`
   - `frontend/src/lib/diagram-workflow/version-canonical.ts`
-  - `frontend/src/lib/diagram-workflow/version-labels.ts`
-- Workflow dialogs:
-  - `frontend/src/dialogs/create-version-dialog/create-version-dialog.tsx`
-  - `frontend/src/dialogs/review-changes-dialog/review-changes-dialog.tsx`
   - `frontend/src/dialogs/migration-dialog/migration-dialog.tsx`
+  - `frontend/src/dialogs/create-version-dialog/create-version-dialog.tsx`
   - `frontend/src/dialogs/restore-version-dialog/restore-version-dialog.tsx`
-- Editor-page workflow integration:
-  - `frontend/src/pages/editor-page/workflow-editor-page.tsx`
-  - `frontend/src/pages/editor-page/workflow/workflow-development-diagram-sync.tsx`
-  - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
-  - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.tsx`
-  - `frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.tsx`
-  - `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.tsx`
-  - `frontend/src/pages/editor-page/canvas/workflow/compare-summary-chip.tsx`
-  - `frontend/src/pages/editor-page/side-panel/versions-section/version-tab/version-list-item.tsx`
+- Other former `features/` code now lives here:
+  - `frontend/src/context/auth-context/*`
+  - `frontend/src/hooks/use-auth.ts`
+  - `frontend/src/lib/api/auth-client.ts`
+  - `frontend/src/lib/api/admin-client.ts`
+  - `frontend/src/lib/api/persistence-client.ts`
+  - `frontend/src/lib/persistence/*`
+  - `frontend/src/pages/dashboard-page/use-library-catalog.ts`
+  - `frontend/src/pages/admin-page/admin-route-guard.tsx`
+  - `frontend/src/pages/bootstrap-page/bootstrap-page.tsx`
+  - `frontend/src/pages/sign-in-page/sign-in-page.tsx`
 
-Important service/module boundaries:
+Important boundaries:
 
-- `frontend/src/context/diagram-workflow-context/*` owns workflow record loading, URL-driven mode selection, compare/version/live derived diagrams, and version record fetching.
-- `frontend/src/lib/api/*diagram-workflow*` owns frontend HTTP transport only.
-- `frontend/src/lib/diagram-workflow/*` owns non-UI workflow helpers and compare/review view-models.
-- `frontend/src/dialogs/*workflow*` owns workflow action entrypoints.
-- `frontend/src/pages/editor-page/.../workflow/*` owns editor chrome only.
-- `frontend/src/features/schema-sync/context/schema-sync-context.tsx` is still the legacy compatibility bridge for Schema Sync and intentionally remains under `features`.
+- Frontend presentation and dialog state stay in `frontend/src/dialogs/` and `frontend/src/pages/...`.
+- Frontend non-UI transport/helpers stay in `frontend/src/lib/`.
+- Shared canonical logic stays in `packages/schema-sync-core/`.
+- Backend routes/services remain authoritative for live DB access, preview, apply, restore, and persistence.
 
-Important high-risk files that were intentionally touched only minimally:
-
-- `frontend/src/pages/editor-page/editor-page.tsx`
-- `frontend/src/pages/editor-page/workflow-editor-page.tsx`
-- `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
-- `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
-- `frontend/src/pages/editor-page/canvas/canvas.tsx`
-- `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
-
-Important high-risk files intentionally not changed:
+High-risk files touched minimally:
 
 - `frontend/src/context/storage-context/storage-provider.tsx`
+  - Import-path updates only.
 - `frontend/src/context/schemadash-context/schemadash-provider.tsx`
-- backend workflow services/routes/repositories
-
-Frontend/backend/shared relationships that still matter:
-
-- Frontend converts the Development diagram to canonical schema using `frontend/src/features/schema-sync/lib/canonical-adapters.ts`.
-- Backend remains authoritative for workflow persistence, version storage, restore, preview/validate/apply, and live snapshot refresh.
-- `packages/schema-sync-core/` still supplies compare/migration primitives used by both sides.
+  - Import-path updates only.
+- `frontend/src/pages/editor-page/editor-page.tsx`
+  - Removed schema-sync provider wrapper and kept editor composition otherwise stable.
+- `frontend/src/context/dialog-context/dialog-provider.tsx`
+  - Added schema-sync dialog registration using the existing native dialog pattern.
+- `frontend/src/lib/schema-sync/canonical-adapters.ts`
+  - Moved only; logic intentionally kept stable.
 
 ## 3. Task Completed
 
-What this task was trying to achieve:
+Task objective:
 
-- Remove `frontend/src/features/diagram-workflow`.
-- Reclassify every file in that subtree by actual responsibility.
-- Rebuild the workflow frontend into native `components`, `context`, `dialogs`, `lib`, and `pages/editor-page` locations.
-- Preserve runtime behavior while reducing methodology drift.
+- Rebuild the schema-sync frontend into SchemaDash’s native structure.
+- Remove `frontend/src/features/schema-sync`.
+- Reclassify files by responsibility instead of feature ownership.
+- Reuse native dialog/context/lib patterns.
+- Preserve frontend/backend/shared-package boundaries.
 
-What was actually implemented:
+What was implemented:
 
-- Added file-by-file audit and rebuild-plan docs:
-  - `docs/diagram-workflow-frontend-audit.md`
-  - `docs/diagram-workflow-frontend-rebuild-plan.md`
-- Moved workflow API clients out of the feature subtree and into `frontend/src/lib/api/`.
-- Moved workflow helper/view-model code into `frontend/src/lib/diagram-workflow/`.
-- Rebuilt the workflow provider into native context files under `frontend/src/context/diagram-workflow-context/`.
-- Moved workflow action dialogs into `frontend/src/dialogs/`.
-- Generalized the old `WorkflowMetricCard` into `frontend/src/components/metric-card/metric-card.tsx`.
-- Moved editor-specific workflow chrome into `frontend/src/pages/editor-page/...`.
-- Moved the versions side-panel row component beside the versions tab implementation.
-- Removed dead code instead of preserving it:
-  - `frontend/src/features/diagram-workflow/components/compare-legend.tsx`
-  - `frontend/src/features/diagram-workflow/components/versions-panel.tsx`
-  - `frontend/src/features/diagram-workflow/components/versions-panel.test.tsx`
-- Removed the `frontend/src/features/diagram-workflow` directory entirely.
-- Fixed a small UI regression while moving code: the live status chip now renders the mode badge it was already calculating, which makes its existing tests pass and matches the intended editor chrome.
-
-Decisions made:
-
-- Kept the workflow provider behavior mostly intact while changing its location and public import surface.
-- Kept schema-sync compatibility behavior in `frontend/src/features/schema-sync/context/schema-sync-context.tsx`, only updating imports.
-- Did not attempt a broader repo-wide `frontend/src/features` cleanup because unrelated feature modules remain and that would have exceeded the requested scope.
+- Added audit and plan docs:
+  - `docs/schema-sync-frontend-audit.md`
+  - `docs/schema-sync-frontend-rebuild-plan.md`
+- Moved schema-sync dialog into native dialogs:
+  - `frontend/src/dialogs/schema-sync-dialog/schema-sync-dialog.tsx`
+- Moved schema-sync editor launch button into native editor-page chrome:
+  - `frontend/src/pages/editor-page/top-navbar/workflow/schema-sync-toolbar-button.tsx`
+- Rebuilt schema-sync open/close behavior to use the native dialog context instead of a dedicated editor wrapper/provider.
+- Moved schema-sync transport and canonical helpers into native lib locations:
+  - `frontend/src/lib/api/schema-sync-client.ts`
+  - `frontend/src/lib/schema-sync/canonical-adapters.ts`
+- Generalized the old migration-only summary widget into:
+  - `frontend/src/components/change-plan-summary/change-plan-summary.tsx`
+- Updated workflow/version/migration code to import canonical adapters from native `frontend/src/lib/schema-sync/*`.
+- Deleted the old schema-sync context and hook files instead of preserving compatibility wrappers.
+- Removed the rest of `frontend/src/features` by relocating the remaining auth/admin/dashboard/persistence frontend files into native `context`, `hooks`, `lib`, and `pages` locations.
 
 Approach intentionally avoided:
 
-- Did not redesign workflow business logic from scratch.
-- Did not refactor storage, schemadash, or backend persistence layers.
-- Did not move unrelated `admin`, `auth`, `dashboard`, `persistence`, or `schema-sync` feature folders.
+- No backend redesign.
+- No shared-package redesign.
+- No business-logic rewrite of canonical diff/apply behavior.
+- No pushing frontend concerns into `packages/schema-sync-core`.
 
 ## 4. Files Changed
 
-Files created:
+Files created or introduced at new native paths:
 
-- `docs/diagram-workflow-frontend-audit.md`
-- `docs/diagram-workflow-frontend-rebuild-plan.md`
-- `frontend/src/components/metric-card/metric-card.tsx`
-- `frontend/src/context/diagram-workflow-context/diagram-workflow-context.tsx`
-- `frontend/src/context/diagram-workflow-context/use-diagram-workflow.ts`
-- `frontend/src/lib/api/diagram-migration-client.ts`
-- `frontend/src/lib/api/diagram-workflow-client.ts`
-- `frontend/src/lib/diagram-workflow/compare-render-model.ts`
-- `frontend/src/lib/diagram-workflow/compare-render-model.test.ts`
-- `frontend/src/lib/diagram-workflow/review-grouping.ts`
-- `frontend/src/lib/diagram-workflow/review-grouping.test.ts`
-- `frontend/src/lib/diagram-workflow/restore-messages.ts`
-- `frontend/src/lib/diagram-workflow/version-canonical.ts`
-- `frontend/src/lib/diagram-workflow/version-canonical.test.ts`
-- `frontend/src/lib/diagram-workflow/version-labels.ts`
-- `frontend/src/dialogs/create-version-dialog/create-version-dialog.tsx`
-- `frontend/src/dialogs/migration-dialog/migration-dialog.tsx`
-- `frontend/src/dialogs/migration-dialog/migration-dialog.test.tsx`
-- `frontend/src/dialogs/migration-dialog/migration-summary.tsx`
-- `frontend/src/dialogs/migration-dialog/migration-warning-list.tsx`
-- `frontend/src/dialogs/review-changes-dialog/review-changes-dialog.tsx`
-- `frontend/src/dialogs/review-changes-dialog/review-changes-dialog.test.tsx`
-- `frontend/src/dialogs/restore-version-dialog/restore-version-dialog.tsx`
-- `frontend/src/dialogs/restore-version-dialog/restore-version-dialog.test.tsx`
-- `frontend/src/dialogs/restore-version-dialog/restore-warning-panel.tsx`
-- `frontend/src/pages/editor-page/canvas/workflow/compare-summary-chip.tsx`
-- `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.tsx`
-- `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.test.tsx`
-- `frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.tsx`
-- `frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.test.tsx`
-- `frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.tsx`
-- `frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.test.tsx`
-- `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
-- `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.test.tsx`
-- `frontend/src/pages/editor-page/workflow/workflow-development-diagram-sync.tsx`
-- `frontend/src/pages/editor-page/workflow/workflow-development-diagram-sync.test.tsx`
-- `frontend/src/pages/editor-page/side-panel/versions-section/version-tab/version-list-item.tsx`
+- `docs/schema-sync-frontend-audit.md`
+- `docs/schema-sync-frontend-rebuild-plan.md`
+- `frontend/src/dialogs/schema-sync-dialog/schema-sync-dialog.tsx`
+- `frontend/src/pages/editor-page/top-navbar/workflow/schema-sync-toolbar-button.tsx`
+- `frontend/src/lib/api/schema-sync-client.ts`
+- `frontend/src/lib/schema-sync/canonical-adapters.ts`
+- `frontend/src/lib/schema-sync/canonical-adapters.test.ts`
+- `frontend/src/components/change-plan-summary/change-plan-summary.tsx`
+- `frontend/src/context/auth-context/auth-context.ts`
+- `frontend/src/context/auth-context/auth-provider.tsx`
+- `frontend/src/hooks/use-auth.ts`
+- `frontend/src/hooks/use-sharing-dialog-api.ts`
+- `frontend/src/lib/api/admin-client.ts`
+- `frontend/src/lib/api/auth-client.ts`
+- `frontend/src/lib/api/persistence-client.ts`
+- `frontend/src/lib/persistence/collaboration-client-id.ts`
+- `frontend/src/lib/persistence/share-token.ts`
+- `frontend/src/pages/admin-page/admin-route-guard.tsx`
+- `frontend/src/pages/bootstrap-page/bootstrap-page.tsx`
+- `frontend/src/pages/dashboard-page/use-library-catalog.ts`
+- `frontend/src/pages/sign-in-page/sign-in-page.tsx`
 
-Files modified:
+Important modified files:
 
-- `docs/codex-handoff.md`
-- `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
-- `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
-- `frontend/src/pages/editor-page/workflow-editor-page.tsx`
+- `frontend/src/context/dialog-context/dialog-context.tsx`
+- `frontend/src/context/dialog-context/dialog-provider.tsx`
 - `frontend/src/pages/editor-page/editor-page.tsx`
+- `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
+- `frontend/src/dialogs/migration-dialog/migration-dialog.tsx`
+- `frontend/src/dialogs/create-version-dialog/create-version-dialog.tsx`
+- `frontend/src/dialogs/restore-version-dialog/restore-version-dialog.tsx`
+- `frontend/src/lib/diagram-workflow/compare-render-model.ts`
+- `frontend/src/lib/diagram-workflow/review-grouping.ts`
+- `frontend/src/lib/diagram-workflow/version-canonical.ts`
+- `frontend/src/app.tsx`
+- `frontend/src/router.tsx`
+- `frontend/src/context/storage-context/storage-provider.tsx`
+- `frontend/src/context/storage-context/storage-context.tsx`
+- `frontend/src/context/schemadash-context/schemadash-provider.tsx`
+- `frontend/src/pages/admin-page/admin-page.tsx`
+- `frontend/src/pages/dashboard-page/*.tsx` consumers of `use-library-catalog`
 - `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
 - `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
-- `frontend/src/pages/editor-page/canvas/canvas.tsx`
-- `frontend/src/pages/editor-page/canvas/relationship-edge/relationship-edge.tsx`
-- `frontend/src/pages/editor-page/canvas/table-node/table-node.tsx`
-- `frontend/src/pages/editor-page/canvas/table-node/table-node-field.tsx`
-- `frontend/src/pages/editor-page/side-panel/versions-section/version-tab/version-tab.tsx`
-- `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.tsx`
+- `frontend/src/pages/editor-page/top-navbar/current-diagram-share-button.tsx`
+- `frontend/src/pages/shared-project-page/shared-diagram-loader.tsx`
+- `frontend/src/pages/shared-project-page/shared-project-page.tsx`
 
-Files intentionally not changed:
+Important files intentionally not changed beyond narrow import updates:
 
-- `frontend/src/context/storage-context/storage-provider.tsx`
-- `frontend/src/context/schemadash-context/schemadash-provider.tsx`
-- backend workflow service/repository files
-- unrelated feature folders under `frontend/src/features/`
+- `packages/schema-sync-core/src/types.ts`
+- `packages/schema-sync-core/src/diff.ts`
+- `backend/src/routes/*`
+- `backend/src/services/*`
 
-Files removed as redundant:
+Files intentionally removed:
 
-- `frontend/src/features/diagram-workflow/components/compare-legend.tsx`
-- `frontend/src/features/diagram-workflow/components/versions-panel.tsx`
-- `frontend/src/features/diagram-workflow/components/versions-panel.test.tsx`
-- the rest of `frontend/src/features/diagram-workflow/` after relocation
-
-Purpose of the most important changed files:
-
-- `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
-  - owns workflow record loading and mode-derived diagram state
-- `frontend/src/lib/diagram-workflow/compare-render-model.ts`
-  - builds compare canvas data from canonical baseline + Development
-- `frontend/src/dialogs/migration-dialog/migration-dialog.tsx`
-  - workflow migration preview/validate/apply entrypoint
-- `frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.tsx`
-  - editor top-navbar review/migration launcher
-- `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.tsx`
-  - editor canvas workflow status chrome
+- every file that was previously under `frontend/src/features/schema-sync/`
+- every remaining file that was previously under `frontend/src/features/`
 
 ## 5. Data / API / Workflow Changes
 
-No backend models, routes, services, migrations, env vars, or config were added in this task.
+Behavioral/API changes:
 
-What changed on the frontend:
+- No backend routes, payloads, env vars, or shared schema types changed.
+- Frontend API client modules were relocated only.
+- Schema sync dialog state now lives inside the dialog entrypoint and uses native dialog-provider open/close state.
+- Canonical adapter import paths changed from feature-local paths to `frontend/src/lib/schema-sync/*`.
+- Auth/admin/persistence/dashboard frontend modules now use native paths, but their behavior was intentionally preserved.
 
-- Workflow API DTOs/clients moved from a feature subtree to `frontend/src/lib/api/`.
-- Workflow helper modules moved from a feature subtree to `frontend/src/lib/diagram-workflow/`.
-- Workflow context import surface changed from one feature-local file to native context files under `frontend/src/context/diagram-workflow-context/`.
-- Workflow dialogs now use native dialog locations under `frontend/src/dialogs/`.
-- Editor workflow chrome now lives under `frontend/src/pages/editor-page/...`.
+Compatibility note:
 
-Behavior preserved intentionally:
-
-- Workflow mode handling remains URL-driven.
-- Development remains the mutable head.
-- Live/Compare/Version views remain read-only.
-- Version create, review, compare, migration, and restore behavior were not redesigned.
-- Schema Sync compatibility behavior still flows through `frontend/src/features/schema-sync/context/schema-sync-context.tsx`.
-
-Compatibility / notable nuance:
-
-- `frontend/src/features` still exists because unrelated modules remain. This refactor removed only `frontend/src/features/diagram-workflow` and did not broaden into unrelated feature-folder cleanup.
+- Several older docs still reference former `frontend/src/features/*` paths. The codebase no longer uses those paths. Treat this handoff as the source of truth for current locations.
 
 ## 6. Validation Performed
 
-Automated validation run during this task:
+Validation completed:
 
-- `npx vitest run --config frontend/vitest.config.ts frontend/src/dialogs/migration-dialog/migration-dialog.test.tsx frontend/src/dialogs/restore-version-dialog/restore-version-dialog.test.tsx frontend/src/dialogs/review-changes-dialog/review-changes-dialog.test.tsx`
-- `npx vitest run --config frontend/vitest.config.ts frontend/src/lib/diagram-workflow/compare-render-model.test.ts frontend/src/lib/diagram-workflow/review-grouping.test.ts frontend/src/lib/diagram-workflow/version-canonical.test.ts frontend/src/pages/editor-page/canvas/workflow/live-status-chip.test.tsx frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.test.tsx frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.test.tsx frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.test.tsx frontend/src/pages/editor-page/workflow/workflow-development-diagram-sync.test.tsx`
-- `npm run build:web`
+- `npx tsc -p tsconfig.json --noEmit`
+- `npx vitest run --config frontend/vitest.config.ts frontend/src/lib/schema-sync/canonical-adapters.test.ts frontend/src/dialogs/migration-dialog/migration-dialog.test.tsx frontend/src/dialogs/restore-version-dialog/restore-version-dialog.test.tsx frontend/src/dialogs/review-changes-dialog/review-changes-dialog.test.tsx frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.test.tsx frontend/src/pages/admin-page/admin-page.test.tsx frontend/src/pages/dashboard-page/dashboard-shell-layout.test.tsx`
+- `NODE_OPTIONS=--max-old-space-size=4096 npm run build:web`
 
-What was verified:
+What that covered:
 
-- workflow dialogs still render and act correctly after relocation
-- workflow helper modules still pass focused unit tests
-- editor workflow chrome tests pass in new locations
-- live status chip now renders the mode badge as intended
-- the frontend production build completes successfully after the structural rewrite
+- canonical adapter stability
+- migration dialog integration
+- restore dialog integration
+- review dialog integration
+- workflow top-navbar entrypoints
+- admin page imports and auth/admin path updates
+- dashboard shell imports and route-guard path updates
+- full frontend production build
 
-What remains unverified:
+Still worth manual QA:
 
-- manual browser QA of compare/review/migration/version/restore flows on this branch
-- live PostgreSQL integration in this session
-- repo-wide non-workflow frontend tests beyond the focused workflow suite
-
-Known limitations / risks:
-
-- `frontend/src/features` still exists because unrelated folders remain; this was a scope constraint, not an overlooked import leak
-- workflow-specific editor code is now in native locations, but the repo still has other non-native feature folders outside this task
+- live PostgreSQL connection management end-to-end
+- live import and refresh against a real database
+- schema sync preview/apply flows in browser
+- shared project/dialog flows after the persistence path move
 
 ## 7. Outstanding Work
 
-Not done yet:
+Not fully done:
 
-- manual QA for the full editor workflow
-- any broader repo-wide removal of other feature-first folders
-- any backend/product redesign around workflow behavior
+- older architecture docs still mention former `frontend/src/features/*` paths
+- no new UI-level tests were added specifically for opening the schema-sync dialog through `useDialog()`
+- manual browser QA against a live database was not performed in this session
 
-Next recommended step:
+Recommended next step:
 
-1. Perform a manual end-to-end QA pass across live sync, compare, review changes, migration, version create/open/compare, and restore on desktop and mobile.
-2. If the repo is continuing a broader architecture cleanup, audit the remaining unrelated `frontend/src/features/*` areas separately instead of extending this task ad hoc.
-
-Blockers / dependencies:
-
-- Broader `frontend/src/features` removal would require a separate scoped effort because unrelated modules still live there.
-- Manual QA is the main remaining confidence gap after the focused automated coverage and production build.
+1. Do manual QA for schema sync connection management, bind/refresh, preview, and apply against a local PostgreSQL instance.
+2. Clean up stale doc references in `docs/CODEBASE_STRUCTURE.md`, `docs/FEATURE_INDEX.md`, and workflow/schema-sync design docs so they point at current native paths.
 
 ## 8. Instructions for the Next Codex Session
 
-Exact reading order:
+Read in this order:
 
 1. `docs/codex-handoff.md`
-2. `docs/diagram-workflow-frontend-rebuild-plan.md`
-3. `docs/diagram-workflow-frontend-audit.md`
-4. `docs/live-database-development-compare-versions-design.md`
-5. `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
-6. `frontend/src/dialogs/migration-dialog/migration-dialog.tsx`
-7. `frontend/src/pages/editor-page/workflow-editor-page.tsx`
-8. `frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.tsx`
-9. `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.tsx`
-10. `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
+2. `docs/schema-sync-frontend-rebuild-plan.md`
+3. `docs/schema-sync-frontend-audit.md`
+4. `docs/architecture/schema-sync-architecture.md`
+5. `frontend/src/dialogs/schema-sync-dialog/schema-sync-dialog.tsx`
+6. `frontend/src/lib/schema-sync/canonical-adapters.ts`
+7. `frontend/src/context/dialog-context/dialog-provider.tsx`
+8. `frontend/src/pages/editor-page/top-navbar/workflow/schema-sync-toolbar-button.tsx`
 
-What to avoid breaking:
+Avoid breaking:
 
-- URL-driven workflow mode selection in the workflow provider
-- Schema Sync compatibility updates in `schema-sync-context`
-- editor readonly behavior in `workflow-editor-page.tsx`
-- restore/create-version dialog behavior and toast flows
+- `frontend/src/lib/schema-sync/canonical-adapters.ts`
+- `frontend/src/context/storage-context/storage-provider.tsx`
+- `frontend/src/context/schemadash-context/schemadash-provider.tsx`
+- `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
+- schema-sync metadata writes to `diagram.schemaSync`
 
-Where to continue implementation:
+Best place to continue:
 
-- Manual QA and any follow-up fixes should start from the editor integration points under `frontend/src/pages/editor-page/...`
-- Any future workflow helper/API changes should start from `frontend/src/lib/diagram-workflow/` and `frontend/src/lib/api/`
+- browser QA of schema-sync flows
+- stale-doc cleanup for removed `frontend/src/features/*` paths
 
 ## 9. Git Summary
 
 Working branch:
 
-- `restructe/01-diagram-workflow-to-native-structure`
+- `restructe/02-schema-sync-to-native-structure`
 
 Pull request title:
 
-- `Rebuild diagram workflow frontend code using native SchemaDash structure`
+- `Rebuild schema sync frontend code using native SchemaDash structure`
 
 Commit list created for this task:
 
-- `d26512d chore: audit diagram workflow frontend methodology drift`
-- `807fd05 docs: add diagram workflow frontend rebuild plan`
-- `72c07fb refactor: move reusable workflow ui into native components and dialogs`
-- `2a56a0c refactor: move workflow state and helpers into native context and lib`
-- `2eed5c2 refactor: integrate workflow code into editor-page structure and remove diagram-workflow subtree`
-
-Brief explanation of each commit:
-
-- `d26512d` added the raw file-by-file audit of the diagram-workflow methodology drift.
-- `807fd05` added the required rebuild plan with classification, mapping, reuse opportunities, and risk notes.
-- `72c07fb` moved workflow dialogs into native dialog folders and generalized the metric card into shared components.
-- `2a56a0c` moved workflow API/helpers into native `lib`, rebuilt the provider under native `context`, and rewired consumers to those locations.
-- `2eed5c2` moved the remaining editor-specific workflow chrome into `pages/editor-page`, deleted dead components, and removed the `frontend/src/features/diagram-workflow` subtree.
+- `7bb912f chore: audit schema sync frontend methodology drift`
+  - Added the schema-sync drift audit document.
+- `01aa7ba docs: add schema sync frontend rebuild plan`
+  - Added the file-by-file rebuild mapping and integration notes.
+- `5eafea8 refactor: move reusable schema sync ui and dialogs into native folders`
+  - Moved schema-sync UI/dialog entrypoints into native folders and generalized the reusable change-plan summary component.
+- `cb31cfc refactor: move schema sync helpers adapters and clients into native lib/context structure`
+  - Moved schema-sync transport/adapters into native `lib`, rewired workflow imports, and replaced the schema-sync provider with native dialog-context wiring.
+- `207820c refactor: remove schema sync feature subtree and update imports`
+  - Deleted the remaining schema-sync feature files, removed the entire `frontend/src/features` tree, and relocated the remaining auth/admin/dashboard/persistence frontend modules into native folders.
+- `test: validate schema sync flows after structure correction`
+  - Records the final TypeScript check, targeted vitest run, successful production build, and this updated handoff.
