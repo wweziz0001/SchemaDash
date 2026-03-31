@@ -18,8 +18,8 @@ Branch: `feature/improve-dashboard-layout-and-role-aware-navigation`
 
 ## Role-aware admin behavior
 
-- Client-side admin route protection already exists in [`src/features/admin/components/admin-route-guard.tsx`](/root/test/chartdb/src/features/admin/components/admin-route-guard.tsx).
-- Server-side admin enforcement already exists in [`server/src/routes/admin-routes.ts`](/root/test/chartdb/server/src/routes/admin-routes.ts) through `requireAdminUser`.
+- Client-side admin route protection already exists in [`frontend/src/pages/admin-page/admin-route-guard.tsx`](/root/test/refractor_SchemaDash/frontend/src/pages/admin-page/admin-route-guard.tsx).
+- Server-side admin enforcement already exists in [`backend/src/routes/admin-routes.ts`](/root/test/refractor_SchemaDash/backend/src/routes/admin-routes.ts) through `requireAdminUser`.
 - Admin visibility in the UI is currently limited to the editor top bar and not part of a role-aware sidebar model.
 
 ## Available real data for a dashboard shell

@@ -30,7 +30,7 @@ export const SummaryList: React.FC<SummaryListProps> = ({
             <div
                 key={item.key ?? String(item.label)}
                 className={cn(
-                    'flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-stone-100/80 px-4 py-3 dark:border-stone-800 dark:bg-stone-950/60',
+                    'flex items-center justify-between gap-3 rounded-2xl bg-stone-100 px-4 py-3 dark:bg-stone-800/80',
                     rowClassName
                 )}
             >
@@ -39,7 +39,7 @@ export const SummaryList: React.FC<SummaryListProps> = ({
                 </dt>
                 <dd
                     className={cn(
-                        'text-sm font-medium text-stone-950 dark:text-stone-100',
+                        'text-right text-sm font-medium text-stone-950 dark:text-stone-100',
                         valueClassName
                     )}
                 >
