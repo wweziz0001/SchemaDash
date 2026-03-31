@@ -123,10 +123,8 @@ import { useDiff } from '@/context/diff-context/use-diff';
 import { useClickAway } from 'react-use';
 import { LivePresenceCursors } from './live-presence-cursors';
 import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
-import { CompareLegend } from '@/features/diagram-workflow/components/compare-legend';
 import { LiveStatusChip } from '@/features/diagram-workflow/components/live-status-chip';
 import { CompareSummaryChip } from '@/features/diagram-workflow/components/compare-summary-chip';
-
 
 const HIGHLIGHTED_EDGE_Z_INDEX = 1;
 const DEFAULT_EDGE_Z_INDEX = 0;
@@ -1706,7 +1704,6 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                     {workflow?.activeMode === 'compare' ? (
                         <div className="pointer-events-none absolute right-4 top-4 z-20">
                             <div className="pointer-events-auto">
-                                
                                 <CompareSummaryChip />
                             </div>
                         </div>

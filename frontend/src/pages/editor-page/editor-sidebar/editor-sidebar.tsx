@@ -11,7 +11,6 @@ import {
     SidebarMenuItem,
 } from '@/components/sidebar/sidebar';
 import {
-    BookOpen,
     Group,
     FileType,
     Plus,

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/button/button';
-import { Check, Pencil } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Input } from '@/components/input/input';
 import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useClickAway, useKeyPressEvent } from 'react-use';
@@ -91,7 +91,7 @@ export const DiagramName: React.FC<DiagramNameProps> = () => {
     );
 
     return (
-        <div className="absolute right-[calc(46.666667%+100px)] z-10 flex -translate-x-3/5 items-center group">
+        <div className="group absolute right-[calc(46.666667%+100px)] z-10 flex translate-x-[-170%] items-center">
             <div
                 className={cn(
                     'flex flex-1 flex-row items-center justify-center px-2 py-1 whitespace-nowrap',

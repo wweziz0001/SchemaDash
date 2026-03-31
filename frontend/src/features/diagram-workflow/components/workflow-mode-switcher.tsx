@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/button/button';
 import { cn } from '@/lib/utils';
-import { Database, GitBranch, GitCompareArrows, PencilLine } from 'lucide-react';
+import { Database, GitBranch, GitCompareArrows } from 'lucide-react';
 import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
 
 export const WorkflowModeSwitcher: React.FC = () => {
@@ -12,16 +12,17 @@ export const WorkflowModeSwitcher: React.FC = () => {
     }
 
     return (
-        <div className="absolute right-1/3 z-10 flex -translate-x-3/5 items-center">
-            <div data-orientation="vertical" role="none" className="mx-2 h-6 w-px shrink-0 bg-border">
-            </div>
+        <div className="absolute right-1/3 z-10 flex -translate-x-1/2 items-center">
+            <div
+                data-orientation="vertical"
+                role="none"
+                className="mx-2 h-6 w-px shrink-0 bg-border"
+            />
             <div className="flex h-fit max-h-7 items-center rounded-md border bg-muted/30 p-0">
                 <Button
                     size="sm"
                     variant={
-                        workflow.activeMode === 'live'
-                            ? 'secondary'
-                            : 'ghost'
+                        workflow.activeMode === 'live' ? 'secondary' : 'ghost'
                     }
                     className={cn(
                         'h-6 gap-1.5 rounded-none rounded-l-[5px] px-2.5 text-xs font-medium shadow-none',
@@ -37,13 +38,14 @@ export const WorkflowModeSwitcher: React.FC = () => {
                             : 'Bind and sync a live database to enable this view'
                     }
                 >
-                    <Database 
-                    className={cn(
-                        'size-3.5',
-                        workflow.activeMode === 'live'
-                        ? 'lucide lucide-git-branch size-3.5 text-teal-600 dark:text-teal-400'
-                        : 'text-muted-foreground'
-                    )} />
+                    <Database
+                        className={cn(
+                            'size-3.5',
+                            workflow.activeMode === 'live'
+                                ? 'text-teal-600 dark:text-teal-400'
+                                : 'text-muted-foreground'
+                        )}
+                    />
                     <span>Live Database</span>
                 </Button>
                 <Button
@@ -62,17 +64,21 @@ export const WorkflowModeSwitcher: React.FC = () => {
                     onClick={() => workflow.setActiveMode('development')}
                 >
                     <GitBranch
-                    className={cn(
-                        'size-3.5',
-                        workflow.activeMode === 'development'
-                        ? 'lucide lucide-git-branch size-3.5 text-teal-600 dark:text-teal-400'
-                        : 'text-muted-foreground'
-                    )} />
+                        className={cn(
+                            'size-3.5',
+                            workflow.activeMode === 'development'
+                                ? 'text-teal-600 dark:text-teal-400'
+                                : 'text-muted-foreground'
+                        )}
+                    />
                     <span>Development</span>
                 </Button>
             </div>
-            <div data-orientation="vertical" role="none" className="mx-2 h-6 w-px shrink-0 bg-border">
-            </div>
+            <div
+                data-orientation="vertical"
+                role="none"
+                className="mx-2 h-6 w-px shrink-0 bg-border"
+            />
             <div className="flex items-center gap-0">
                 <Button
                     size="sm"
@@ -96,12 +102,13 @@ export const WorkflowModeSwitcher: React.FC = () => {
                     }
                 >
                     <GitCompareArrows
-                    className={cn(
-                        'size-3.5',
-                        workflow.activeMode === 'compare'
-                        ? 'lucide lucide-git-branch size-3.5 text-teal-600 dark:text-teal-400'
-                        : 'text-muted-foreground'
-                    )} />
+                        className={cn(
+                            'size-3.5',
+                            workflow.activeMode === 'compare'
+                                ? 'text-teal-600 dark:text-teal-400'
+                                : 'text-muted-foreground'
+                        )}
+                    />
                     <span>Compare</span>
                 </Button>
             </div>
