@@ -6,12 +6,12 @@ import { Input } from '@/components/input/input';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { CreateVersionDialog } from '@/dialogs/create-version-dialog/create-version-dialog';
 import { RestoreVersionDialog } from '@/dialogs/restore-version-dialog/restore-version-dialog';
-import { VersionListItem } from '@/features/diagram-workflow/components/version-list-item';
 import type { DiagramWorkflowVersionSummary } from '@/lib/api/diagram-workflow-client';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { formatVersionTimestamp } from '@/lib/diagram-workflow/version-labels';
 import { History, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { VersionListItem } from './version-list-item';
 
 export interface VersionTabProps {}
 

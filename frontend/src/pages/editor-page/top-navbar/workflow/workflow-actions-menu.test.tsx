@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ReviewDropdown } from './review-dropdown';
+import { WorkflowActionsMenu } from './workflow-actions-menu';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 
 vi.mock('@/context/diagram-workflow-context/diagram-workflow-context', () => ({
@@ -23,7 +23,7 @@ describe('review dropdown', () => {
             compareSourceKind: 'live',
         } as never);
 
-        render(<ReviewDropdown />);
+        render(<WorkflowActionsMenu />);
 
         expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
     });
@@ -36,7 +36,7 @@ describe('review dropdown', () => {
             compareSourceKind: 'live',
         } as never);
 
-        render(<ReviewDropdown />);
+        render(<WorkflowActionsMenu />);
 
         await user.click(screen.getByRole('button', { name: 'Review' }));
 
@@ -55,7 +55,7 @@ describe('review dropdown', () => {
             compareSourceKind: 'version',
         } as never);
 
-        render(<ReviewDropdown />);
+        render(<WorkflowActionsMenu />);
 
         expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
     });

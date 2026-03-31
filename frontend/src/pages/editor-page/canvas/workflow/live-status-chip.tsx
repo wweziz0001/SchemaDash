@@ -135,6 +135,12 @@ export const LiveStatusChip: React.FC = () => {
             >
                 {status.syncBadge.label}
             </Badge>
+            <Badge
+                variant={status.modeBadge.variant}
+                title={status.modeBadge.title}
+            >
+                {status.modeBadge.label}
+            </Badge>
         </div>
     );
 };

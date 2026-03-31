@@ -11,7 +11,7 @@ import { MigrationDialog } from '@/dialogs/migration-dialog/migration-dialog';
 import { ReviewChangesDialog } from '@/dialogs/review-changes-dialog/review-changes-dialog';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 
-export const ReviewDropdown: React.FC = () => {
+export const WorkflowActionsMenu: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();
     const [reviewOpen, setReviewOpen] = useState(false);
     const [migrationOpen, setMigrationOpen] = useState(false);
