@@ -2,6 +2,7 @@ import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { HelmetProvider } from 'react-helmet-async';
 import {
     authContext,
     type AuthContextValue,
@@ -181,11 +182,13 @@ describe('admin page', () => {
         mockedAdminClient.getOverview.mockResolvedValue(overviewFixture);
 
         render(
-            <MemoryRouter>
-                <authContext.Provider value={createAuthValue()}>
-                    <AdminPage />
-                </authContext.Provider>
-            </MemoryRouter>
+            <HelmetProvider>
+                <MemoryRouter>
+                    <authContext.Provider value={createAuthValue()}>
+                        <AdminPage />
+                    </authContext.Provider>
+                </MemoryRouter>
+            </HelmetProvider>
         );
 
         expect(await screen.findByText('Grace Hopper')).toBeInTheDocument();

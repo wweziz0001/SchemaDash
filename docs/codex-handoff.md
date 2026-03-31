@@ -2,286 +2,299 @@
 
 ## 1. Project Overview
 
-SchemaDash is a full-stack database schema design and review product.
+SchemaDash is a full-stack schema design and review product.
 
-- `frontend/` is a Vite + React + Tailwind app for the dashboard/library, editor, sharing, collaboration, import/export, templates/examples, and admin surfaces.
-- `backend/` is a Fastify API that owns auth, durable persistence, sharing, collaboration sessions/presence, schema-sync operations, and admin/health endpoints.
-- `packages/schema-sync-core/` is the shared canonical schema engine used by both frontend and backend for diffing, change plans, hashes, and SQL planning.
+- `frontend/` is a Vite + React + Tailwind application for the authenticated library shell, editor, shared viewers, templates/examples, auth flows, and admin surfaces.
+- `backend/` is a Fastify API that owns auth, persistence, sharing, collaboration, schema-sync, health, and admin routes.
+- `packages/schema-sync-core/` is the shared schema engine used by both frontend and backend.
 
 Relevant product context for this task:
 
-- Frontend persistence is not a standalone feature island. It is a cross-cutting boundary spanning `storage-context`, open/save/share dialogs, shared-viewer pages, request helpers, and persistence-specific browser helpers.
-- Durable storage uses backend persistence routes/services, while the browser still keeps a Dexie cache in `frontend/src/context/storage-context/storage-provider.tsx`.
-- Sharing depends on persistence state, share-token propagation, and shared-viewer routes. Collaboration/session state also depends on persistence DTOs and storage-context orchestration.
+- The admin surface is intentionally small and read-only.
+- Admin frontend behavior belongs inside the native SchemaDash structure:
+  - reusable UI in `frontend/src/components/`
+  - route integration in `frontend/src/pages/admin-page/`
+  - admin HTTP transport in `frontend/src/lib/api/`
+  - stable admin DTOs/helpers in `frontend/src/lib/admin/`
+- The admin page must visually match the authenticated library/settings/profile pages instead of introducing an admin-only design language.
 
-Important current state:
+Current admin product scope:
 
-- `frontend/src/features/persistence` does not exist.
-- `frontend/src/features` does not exist.
-- Persistence support code is now split across native `frontend/src/lib/`, `frontend/src/dialogs/`, `frontend/src/context/`, and `frontend/src/pages/` boundaries.
+- Protected `/admin` route for authenticated admin users only.
+- Overview metrics for users, admins, collections, projects, diagrams, and active sessions.
+- Platform health summary from `GET /api/admin/overview`.
+- Read-only user table with status, role, auth provider, and activity visibility.
 
 ## 2. Current Architectural Context
 
-Read these first for future work in this area:
+Read these first for future admin work:
 
-1. `docs/persistence-frontend-rebuild-plan.md`
-2. `docs/audits/persistence-frontend-methodology-drift.md`
-3. `docs/CODEBASE_STRUCTURE.md`
-4. `docs/FEATURE_INDEX.md`
-5. `docs/architecture/backend-persistence-foundation.md`
-6. `docs/codex-handoff.md`
+1. `docs/codex-handoff.md`
+2. `docs/admin-frontend-rebuild-plan.md`
+3. `docs/audits/admin-frontend-methodology-drift.md`
+4. `docs/operations/admin-dashboard.md`
+5. `docs/CODEBASE_STRUCTURE.md`
 
-Important frontend modules for this task:
+Important frontend files for this area:
 
-- `frontend/src/context/storage-context/storage-provider.tsx`
-- `frontend/src/context/storage-context/storage-context.tsx`
-- `frontend/src/dialogs/open-diagram-dialog/open-diagram-dialog.tsx`
-- `frontend/src/dialogs/open-diagram-dialog/sharing-settings-dialog.tsx`
-- `frontend/src/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api.ts`
-- `frontend/src/dialogs/save-diagram-dialog/save-diagram-dialog.tsx`
-- `frontend/src/pages/editor-page/top-navbar/current-diagram-share-button.tsx`
-- `frontend/src/pages/shared-project-page/shared-diagram-loader.tsx`
-- `frontend/src/pages/shared-project-page/shared-project-page.tsx`
-- `frontend/src/lib/api/persistence-client.ts`
-- `frontend/src/lib/persistence/persistence-types.ts`
-- `frontend/src/lib/persistence/diagram-serialization.ts`
-- `frontend/src/lib/persistence/share-token.ts`
-- `frontend/src/lib/persistence/collaboration-client-id.ts`
+- `frontend/src/pages/admin-page/admin-page.tsx`
+- `frontend/src/pages/admin-page/admin-route-guard.tsx`
+- `frontend/src/lib/api/admin-client.ts`
+- `frontend/src/lib/admin/admin-overview.ts`
+- `frontend/src/components/status-badge/status-badge.tsx`
+- `frontend/src/components/summary-list/summary-list.tsx`
+- `frontend/src/components/metric-card/metric-card.tsx`
+- `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx`
+- `frontend/src/router.tsx`
+
+Important backend files for this area:
+
+- `backend/src/routes/admin-routes.ts`
+- `backend/src/routes/health-routes.ts`
+- `backend/src/services/admin-service.ts`
 
 High-risk files:
 
-- `frontend/src/context/storage-context/storage-provider.tsx`
-- `frontend/src/context/schemadash-context/schemadash-provider.tsx`
-- `frontend/src/dialogs/open-diagram-dialog/open-diagram-dialog.tsx`
-- `frontend/src/pages/editor-page/top-navbar/current-diagram-share-button.tsx`
-- `frontend/src/pages/shared-project-page/shared-diagram-loader.tsx`
+- `frontend/src/pages/admin-page/admin-page.tsx`
+- `frontend/src/pages/admin-page/admin-route-guard.tsx`
+- `frontend/src/lib/api/admin-client.ts`
+- `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx`
+- `frontend/src/router.tsx`
 
 Important service/module boundaries:
 
-- `frontend/src/context/storage-context/*` remains the single frontend persistence orchestration layer.
-- `frontend/src/lib/api/persistence-client.ts` now owns only HTTP transport.
-- `frontend/src/lib/persistence/*` now owns persistence DTOs, diagram serialization helpers, share-token helpers, and collaboration client-id helpers.
-- `frontend/src/dialogs/open-diagram-dialog/*` owns the sharing dialog entrypoint and its dialog-specific storage adapter.
-- `backend/src/services/persistence-service.ts` and `backend/src/repositories/app-repository.ts` remain authoritative backend persistence boundaries and were intentionally not refactored here.
+- `frontend/src/lib/api/admin-client.ts` is now transport-only.
+- `frontend/src/lib/admin/admin-overview.ts` owns stable admin DTOs plus pure view-model helpers and formatting helpers.
+- `frontend/src/pages/admin-page/admin-page.tsx` is now primarily page composition.
+- `frontend/src/pages/admin-page/admin-route-guard.tsx` remains the route protection boundary.
+- `backend/src/routes/admin-routes.ts` exposes `GET /api/admin/overview`.
+- `backend/src/services/admin-service.ts` remains the authoritative source of the overview payload shape.
 
 Relevant frontend/backend relationship:
 
-- Frontend request helpers call backend persistence routes under `backend/src/routes/persistence-routes.ts`.
-- The storage provider translates backend DTOs into frontend saved-model state and Dexie cache rows.
-- Shared project/diagram routes use the same persistence client and diagram serialization helpers as the editor/persistence flows.
+- `frontend/src/lib/api/admin-client.ts` fetches `GET /api/admin/overview`.
+- `backend/src/routes/admin-routes.ts` guards the route with `requireAdminUser`.
+- `backend/src/services/admin-service.ts` assembles the overview metrics, platform summary, and user/project/diagram breakdowns consumed by the page.
 
 ## 3. Task Completed
 
 Task objective:
 
-- Correct the persistence frontend methodology drift.
-- Remove any remaining persistence feature-island patterns.
-- Keep persistence, sharing, cache, and open/save flows aligned with native SchemaDash structure.
+- Correct the admin frontend methodology drift.
+- Keep admin aligned with native SchemaDash structure instead of a feature-island pattern.
+- Make the admin page visually match the rest of SchemaDash.
 
 What was implemented:
 
-- Added a dedicated audit doc:
-    - `docs/audits/persistence-frontend-methodology-drift.md`
-- Added the required rebuild plan:
-    - `docs/persistence-frontend-rebuild-plan.md`
-- Moved the old root sharing hook into the dialog boundary:
-    - `frontend/src/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api.ts`
-- Removed the old root hook path:
-    - `frontend/src/hooks/use-sharing-dialog-api.ts`
-- Split persistence support code by responsibility:
-    - `frontend/src/lib/api/persistence-client.ts` stays as the REST client
-    - `frontend/src/lib/persistence/persistence-types.ts` now owns DTO/model types
-    - `frontend/src/lib/persistence/diagram-serialization.ts` now owns diagram serialize/deserialize helpers
-- Updated native consumers to use those new boundaries:
-    - `storage-context`
-    - `schemadash-context`
-    - workflow/version helpers
-    - shared-project/shared-diagram pages
-    - auth client/context typing
-    - create-version dialog
-    - sharing dialog and share button
-- Removed redundant identity deserializer usage from `storage-provider`.
-- Updated architecture/index docs so they no longer describe persistence as living under `frontend/src/features/persistence` or `frontend/src/features`.
+- Added an audit doc:
+  - `docs/audits/admin-frontend-methodology-drift.md`
+- Added a rebuild plan doc:
+  - `docs/admin-frontend-rebuild-plan.md`
+- Confirmed the historical `frontend/src/features/admin` subtree is already absent on this branch and kept it absent.
+- Extracted reusable presentational pieces out of `frontend/src/pages/admin-page/admin-page.tsx`:
+  - `frontend/src/components/status-badge/status-badge.tsx`
+  - `frontend/src/components/summary-list/summary-list.tsx`
+- Generalized the shared metric card so admin can reuse native metric surfaces:
+  - `frontend/src/components/metric-card/metric-card.tsx`
+- Split stable admin types/helpers out of the transport module:
+  - `frontend/src/lib/admin/admin-overview.ts`
+  - `frontend/src/lib/api/admin-client.ts`
+- Rebuilt `frontend/src/pages/admin-page/admin-page.tsx` around native components/helpers instead of page-local UI primitives.
+- Aligned admin visuals with the existing authenticated page language:
+  - same hero rhythm as library/settings/profile
+  - same amber outline badge treatment
+  - same top-level CTA style
+  - native alert/loading surface treatment
+  - native card/table/spacing/typography patterns
+- Updated the admin page test harness to wrap the page in `HelmetProvider`.
+- Updated one stale audit reference that still pointed at the removed admin feature subtree.
+
+Key decisions:
+
+- Keep route-level admin wiring under `frontend/src/pages/admin-page/` and `frontend/src/router.tsx`.
+- Keep backend contracts unchanged.
+- Avoid introducing any admin-only provider/context layer because the current admin surface does not justify one.
+- Reuse existing SchemaDash primitives instead of inventing a separate admin component library.
 
 Approach intentionally avoided:
 
-- No backend persistence redesign.
-- No rewrite of storage-provider save/open/session logic.
-- No new parallel persistence/state layer.
-- No compatibility stubs under `frontend/src/features`.
-- No broad unrelated frontend redesign.
+- No backend admin redesign.
+- No broad dashboard-shell refactor.
+- No compatibility stubs under `frontend/src/features/admin`.
+- No admin-specific theme or design language.
+- No unrelated changes to `frontend/vite.config.ts`.
 
 ## 4. Files Changed
 
 Files created:
 
-- `docs/audits/persistence-frontend-methodology-drift.md`
-- `docs/persistence-frontend-rebuild-plan.md`
-- `frontend/src/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api.ts`
-- `frontend/src/lib/persistence/persistence-types.ts`
-- `frontend/src/lib/persistence/diagram-serialization.ts`
-- `frontend/src/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api.test.tsx`
-- `frontend/src/lib/persistence/diagram-serialization.test.ts`
+- `docs/audits/admin-frontend-methodology-drift.md`
+  - Audit of structural drift, visual mismatches, and native reuse targets.
+- `docs/admin-frontend-rebuild-plan.md`
+  - Required path mapping, classification, risk notes, and implementation plan.
+- `frontend/src/components/status-badge/status-badge.tsx`
+  - Reusable wrapper around the native `Badge` component for consistent status/role tones.
+- `frontend/src/components/summary-list/summary-list.tsx`
+  - Reusable key/value summary row list for admin overview panels.
+- `frontend/src/lib/admin/admin-overview.ts`
+  - Stable admin overview types plus pure format/summary helpers.
 
 Files modified:
 
-- `docs/CODEBASE_STRUCTURE.md`
-- `docs/FEATURE_INDEX.md`
-- `docs/architecture/backend-persistence-foundation.md`
-- `docs/diagram-workflow-frontend-audit.md`
-- `docs/diagram-workflow-frontend-rebuild-plan.md`
 - `docs/codex-handoff.md`
-- `frontend/src/context/auth-context/auth-context.ts`
-- `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
-- `frontend/src/context/schemadash-context/schemadash-provider.tsx`
-- `frontend/src/context/storage-context/storage-context.tsx`
-- `frontend/src/context/storage-context/storage-provider.tsx`
-- `frontend/src/dialogs/create-version-dialog/create-version-dialog.tsx`
-- `frontend/src/dialogs/open-diagram-dialog/open-diagram-dialog.tsx`
-- `frontend/src/dialogs/open-diagram-dialog/sharing-settings-dialog.tsx`
-- `frontend/src/lib/api/auth-client.ts`
-- `frontend/src/lib/api/diagram-workflow-client.ts`
-- `frontend/src/lib/api/persistence-client.ts`
-- `frontend/src/lib/diagram-workflow/version-canonical.ts`
-- `frontend/src/pages/editor-page/top-navbar/current-diagram-share-button.tsx`
-- `frontend/src/pages/shared-project-page/shared-diagram-loader.tsx`
-- `frontend/src/pages/shared-project-page/shared-project-page.tsx`
-
-Files intentionally removed:
-
-- `frontend/src/hooks/use-sharing-dialog-api.ts`
+  - Rewritten for this admin task so future sessions start with the right context.
+- `docs/audits/authenticated-layout-audit.md`
+  - Updated stale admin path references away from the removed feature subtree.
+- `frontend/src/components/metric-card/metric-card.tsx`
+  - Made the shared metric card more flexible so admin could reuse it instead of defining a local duplicate.
+- `frontend/src/lib/api/admin-client.ts`
+  - Reduced to transport-only responsibility.
+- `frontend/src/pages/admin-page/admin-page.tsx`
+  - Main admin page rebuilt around native components/helpers and native styling patterns.
+- `frontend/src/pages/admin-page/admin-page.test.tsx`
+  - Updated to use `HelmetProvider` after adding a page title.
+- `frontend/src/pages/dashboard-page/dashboard-shell-layout.test.tsx`
+  - Updated imports to use the new admin type module.
 
 Important files intentionally not changed:
 
-- `backend/src/services/persistence-service.ts`
-- `backend/src/repositories/app-repository.ts`
-- `frontend/src/dialogs/save-diagram-dialog/save-diagram-dialog.tsx`
+- `frontend/src/pages/admin-page/admin-route-guard.tsx`
+  - Already in the correct native location and behaviorally stable.
+- `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx`
+  - High-risk shared shell; left unchanged because admin integration did not require runtime nav changes.
+- `frontend/src/router.tsx`
+  - Already reflects the correct page boundary for `/admin`.
+- `backend/src/routes/admin-routes.ts`
+  - Backend route contract kept stable.
+- `backend/src/services/admin-service.ts`
+  - Payload assembly kept stable.
 - `frontend/vite.config.ts`
+  - Had an unrelated pre-existing working-tree change and was intentionally avoided.
 
-Notes on intentionally avoided edits:
+Files/directories intentionally absent:
 
-- Backend persistence contracts were kept stable.
-- `frontend/src/dialogs/save-diagram-dialog/save-diagram-dialog.tsx` was left alone because it already sits in the right native boundary and did not need structural correction.
-- `frontend/vite.config.ts` had an unrelated local modification in the working tree before this task and was intentionally left out of the commit set.
+- `frontend/src/features/admin`
+- `frontend/src/features`
 
 ## 5. Data / API / Workflow Changes
 
 Behavioral/API changes:
 
-- No backend routes, payload shapes, env vars, or database schemas changed.
-- `frontend/src/lib/api/persistence-client.ts` still exposes the same persistence transport behavior, but it no longer owns the DTO/model type definitions or diagram serialization helpers.
-- Sharing dialog API wiring moved from a global root hook into a dialog-local native module.
-- Shared-viewer pages and workflow/version code now import diagram serialization helpers from `frontend/src/lib/persistence/diagram-serialization.ts`.
+- No backend routes changed.
+- No admin overview payload shape changed.
+- No new environment variables, migrations, or config keys were introduced.
 
-Workflow/storage behavior preserved:
+Frontend structure/workflow changes:
 
-- Dexie cache behavior remains in `frontend/src/context/storage-context/storage-provider.tsx`.
-- Save/open/update/delete/project/collection flows still go through `storage-context`.
-- Share-token request behavior remains in `frontend/src/lib/api/request.ts` and `frontend/src/lib/persistence/share-token.ts`.
-- Collaboration/session behavior remains anchored in `storage-context` and `schemadash-context`.
+- Admin overview typing moved out of `frontend/src/lib/api/admin-client.ts` into `frontend/src/lib/admin/admin-overview.ts`.
+- Admin summary formatting and label helpers now live in `frontend/src/lib/admin/admin-overview.ts`.
+- Admin page rendering now relies on reusable presentational modules instead of page-local mini-components.
+- Admin page now sets a document title via `Helmet`.
 
 Compatibility handling:
 
-- This task removed old frontend feature-boundary references from major architecture docs.
-- The runtime code no longer relies on any `frontend/src/features/*` path.
+- Existing tests were updated to import the moved admin types.
+- The standalone admin page test was updated to include `HelmetProvider`.
 
 ## 6. Validation Performed
 
 Validation completed:
 
 - `npx tsc -p tsconfig.json --noEmit`
-- `npx vitest run --config frontend/vitest.config.ts frontend/src/lib/persistence/diagram-serialization.test.ts frontend/src/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api.test.tsx frontend/src/dialogs/review-changes-dialog/review-changes-dialog.test.tsx frontend/src/dialogs/restore-version-dialog/restore-version-dialog.test.tsx frontend/src/pages/dashboard-page/dashboard-shell-layout.test.tsx frontend/src/pages/admin-page/admin-page.test.tsx`
+- `npx vitest run --config frontend/vitest.config.ts frontend/src/pages/admin-page/admin-page.test.tsx frontend/src/pages/dashboard-page/dashboard-shell-layout.test.tsx`
 - `npm run build:web`
+- Confirmed `find frontend/src -type d | grep '/features\\(/\\|$\\)'` returns no matches
 
 What was verified:
 
-- TypeScript imports and module splits compile cleanly.
-- Extracted diagram serialization round-trips correctly.
-- Relocated sharing-dialog adapter still routes through the storage boundary correctly.
-- Existing dashboard/admin/review/restore tests still pass after the persistence path updates.
-- Frontend production build completes successfully.
+- TypeScript passes after the admin type/helper split.
+- Admin page tests pass with the new `Helmet` usage.
+- Dashboard shell admin route coverage still passes after the type import changes.
+- Frontend production build succeeds.
+- `frontend/src/features/admin` and `frontend/src/features` are absent.
 
-Still unverified manually:
+What remains unverified manually:
 
-- Browser-level open diagram flow
-- Save/update/delete flow in the UI
-- Collection/project/diagram interactions against a running backend
-- Shared project/diagram viewer flow in a browser session
-- Session-aware editor persistence flows against a live backend
+- Browser-level visual QA of `/admin` against a live backend session.
+- Manual verification of the refresh action against a running deployment.
+- Manual dark-mode inspection of the admin page in a browser.
 
 Known limitations / risks:
 
-- `frontend/src/context/storage-context/storage-provider.tsx` remains large and high-risk. This task only corrected its surrounding support boundaries, not its internal size/complexity.
-- Manual QA against a running backend is still recommended for share/open/save scenarios.
+- The admin page is still a single route component, even though it is substantially slimmer than before.
+- No end-to-end browser test was added for `/admin`.
+- Future admin feature growth may justify a dedicated `frontend/src/components/admin-overview/` folder, but it was not necessary yet.
 
 ## 7. Outstanding Work
 
 Not done yet:
 
-- No new end-to-end browser tests were added for open/save/share flows.
-- No internal decomposition of `frontend/src/context/storage-context/storage-provider.tsx` was attempted beyond safe import/helper corrections.
-- Some older docs outside the persistence scope may still reference former feature-folder paths unrelated to this task.
+- No admin action dialogs were added; the page remains intentionally read-only.
+- No manual browser QA against a live authenticated deployment was performed in this task.
+- No backend admin capabilities beyond the existing overview endpoint were expanded.
 
 Recommended next step:
 
-1. Manually QA open/save/delete/share flows against a running backend and persisted data set.
-2. If more persistence cleanup is needed, extract small pure helper modules from `storage-provider` without changing behavior.
-3. If future work touches sharing/collaboration security, review `frontend/src/lib/persistence/share-token.ts`, `frontend/src/lib/api/request.ts`, and `backend/src/utils/request-share-token.ts` together.
+1. Manually QA `/admin` in both light and dark themes against a running backend.
+2. If new admin widgets are added later, continue using `frontend/src/components/` for reusable surfaces and `frontend/src/lib/admin/` for stable admin helpers.
+3. If admin gains mutating actions in the future, route those through `frontend/src/dialogs/` rather than rebuilding page-local modal logic.
 
 Blockers/risks for future work:
 
-- `storage-provider` is still the most sensitive file in the persistence frontend.
-- Shared-viewer and collaboration flows are easy to regress because they depend on both persistence DTOs and share-token behavior.
+- Avoid broad edits to `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx` and `frontend/src/router.tsx` unless route behavior actually changes.
+- Keep `frontend/src/lib/admin/admin-overview.ts` aligned with `backend/src/services/admin-service.ts` whenever the payload evolves.
 
 ## 8. Instructions for the Next Codex Session
 
 Read in this order:
 
 1. `docs/codex-handoff.md`
-2. `docs/persistence-frontend-rebuild-plan.md`
-3. `docs/audits/persistence-frontend-methodology-drift.md`
-4. `docs/CODEBASE_STRUCTURE.md`
-5. `frontend/src/context/storage-context/storage-provider.tsx`
-6. `frontend/src/lib/api/persistence-client.ts`
-7. `frontend/src/lib/persistence/persistence-types.ts`
-8. `frontend/src/lib/persistence/diagram-serialization.ts`
-9. `frontend/src/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api.ts`
-10. `frontend/src/dialogs/open-diagram-dialog/sharing-settings-dialog.tsx`
+2. `docs/admin-frontend-rebuild-plan.md`
+3. `docs/audits/admin-frontend-methodology-drift.md`
+4. `docs/operations/admin-dashboard.md`
+5. `frontend/src/lib/admin/admin-overview.ts`
+6. `frontend/src/lib/api/admin-client.ts`
+7. `frontend/src/pages/admin-page/admin-page.tsx`
+8. `frontend/src/pages/admin-page/admin-route-guard.tsx`
+9. `frontend/src/components/status-badge/status-badge.tsx`
+10. `frontend/src/components/summary-list/summary-list.tsx`
 
 Avoid breaking:
 
-- `frontend/src/context/storage-context/storage-provider.tsx`
-- `frontend/src/context/schemadash-context/schemadash-provider.tsx`
-- `frontend/src/lib/api/request.ts`
-- `frontend/src/lib/persistence/share-token.ts`
-- `frontend/src/pages/shared-project-page/shared-diagram-loader.tsx`
+- `frontend/src/pages/admin-page/admin-route-guard.tsx`
+- `frontend/src/lib/api/admin-client.ts`
+- `frontend/src/lib/admin/admin-overview.ts`
+- `frontend/src/pages/dashboard-page/dashboard-shell-layout.tsx`
+- `frontend/src/router.tsx`
 
-Continue implementation here if more persistence work is needed:
+Continue implementation here if more admin work is requested:
 
-- Start at `frontend/src/context/storage-context/storage-provider.tsx` and only extract code that can be proven pure and behavior-preserving.
-- Keep share/open/save behavior anchored in existing native context/dialog/page/lib boundaries.
+- Start with `frontend/src/pages/admin-page/admin-page.tsx` for page composition changes.
+- Put pure admin helpers beside `frontend/src/lib/admin/admin-overview.ts`.
+- Put future reusable admin widgets in `frontend/src/components/`.
+- Put future admin dialogs in `frontend/src/dialogs/`.
 
 ## 9. Git Summary
 
 Working branch:
 
-- `restructe/03-persistence-to-native-structure`
+- `restructe/04-admin-to-native-structure-and-system-style`
 
 Pull request title:
 
-- `Rebuild persistence frontend code using native SchemaDash structure`
+- `Rebuild admin frontend using native SchemaDash structure and native system styling`
 
 Commit list created for this task:
 
-1. `chore: audit persistence frontend methodology drift`
-   Added the persistence methodology audit documenting the old feature subtree, the responsibility drift, and the corrective direction.
-2. `docs: add persistence frontend rebuild plan`
-   Added the required file-by-file rebuild plan with old-to-new mappings, classifications, reuse notes, and risk handling.
-3. `refactor: move reusable persistence ui and dialogs into native folders`
-   Relocated the sharing-dialog adapter into `dialogs/open-diagram-dialog`, updated dialog consumers, and removed the old root hook path.
-4. `refactor: move persistence helpers sharing helpers and clients into native lib/context structure`
-   Split persistence DTOs and diagram serialization into native `frontend/src/lib/persistence/` modules and updated native consumers/imports.
-5. `refactor: remove persistence feature subtree and update imports`
-   Updated architecture/index docs so they no longer describe persistence as living under `frontend/src/features/persistence` or `frontend/src/features`.
-6. `test: validate persistence-related frontend flows after structure correction`
-   Added focused tests for the extracted persistence modules, updated this handoff, and captured the validation phase for the refactor.
+- `chore: audit admin frontend methodology drift and style divergence`
+  - Added the admin methodology/style audit doc.
+- `docs: add admin frontend rebuild plan`
+  - Added the required rebuild plan with historical path mapping and implementation phases.
+- `refactor: move reusable admin ui and dialogs into native folders`
+  - Extracted reusable admin UI pieces into native `components/` modules and removed page-local UI duplication.
+- `refactor: move admin helpers and page integration into native structure`
+  - Split stable admin types/helpers into `frontend/src/lib/admin/` and updated runtime/tests to use the new boundary.
+- `refactor: align admin page with native SchemaDash visual system and remove admin feature subtree`
+  - Aligned admin hero/actions/loading/error surfaces with the native product language and cleared the stale admin feature-path reference.
+- `test: validate admin frontend behavior and style consistency after correction`
+  - Records the final validation pass and this updated handoff context.
