@@ -50,7 +50,7 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { BaseDialogProps } from '../common/base-dialog-props';
-import { useSharingDialogApi } from '@/features/persistence/hooks/use-sharing-dialog-api';
+import { useSharingDialogApi } from '@/hooks/use-sharing-dialog-api';
 import { DiagramRowActionsMenu } from './diagram-row-actions-menu/diagram-row-actions-menu';
 import { SharingSettingsDialog } from './sharing-settings-dialog';
 

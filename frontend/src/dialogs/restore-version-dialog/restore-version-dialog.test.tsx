@@ -25,10 +25,8 @@ vi.mock('@/hooks/use-schemadash', () => ({
     useSchemaDash: vi.fn(),
 }));
 
-vi.mock('@/features/persistence/api/persistence-client', async () => {
-    const actual = await vi.importActual(
-        '@/features/persistence/api/persistence-client'
-    );
+vi.mock('@/lib/api/persistence-client', async () => {
+    const actual = await vi.importActual('@/lib/api/persistence-client');
 
     return {
         ...actual,

@@ -5,7 +5,7 @@ import type {
     PersistedUserSummary,
     SharingAccess,
     SharingScope,
-} from '@/features/persistence/api/persistence-client';
+} from '@/lib/api/persistence-client';
 
 export interface SharingDialogSubject {
     type: 'project' | 'diagram';

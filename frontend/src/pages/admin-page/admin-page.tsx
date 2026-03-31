@@ -29,8 +29,8 @@ import {
 import {
     adminClient,
     type AdminOverviewResponse,
-} from '@/features/admin/api/admin-client';
-import { useAuth } from '@/features/auth/hooks/use-auth';
+} from '@/lib/api/admin-client';
+import { useAuth } from '@/hooks/use-auth';
 import { RequestError } from '@/lib/api/request';
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {

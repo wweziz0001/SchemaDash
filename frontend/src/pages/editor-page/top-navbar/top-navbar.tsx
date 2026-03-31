@@ -7,7 +7,7 @@ import { LastSaved } from './last-saved';
 import { LanguageNav } from './language-nav/language-nav';
 import { Menu } from './menu/menu';
 import { Button } from '@/components/button/button';
-import { useAuth } from '@/features/auth/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 import { Link } from 'react-router-dom';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { RequestError } from '@/lib/api/request';
-import { authClient, type AuthSessionResponse } from '../api/auth-client';
+import { authClient, type AuthSessionResponse } from '@/lib/api/auth-client';
 import { authContext } from './auth-context';
 
 const defaultSessionState: AuthSessionResponse = {

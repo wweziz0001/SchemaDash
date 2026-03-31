@@ -5,7 +5,7 @@ import { canonicalSchemaToDiagram } from '@/lib/schema-sync/canonical-adapters';
 import {
     deserializeDiagram,
     persistenceClient,
-} from '@/features/persistence/api/persistence-client';
+} from '@/lib/api/persistence-client';
 import {
     diagramWorkflowClient,
     type DiagramWorkflowRecord,

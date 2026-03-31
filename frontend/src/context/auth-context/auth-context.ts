@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import type { PersistedUserSummary } from '@/features/persistence/api/persistence-client';
+import type { PersistedUserSummary } from '@/lib/api/persistence-client';
 
 export interface AuthContextValue {
     ready: boolean;

@@ -5,15 +5,15 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
     authContext,
     type AuthContextValue,
-} from '@/features/auth/context/auth-context';
-import { AdminRouteGuard } from '@/features/admin/components/admin-route-guard';
+} from '@/context/auth-context/auth-context';
+import { AdminRouteGuard } from '@/pages/admin-page/admin-route-guard';
 import { AdminPage } from './admin-page';
 import {
     adminClient,
     type AdminOverviewResponse,
-} from '@/features/admin/api/admin-client';
+} from '@/lib/api/admin-client';
 
-vi.mock('@/features/admin/api/admin-client', () => ({
+vi.mock('@/lib/api/admin-client', () => ({
     adminClient: {
         getOverview: vi.fn(),
     },

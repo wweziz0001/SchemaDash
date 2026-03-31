@@ -18,7 +18,7 @@ import {
 } from '@/components/select/select';
 import { useLocalConfig } from '@/hooks/use-local-config';
 import { useConfig } from '@/hooks/use-config';
-import { useAuth } from '@/features/auth/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 
 export const SettingsPage: React.FC = () => {
     const {

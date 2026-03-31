@@ -9,7 +9,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/card/card';
-import { useAuth } from '@/features/auth/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 import { useStorage } from '@/hooks/use-storage';
 
 export const ProfilePage: React.FC = () => {

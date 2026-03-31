@@ -1,7 +1,7 @@
 import React from 'react';
 import { LibraryPage } from './library-page';
-import { useLibraryCatalog } from '@/features/dashboard/hooks/use-library-catalog';
-import { useAuth } from '@/features/auth/hooks/use-auth';
+import { useLibraryCatalog } from './use-library-catalog';
+import { useAuth } from '@/hooks/use-auth';
 import {
     Card,
     CardContent,

@@ -11,7 +11,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import {
     authContext,
     type AuthContextValue,
-} from '@/features/auth/context/auth-context';
+} from '@/context/auth-context/auth-context';
 import { ConfigContext } from '@/context/config-context/config-context';
 import { LocalConfigContext } from '@/context/local-config-context/local-config-context';
 import { useStorage } from '@/hooks/use-storage';
@@ -24,18 +24,18 @@ import { CollectionDetailPage } from './collection-detail-page';
 import { TrashPage } from './trash-page';
 import { ProfilePage } from './profile-page';
 import { SettingsPage } from './settings-page';
-import { AdminRouteGuard } from '@/features/admin/components/admin-route-guard';
+import { AdminRouteGuard } from '@/pages/admin-page/admin-route-guard';
 import { AdminPage } from '@/pages/admin-page/admin-page';
 import {
     adminClient,
     type AdminOverviewResponse,
-} from '@/features/admin/api/admin-client';
+} from '@/lib/api/admin-client';
 
 vi.mock('@/hooks/use-storage', () => ({
     useStorage: vi.fn(),
 }));
 
-vi.mock('@/features/admin/api/admin-client', () => ({
+vi.mock('@/lib/api/admin-client', () => ({
     adminClient: {
         getOverview: vi.fn(),
     },

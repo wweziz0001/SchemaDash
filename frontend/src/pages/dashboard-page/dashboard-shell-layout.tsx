@@ -17,7 +17,7 @@ import SchemaDashLogo from '@/assets/logo-light.png';
 import { Button } from '@/components/button/button';
 import { Avatar, AvatarFallback } from '@/components/avatar/avatar';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/features/auth/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 import { LocalConfigProvider } from '@/context/local-config-context/local-config-provider';
 import { ThemeProvider } from '@/context/theme-context/theme-provider';
 import { StorageProvider } from '@/context/storage-context/storage-provider';

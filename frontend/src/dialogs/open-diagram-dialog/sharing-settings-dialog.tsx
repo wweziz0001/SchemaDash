@@ -25,7 +25,7 @@ import type {
     PersistedUserSummary,
     SharingAccess,
     SharingScope,
-} from '@/features/persistence/api/persistence-client';
+} from '@/lib/api/persistence-client';
 import { cn } from '@/lib/utils';
 import {
     Clock3,

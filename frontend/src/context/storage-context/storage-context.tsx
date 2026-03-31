@@ -22,7 +22,7 @@ import type {
     ResourceAccess,
     SharingAccess,
     SharingScope,
-} from '@/features/persistence/api/persistence-client';
+} from '@/lib/api/persistence-client';
 
 export interface SavedCollection {
     id: string;

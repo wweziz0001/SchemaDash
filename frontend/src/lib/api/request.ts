@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '@/lib/env';
-import { getCurrentShareToken } from '@/features/persistence/share-token';
+import { getCurrentShareToken } from '@/lib/persistence/share-token';
 
 const SHARE_TOKEN_HEADER = 'x-schemadash-share-token';
 const LEGACY_SHARE_TOKEN_HEADER = 'x-chartdb-share-token';
