@@ -7,7 +7,6 @@ import {
     Layers3,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Badge } from '@/components/badge/badge';
 import { Button } from '@/components/button/button';
 import {
     Card,
@@ -17,6 +16,7 @@ import {
     CardTitle,
 } from '@/components/card/card';
 import type { LibraryDiagramItem } from '@/lib/dashboard/library-catalog';
+import { StatusBadge } from '@/components/status-badge/status-badge';
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
@@ -39,35 +39,19 @@ export const LibraryDiagramCard: React.FC<{ item: LibraryDiagramItem }> = ({
                             'Saved schema diagram ready for editing, review, and sharing.'}
                     </CardDescription>
                 </div>
-                <Badge
-                    variant="outline"
-                    className="border-stone-200 bg-stone-100 text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300"
-                >
+                <StatusBadge tone="neutral">
                     {item.diagram.databaseType}
-                </Badge>
+                </StatusBadge>
             </div>
 
             <div className="flex flex-wrap gap-2">
                 {item.isShared ? (
-                    <Badge
-                        variant="outline"
-                        className="border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200"
-                    >
-                        Shared access
-                    </Badge>
+                    <StatusBadge tone="info">Shared access</StatusBadge>
                 ) : null}
-                <Badge
-                    variant="outline"
-                    className="border-stone-200 bg-stone-100 text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300"
-                >
-                    {item.project.name}
-                </Badge>
-                <Badge
-                    variant="outline"
-                    className="border-stone-200 bg-stone-100 text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300"
-                >
+                <StatusBadge tone="neutral">{item.project.name}</StatusBadge>
+                <StatusBadge tone="neutral">
                     {item.collection?.name ?? 'Unorganized'}
-                </Badge>
+                </StatusBadge>
             </div>
         </CardHeader>
         <CardContent className="space-y-4">

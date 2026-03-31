@@ -2,14 +2,9 @@ import React from 'react';
 import { Database, Upload } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
+import { Alert, AlertDescription, AlertTitle } from '@/components/alert/alert';
 import { Badge } from '@/components/badge/badge';
 import { Button } from '@/components/button/button';
-import {
-    Card,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/card/card';
 import {
     Select,
     SelectContent,
@@ -148,14 +143,13 @@ export const LibraryPage = ({
         </DashboardSearchToolbar>
 
         {error ? (
-            <Card className="border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-                <CardHeader>
-                    <CardTitle>Library unavailable</CardTitle>
-                    <CardDescription className="text-current">
-                        {error}
-                    </CardDescription>
-                </CardHeader>
-            </Card>
+            <Alert
+                variant="destructive"
+                className="border-rose-200/80 bg-rose-50/80 dark:border-rose-500/30 dark:bg-rose-500/10"
+            >
+                <AlertTitle>Library unavailable</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
         ) : null}
 
         {loading ? (

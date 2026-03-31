@@ -10,6 +10,7 @@ import {
     CardTitle,
 } from '@/components/card/card';
 import { DashboardPageHeader } from '@/components/dashboard-page/dashboard-page-header';
+import { SummaryList } from '@/components/summary-list/summary-list';
 import { useAuth } from '@/hooks/use-auth';
 import { useStorage } from '@/hooks/use-storage';
 
@@ -45,6 +46,11 @@ export const ProfilePage: React.FC = () => {
             <DashboardPageHeader
                 title="Profile"
                 description="Account identity, self-hosted access mode, and the workspace scope currently attached to this SchemaDash session."
+                leadingVisual={
+                    <div className="flex size-16 items-center justify-center rounded-3xl bg-stone-950 text-stone-50 dark:bg-amber-300 dark:text-stone-950">
+                        <UserRound className="size-7" />
+                    </div>
+                }
                 badge={
                     <Badge
                         variant="outline"
@@ -55,13 +61,7 @@ export const ProfilePage: React.FC = () => {
                             : 'Local workspace'}
                     </Badge>
                 }
-            >
-                <div className="hidden items-center gap-4 md:flex">
-                    <div className="flex size-16 items-center justify-center rounded-3xl bg-stone-950 text-stone-50 dark:bg-amber-300 dark:text-stone-950">
-                        <UserRound className="size-7" />
-                    </div>
-                </div>
-            </DashboardPageHeader>
+            />
 
             <section className="grid gap-4 lg:grid-cols-[1.5fr,1fr]">
                 <Card className="border-stone-200/80 bg-white/80 shadow-sm dark:border-stone-800/80 dark:bg-stone-900/80">
@@ -134,18 +134,18 @@ export const ProfilePage: React.FC = () => {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4 text-sm text-stone-600 dark:text-stone-300">
-                        <div className="flex items-center justify-between rounded-2xl bg-stone-100 px-4 py-3 dark:bg-stone-800/80">
-                            <span>Collections</span>
-                            <span className="font-semibold text-stone-950 dark:text-stone-50">
-                                {collectionCount}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-2xl bg-stone-100 px-4 py-3 dark:bg-stone-800/80">
-                            <span>Active projects</span>
-                            <span className="font-semibold text-stone-950 dark:text-stone-50">
-                                {projectCount}
-                            </span>
-                        </div>
+                        <SummaryList
+                            items={[
+                                {
+                                    label: 'Collections',
+                                    value: collectionCount,
+                                },
+                                {
+                                    label: 'Active projects',
+                                    value: projectCount,
+                                },
+                            ]}
+                        />
                         <div className="flex items-center gap-3 rounded-2xl bg-stone-100 px-4 py-3 dark:bg-stone-800/80">
                             <ShieldCheck className="size-4 text-stone-500" />
                             <span>

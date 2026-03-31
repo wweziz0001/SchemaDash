@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Trash2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/alert/alert';
 import {
     Card,
     CardContent,
@@ -10,6 +11,7 @@ import {
 } from '@/components/card/card';
 import { DashboardFeedbackPanel } from '@/components/dashboard-page/dashboard-feedback-panel';
 import { DashboardPageHeader } from '@/components/dashboard-page/dashboard-page-header';
+import { MetricCard } from '@/components/metric-card/metric-card';
 import { useLibraryCatalog } from './use-library-catalog';
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -35,56 +37,34 @@ export const TrashPage: React.FC = () => {
             />
 
             <section className="grid gap-4 md:grid-cols-3">
-                <Card className="border-stone-200/80 bg-white/80 shadow-sm dark:border-stone-800/80 dark:bg-stone-900/80">
-                    <CardHeader className="pb-3">
-                        <CardDescription>Deleted projects</CardDescription>
-                        <CardTitle className="text-3xl">
-                            {projects.length}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0 text-sm text-stone-500">
-                        Currently held in trash.
-                    </CardContent>
-                </Card>
-                <Card className="border-stone-200/80 bg-white/80 shadow-sm dark:border-stone-800/80 dark:bg-stone-900/80">
-                    <CardHeader className="pb-3">
-                        <CardDescription>Contained diagrams</CardDescription>
-                        <CardTitle className="text-3xl">
-                            {projects.reduce(
-                                (count, project) =>
-                                    count + project.diagramCount,
-                                0
-                            )}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0 text-sm text-stone-500">
-                        Diagram summaries still available for audit.
-                    </CardContent>
-                </Card>
-                <Card className="border-stone-200/80 bg-white/80 shadow-sm dark:border-stone-800/80 dark:bg-stone-900/80">
-                    <CardHeader className="pb-3">
-                        <CardDescription>
-                            Collections in workspace
-                        </CardDescription>
-                        <CardTitle className="text-3xl">
-                            {collections.length}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0 text-sm text-stone-500">
-                        Active collection taxonomy remains intact.
-                    </CardContent>
-                </Card>
+                <MetricCard
+                    detail="Currently held in trash."
+                    label="Deleted projects"
+                    value={projects.length}
+                />
+                <MetricCard
+                    detail="Diagram summaries still available for audit."
+                    label="Contained diagrams"
+                    value={projects.reduce(
+                        (count, project) => count + project.diagramCount,
+                        0
+                    )}
+                />
+                <MetricCard
+                    detail="Active collection taxonomy remains intact."
+                    label="Collections in workspace"
+                    value={collections.length}
+                />
             </section>
 
             {error ? (
-                <Card className="border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-                    <CardHeader>
-                        <CardTitle>Trash unavailable</CardTitle>
-                        <CardDescription className="text-current">
-                            {error}
-                        </CardDescription>
-                    </CardHeader>
-                </Card>
+                <Alert
+                    variant="destructive"
+                    className="border-rose-200/80 bg-rose-50/80 dark:border-rose-500/30 dark:bg-rose-500/10"
+                >
+                    <AlertTitle>Trash unavailable</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
             ) : null}
 
             {loading ? (

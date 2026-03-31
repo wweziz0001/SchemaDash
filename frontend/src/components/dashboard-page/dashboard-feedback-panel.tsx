@@ -1,11 +1,12 @@
 import React from 'react';
+import { Card, CardContent } from '@/components/card/card';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/card/card';
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/empty/empty';
 import { cn } from '@/lib/utils';
 
 export interface DashboardFeedbackPanelProps {
@@ -52,33 +53,23 @@ export const DashboardFeedbackPanel: React.FC<DashboardFeedbackPanelProps> = ({
                 className
             )}
         >
-            <CardHeader className="sr-only">
-                <CardTitle>{title}</CardTitle>
-                {description ? (
-                    <CardDescription>{description}</CardDescription>
-                ) : null}
-            </CardHeader>
-            <CardContent
-                className={cn(
-                    'flex flex-col items-center justify-center gap-3 py-16 text-center',
-                    contentClassName
-                )}
-            >
-                {icon ? (
-                    <div className="rounded-2xl bg-stone-100 p-4 dark:bg-stone-800">
-                        {icon}
-                    </div>
-                ) : null}
-                <div className="space-y-1">
-                    {title ? (
-                        <h2 className="text-xl font-semibold">{title}</h2>
-                    ) : null}
-                    {description ? (
-                        <p className="max-w-xl text-sm leading-6 text-stone-500">
-                            {description}
-                        </p>
-                    ) : null}
-                </div>
+            <CardContent className={cn('py-6', contentClassName)}>
+                <Empty className="min-h-[17rem] border-none bg-transparent p-6">
+                    <EmptyHeader className="max-w-xl">
+                        {icon ? (
+                            <EmptyMedia
+                                variant="icon"
+                                className="size-14 rounded-2xl bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-300"
+                            >
+                                {icon}
+                            </EmptyMedia>
+                        ) : null}
+                        {title ? <EmptyTitle>{title}</EmptyTitle> : null}
+                        {description ? (
+                            <EmptyDescription>{description}</EmptyDescription>
+                        ) : null}
+                    </EmptyHeader>
+                </Empty>
             </CardContent>
         </Card>
     );

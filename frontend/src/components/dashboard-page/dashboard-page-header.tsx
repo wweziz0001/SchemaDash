@@ -9,6 +9,7 @@ export interface DashboardPageHeaderProps extends React.HTMLAttributes<HTMLEleme
     actions?: React.ReactNode;
     icon?: React.ReactNode;
     contentClassName?: string;
+    leadingVisual?: React.ReactNode;
 }
 
 export const DashboardPageHeader: React.FC<DashboardPageHeaderProps> = ({
@@ -19,6 +20,7 @@ export const DashboardPageHeader: React.FC<DashboardPageHeaderProps> = ({
     contentClassName,
     description,
     icon,
+    leadingVisual,
     title,
     ...props
 }) => (
@@ -35,26 +37,35 @@ export const DashboardPageHeader: React.FC<DashboardPageHeaderProps> = ({
                 contentClassName
             )}
         >
-            <div className="min-w-0 flex-1 space-y-3">
-                {badge ? (
-                    badge
-                ) : icon ? (
-                    <Badge
-                        variant="outline"
-                        className="w-fit border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
-                    >
-                        {icon}
-                    </Badge>
-                ) : null}
-                <div className="space-y-2">
-                    <h1 className="text-3xl font-semibold tracking-tight text-stone-950 dark:text-stone-50 sm:text-4xl">
-                        {title}
-                    </h1>
-                    <p className="max-w-3xl text-sm leading-6 text-stone-600 dark:text-stone-300 sm:text-base">
-                        {description}
-                    </p>
+            <div className="min-w-0 flex-1">
+                <div className="flex items-start gap-4">
+                    {leadingVisual ? (
+                        <div className="hidden shrink-0 md:block">
+                            {leadingVisual}
+                        </div>
+                    ) : null}
+                    <div className="min-w-0 flex-1 space-y-3">
+                        {badge ? (
+                            badge
+                        ) : icon ? (
+                            <Badge
+                                variant="outline"
+                                className="w-fit border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+                            >
+                                {icon}
+                            </Badge>
+                        ) : null}
+                        <div className="space-y-2">
+                            <h1 className="text-3xl font-semibold tracking-tight text-stone-950 dark:text-stone-50 sm:text-4xl">
+                                {title}
+                            </h1>
+                            <p className="max-w-3xl text-sm leading-6 text-stone-600 dark:text-stone-300 sm:text-base">
+                                {description}
+                            </p>
+                        </div>
+                        {children}
+                    </div>
                 </div>
-                {children}
             </div>
             {actions ? (
                 <div className="flex flex-col gap-3 md:flex-row">{actions}</div>

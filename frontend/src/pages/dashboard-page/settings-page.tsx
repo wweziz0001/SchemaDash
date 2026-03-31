@@ -17,6 +17,7 @@ import {
 } from '@/components/select/select';
 import { DashboardPageHeader } from '@/components/dashboard-page/dashboard-page-header';
 import { DashboardSettingOptionCard } from '@/components/dashboard-page/dashboard-setting-option-card';
+import { SummaryList } from '@/components/summary-list/summary-list';
 import { useLocalConfig } from '@/hooks/use-local-config';
 import { useConfig } from '@/hooks/use-config';
 import { useAuth } from '@/hooks/use-auth';
@@ -128,24 +129,33 @@ export const SettingsPage: React.FC = () => {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4 text-sm text-stone-600 dark:text-stone-300">
-                        <div className="flex items-center justify-between rounded-2xl bg-stone-100 px-4 py-3 dark:bg-stone-800/80">
-                            <span>Authentication mode</span>
-                            <span className="font-semibold uppercase text-stone-950 dark:text-stone-50">
-                                {enabled ? mode : 'disabled'}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-2xl bg-stone-100 px-4 py-3 dark:bg-stone-800/80">
-                            <span>Server reachability</span>
-                            <span className="font-semibold text-stone-950 dark:text-stone-50">
-                                {serverReachable ? 'Online' : 'Offline'}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-2xl bg-stone-100 px-4 py-3 dark:bg-stone-800/80">
-                            <span>Default diagram id</span>
-                            <span className="max-w-[220px] truncate font-semibold text-stone-950 dark:text-stone-50">
-                                {config?.defaultDiagramId || 'Not set'}
-                            </span>
-                        </div>
+                        <SummaryList
+                            items={[
+                                {
+                                    label: 'Authentication mode',
+                                    value: (
+                                        <span className="uppercase">
+                                            {enabled ? mode : 'disabled'}
+                                        </span>
+                                    ),
+                                },
+                                {
+                                    label: 'Server reachability',
+                                    value: serverReachable
+                                        ? 'Online'
+                                        : 'Offline',
+                                },
+                                {
+                                    label: 'Default diagram id',
+                                    value: (
+                                        <span className="inline-block max-w-[220px] truncate">
+                                            {config?.defaultDiagramId ||
+                                                'Not set'}
+                                        </span>
+                                    ),
+                                },
+                            ]}
+                        />
                     </CardContent>
                 </Card>
             </section>
