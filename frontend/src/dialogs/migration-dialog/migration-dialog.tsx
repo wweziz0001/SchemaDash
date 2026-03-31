@@ -24,7 +24,7 @@ import {
 } from '@/lib/api/diagram-migration-client';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { useStorage } from '@/hooks/use-storage';
-import { MigrationSummary } from './migration-summary';
+import { ChangePlanSummary } from '@/components/change-plan-summary/change-plan-summary';
 import { MigrationWarningList } from './migration-warning-list';
 
 export interface MigrationDialogProps {
@@ -551,7 +551,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                     </div>
                                 </div>
 
-                                <MigrationSummary plan={preview.plan} />
+                                <ChangePlanSummary plan={preview.plan} />
                                 <MigrationWarningList
                                     title="Preview notes, warnings, and blockers"
                                     issues={preview.issues}

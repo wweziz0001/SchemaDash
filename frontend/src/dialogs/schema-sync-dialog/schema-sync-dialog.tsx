@@ -17,7 +17,8 @@ import { Textarea } from '@/components/textarea/textarea';
 import { Badge } from '@/components/badge/badge';
 import { Separator } from '@/components/separator/separator';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
-import { useSchemaSync } from '../hooks/use-schema-sync';
+import { ChangePlanSummary } from '@/components/change-plan-summary/change-plan-summary';
+import { useSchemaSync } from '@/features/schema-sync/hooks/use-schema-sync';
 import type { ConnectionUpsert } from '@schemadash/schema-sync-core';
 import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useToast } from '@/components/toast/use-toast';
@@ -643,40 +644,10 @@ export const SchemaSyncDialog: React.FC = () => {
                                         className="min-h-0 flex-1"
                                     >
                                         {previewPlan ? (
-                                            <div className="grid gap-3 md:grid-cols-2">
-                                                <div className="rounded-md border p-3">
-                                                    <div className="text-sm font-semibold">
-                                                        Counts
-                                                    </div>
-                                                    <div className="mt-2 text-sm">
-                                                        Total:{' '}
-                                                        {
-                                                            previewPlan.summary
-                                                                .totalChanges
-                                                        }
-                                                    </div>
-                                                    <div className="text-sm">
-                                                        Safe:{' '}
-                                                        {
-                                                            previewPlan.summary
-                                                                .safeChanges
-                                                        }
-                                                    </div>
-                                                    <div className="text-sm">
-                                                        Warning:{' '}
-                                                        {
-                                                            previewPlan.summary
-                                                                .warningChanges
-                                                        }
-                                                    </div>
-                                                    <div className="text-sm">
-                                                        Destructive:{' '}
-                                                        {
-                                                            previewPlan.summary
-                                                                .destructiveChanges
-                                                        }
-                                                    </div>
-                                                </div>
+                                            <div className="grid gap-3">
+                                                <ChangePlanSummary
+                                                    plan={previewPlan}
+                                                />
                                                 <div className="rounded-md border p-3">
                                                     <div className="text-sm font-semibold">
                                                         Status
@@ -704,7 +675,7 @@ export const SchemaSyncDialog: React.FC = () => {
                                                     ) : null}
                                                 </div>
                                                 {applyResult ? (
-                                                    <div className="rounded-md border p-3 md:col-span-2">
+                                                    <div className="rounded-md border p-3">
                                                         <div className="text-sm font-semibold">
                                                             Post-apply result
                                                         </div>

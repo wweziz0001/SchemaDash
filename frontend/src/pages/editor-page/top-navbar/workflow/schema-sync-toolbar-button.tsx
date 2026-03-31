@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/button/button';
 import { DatabaseZap } from 'lucide-react';
-import { useSchemaSync } from '../hooks/use-schema-sync';
+import { useSchemaSync } from '@/features/schema-sync/hooks/use-schema-sync';
 
 export const SchemaSyncToolbarButton: React.FC = () => {
     const { setOpen } = useSchemaSync();

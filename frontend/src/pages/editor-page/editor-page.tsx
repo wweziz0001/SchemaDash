@@ -27,7 +27,7 @@ import { DiffProvider } from '@/context/diff-context/diff-provider';
 import { TopNavbarMock } from './top-navbar/top-navbar-mock';
 import { DiagramFilterProvider } from '@/context/diagram-filter-context/diagram-filter-provider';
 import { SchemaSyncProvider } from '@/features/schema-sync/context/schema-sync-context';
-import { SchemaSyncDialog } from '@/features/schema-sync/dialogs/schema-sync-dialog';
+import { SchemaSyncDialog } from '@/dialogs/schema-sync-dialog/schema-sync-dialog';
 import type { Diagram } from '@/lib/domain/diagram';
 import { WorkflowDevelopmentDiagramSync } from './workflow/workflow-development-diagram-sync';
 

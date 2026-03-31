@@ -6,7 +6,6 @@ import { DiagramName } from './diagram-name';
 import { LastSaved } from './last-saved';
 import { LanguageNav } from './language-nav/language-nav';
 import { Menu } from './menu/menu';
-import { SchemaSyncToolbarButton } from '@/features/schema-sync/components/schema-sync-toolbar-button';
 import { Button } from '@/components/button/button';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { Link } from 'react-router-dom';
@@ -14,6 +13,7 @@ import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { VersionViewBadge } from './workflow/version-view-badge';
 import { WorkflowActionsMenu } from './workflow/workflow-actions-menu';
+import { SchemaSyncToolbarButton } from './workflow/schema-sync-toolbar-button';
 import { WorkflowModeSwitcher } from './workflow/workflow-mode-switcher';
 
 export interface TopNavbarProps {}
