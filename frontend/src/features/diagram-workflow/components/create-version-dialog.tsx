@@ -113,6 +113,22 @@ export const CreateVersionDialog: React.FC<CreateVersionDialogProps> = ({
                 </DialogHeader>
 
                 <div className="space-y-4">
+                    <div className="rounded-xl border bg-muted/15 p-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                                Source Development
+                            </span>
+                            <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                                Result Immutable snapshot
+                            </span>
+                        </div>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Creating a version captures the current Development
+                            schema for later review, compare, and safe restore
+                            without mutating the stored snapshot.
+                        </p>
+                    </div>
+
                     {!canCreateVersion ? (
                         <Alert>
                             <AlertTitle>

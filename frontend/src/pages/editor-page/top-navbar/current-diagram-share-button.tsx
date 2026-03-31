@@ -54,17 +54,18 @@ export const CurrentDiagramShareButton: React.FC = () => {
 
     return (
         <>
-            <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setOpen(true)}
-                disabled={!canShare}
-            >
-                <Share2 className="mr-2 size-4" />
-                Share
-            </Button>
-
+            <div className="p-1">
+                <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setOpen(true)}
+                    disabled={!canShare}
+                    className="flex flex-col items-center justify-center gap-2 border-0 px-3 py-8 shadow-none"
+                >
+                    <Share2 className="size-4" />
+                    <span>Share</span>
+                </Button>
+            </div>
             <SharingSettingsDialog
                 open={open}
                 onOpenChange={setOpen}

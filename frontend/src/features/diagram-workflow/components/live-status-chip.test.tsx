@@ -31,9 +31,9 @@ describe('live status chip', () => {
 
         render(<LiveStatusChip />);
 
-        expect(screen.queryByText('Connected: Warehouse')).not.toBeNull();
-        expect(screen.queryByText(/Last synced/)).not.toBeNull();
-        expect(screen.queryByText('Read-only')).not.toBeNull();
+        expect(screen.queryByText('Warehouse linked')).not.toBeNull();
+        expect(screen.queryByText(/Synced/)).not.toBeNull();
+        expect(screen.queryByText('Live read-only')).not.toBeNull();
     });
 
     it('shows disconnected state before a live database is bound', () => {
@@ -54,7 +54,7 @@ describe('live status chip', () => {
 
         expect(screen.queryByText('Disconnected')).not.toBeNull();
         expect(screen.queryByText('Live unavailable')).not.toBeNull();
-        expect(screen.queryByText('Editable')).not.toBeNull();
+        expect(screen.queryByText('Development editable')).not.toBeNull();
     });
 
     it('shows compare read-only state while reviewing differences', () => {

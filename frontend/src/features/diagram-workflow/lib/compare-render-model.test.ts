@@ -210,7 +210,7 @@ describe('buildCompareRenderModel', () => {
                 ...developmentDiagram,
                 tables: [
                     {
-                        ...developmentDiagram.tables[0],
+                        ...developmentDiagram.tables![0],
                         name: 'table_1',
                         schema: 'public',
                         syncMetadata: {
@@ -219,13 +219,13 @@ describe('buildCompareRenderModel', () => {
                         },
                         fields: [
                             {
-                                ...developmentDiagram.tables[0].fields[0],
+                                ...developmentDiagram.tables![0].fields[0],
                                 name: 'id',
                                 type: { id: 'bigint', name: 'bigint' },
                                 syncMetadata: undefined,
                             },
                             {
-                                ...developmentDiagram.tables[0].fields[1],
+                                ...developmentDiagram.tables![0].fields[1],
                                 name: 'field_2',
                                 type: { id: 'date', name: 'date' },
                                 nullable: true,

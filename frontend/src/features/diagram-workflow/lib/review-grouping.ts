@@ -225,7 +225,12 @@ const getNamedMatchKey = (
     item:
         | { name: string; sync?: { sourceId?: string } }
         | { name?: string | null; id: string; sync?: { sourceId?: string } }
-) => (item.sync?.sourceId ?? item.name ?? item.id).toLowerCase();
+) =>
+    (
+        item.sync?.sourceId ??
+        item.name ??
+        ('id' in item ? item.id : '')
+    ).toLowerCase();
 
 const buildSection = ({
     key,

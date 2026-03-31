@@ -25,6 +25,7 @@ import {
 } from '../api/diagram-migration-client';
 import { MigrationSummary } from './migration-summary';
 import { MigrationWarningList } from './migration-warning-list';
+import { WorkflowMetricCard } from './workflow-metric-card';
 
 export interface MigrationDialogProps {
     open: boolean;
@@ -257,6 +258,9 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
     const requiresDestructiveConfirmation =
         !!preview?.plan?.requiresConfirmation;
     const previewIssues = preview?.issues ?? [];
+    const blockingPreviewIssues = previewIssues.filter(
+        (issue) => issue.severity === 'blocking'
+    ).length;
     const applyDisabled =
         !validation?.readyToApply ||
         applying ||
@@ -359,7 +363,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
 
                 <ScrollArea className="min-h-0 flex-1 pr-4">
                     <div className="flex flex-col gap-6 pb-6">
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-muted/15 p-3 shadow-sm">
                             <Badge variant="outline">
                                 {loadingPreview
                                     ? 'Generating preview'
@@ -375,6 +379,15 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                       : validation
                                         ? 'Validation failed'
                                         : 'Validation pending'}
+                            </Badge>
+                            <Badge variant="outline">
+                                {workflow?.workflow?.connectionName ??
+                                    'No bound connection'}
+                            </Badge>
+                            <Badge variant="outline">
+                                {workflow?.workflow?.liveSnapshotId
+                                    ? 'Live baseline ready'
+                                    : 'Live baseline missing'}
                             </Badge>
                         </div>
 
@@ -401,7 +414,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
 
                         {!loadingPreview && !preview?.plan ? (
                             <div className="space-y-4">
-                                <div className="rounded-lg border p-4">
+                                <div className="rounded-xl border bg-card/60 p-4 shadow-sm">
                                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                         <div>
                                             <div className="text-sm font-medium">
@@ -425,51 +438,45 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                     </div>
 
                                     <div className="mt-4 grid gap-3 md:grid-cols-4">
-                                        <div className="rounded-md border bg-muted/20 p-3">
-                                            <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                                                Connection
-                                            </div>
-                                            <div className="mt-2 text-sm font-medium">
-                                                {preview?.connectionName ??
-                                                    'Unavailable'}
-                                            </div>
-                                        </div>
-                                        <div className="rounded-md border bg-muted/20 p-3">
-                                            <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                                                Live snapshot
-                                            </div>
-                                            <div className="mt-2 text-sm font-medium">
-                                                {preview?.workflowLiveSnapshotId
+                                        <WorkflowMetricCard
+                                            label="Connection"
+                                            value={
+                                                preview?.connectionName ??
+                                                'Unavailable'
+                                            }
+                                            detail="Saved connection bound to this workflow."
+                                        />
+                                        <WorkflowMetricCard
+                                            label="Live snapshot"
+                                            value={
+                                                preview?.workflowLiveSnapshotId
                                                     ? 'Available'
-                                                    : 'Missing'}
-                                            </div>
-                                        </div>
-                                        <div className="rounded-md border bg-muted/20 p-3">
-                                            <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                                                Blocking issues
-                                            </div>
-                                            <div className="mt-2 text-sm font-medium">
-                                                {
-                                                    previewIssues.filter(
-                                                        (issue) =>
-                                                            issue.severity ===
-                                                            'blocking'
-                                                    ).length
-                                                }
-                                            </div>
-                                        </div>
-                                        <div className="rounded-md border bg-muted/20 p-3">
-                                            <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                                                Generated
-                                            </div>
-                                            <div className="mt-2 text-sm font-medium">
-                                                {preview?.generatedAt
+                                                    : 'Missing'
+                                            }
+                                            detail="A live baseline is required to produce a reliable plan."
+                                        />
+                                        <WorkflowMetricCard
+                                            label="Blocking issues"
+                                            value={blockingPreviewIssues}
+                                            detail="Blocking findings that prevent the preview from being actionable."
+                                        />
+                                        <WorkflowMetricCard
+                                            label="Generated"
+                                            value={
+                                                preview?.generatedAt
                                                     ? new Date(
                                                           preview.generatedAt
-                                                      ).toLocaleString()
-                                                    : 'Not generated'}
-                                            </div>
-                                        </div>
+                                                      ).toLocaleTimeString()
+                                                    : 'Not generated'
+                                            }
+                                            detail={
+                                                preview?.generatedAt
+                                                    ? new Date(
+                                                          preview.generatedAt
+                                                      ).toLocaleDateString()
+                                                    : 'Preview generation did not complete.'
+                                            }
+                                        />
                                     </div>
                                 </div>
 
@@ -482,13 +489,75 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
 
                         {preview?.plan ? (
                             <>
+                                <div className="rounded-xl border bg-muted/15 p-4 shadow-sm">
+                                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                        <div className="space-y-2">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <Badge variant="secondary">
+                                                    Canonical plan
+                                                </Badge>
+                                                <Badge variant="outline">
+                                                    Baseline Live Database
+                                                </Badge>
+                                                <Badge variant="outline">
+                                                    Target Development
+                                                </Badge>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">
+                                                The migration workflow turns the
+                                                current live baseline and
+                                                Development schema into a
+                                                previewable, validation-aware
+                                                execution plan.
+                                            </p>
+                                        </div>
+                                        <Badge variant="outline">
+                                            {preview.connectionName ??
+                                                'Connection unavailable'}
+                                        </Badge>
+                                    </div>
+                                    <div className="mt-4 grid gap-3 md:grid-cols-4">
+                                        <WorkflowMetricCard
+                                            label="Connection"
+                                            value={
+                                                preview.connectionName ??
+                                                'Unavailable'
+                                            }
+                                            detail="Target database connection for this migration."
+                                        />
+                                        <WorkflowMetricCard
+                                            label="Live snapshot"
+                                            value={
+                                                preview.workflowLiveSnapshotId
+                                                    ? 'Ready'
+                                                    : 'Missing'
+                                            }
+                                            detail="The live baseline used to build this canonical plan."
+                                        />
+                                        <WorkflowMetricCard
+                                            label="Blocking issues"
+                                            value={blockingPreviewIssues}
+                                            detail="Blocking findings currently attached to the preview."
+                                        />
+                                        <WorkflowMetricCard
+                                            label="Generated"
+                                            value={new Date(
+                                                preview.generatedAt
+                                            ).toLocaleTimeString()}
+                                            detail={new Date(
+                                                preview.generatedAt
+                                            ).toLocaleDateString()}
+                                        />
+                                    </div>
+                                </div>
+
                                 <MigrationSummary plan={preview.plan} />
                                 <MigrationWarningList
                                     title="Preview notes, warnings, and blockers"
                                     issues={preview.issues}
                                 />
 
-                                <div className="rounded-lg border p-4">
+                                <div className="rounded-xl border bg-card/60 p-4 shadow-sm">
                                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                         <div>
                                             <div className="text-sm font-medium">
@@ -522,7 +591,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                             {validation.checks.map((check) => (
                                                 <div
                                                     key={check.code}
-                                                    className="rounded-md border bg-muted/20 p-3"
+                                                    className="rounded-xl border bg-background/80 p-4 shadow-sm"
                                                 >
                                                     <div className="flex items-center justify-between gap-3">
                                                         <div className="font-medium">
@@ -557,7 +626,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
 
                                 <Separator />
 
-                                <div className="rounded-lg border p-4">
+                                <div className="rounded-xl border bg-card/60 p-4 shadow-sm">
                                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                         <div>
                                             <div className="text-sm font-medium">
@@ -582,7 +651,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                     </div>
 
                                     {requiresDestructiveConfirmation ? (
-                                        <div className="mt-4 grid gap-2">
+                                        <div className="mt-4 grid gap-2 rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900 dark:bg-amber-950/20">
                                             <label className="text-sm font-medium">
                                                 Destructive confirmation text
                                             </label>
@@ -632,50 +701,42 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                             </Alert>
 
                                             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                                                <div className="rounded-md border bg-muted/20 p-3">
-                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                                                        Job ID
-                                                    </div>
-                                                    <div className="mt-2 break-all text-sm font-medium">
-                                                        {execution.result
+                                                <WorkflowMetricCard
+                                                    label="Job ID"
+                                                    value={
+                                                        execution.result
                                                             .jobId ??
-                                                            'Not recorded'}
-                                                    </div>
-                                                </div>
-                                                <div className="rounded-md border bg-muted/20 p-3">
-                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                                                        Audit ID
-                                                    </div>
-                                                    <div className="mt-2 break-all text-sm font-medium">
-                                                        {execution.result
+                                                        'Not recorded'
+                                                    }
+                                                />
+                                                <WorkflowMetricCard
+                                                    label="Audit ID"
+                                                    value={
+                                                        execution.result
                                                             .auditId ??
-                                                            'Not recorded'}
-                                                    </div>
-                                                </div>
-                                                <div className="rounded-md border bg-muted/20 p-3">
-                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                                                        Post-apply snapshot
-                                                    </div>
-                                                    <div className="mt-2 break-all text-sm font-medium">
-                                                        {execution.result
+                                                        'Not recorded'
+                                                    }
+                                                />
+                                                <WorkflowMetricCard
+                                                    label="Post-apply snapshot"
+                                                    value={
+                                                        execution.result
                                                             .postApplySnapshotId ??
-                                                            'Not recorded'}
-                                                    </div>
-                                                </div>
-                                                <div className="rounded-md border bg-muted/20 p-3">
-                                                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                                                        Workflow live snapshot
-                                                    </div>
-                                                    <div className="mt-2 break-all text-sm font-medium">
-                                                        {execution.result
+                                                        'Not recorded'
+                                                    }
+                                                />
+                                                <WorkflowMetricCard
+                                                    label="Workflow live snapshot"
+                                                    value={
+                                                        execution.result
                                                             .updatedLiveSnapshotId ??
-                                                            'Not updated'}
-                                                    </div>
-                                                </div>
+                                                        'Not updated'
+                                                    }
+                                                />
                                             </div>
 
                                             <div className="grid gap-3 md:grid-cols-2">
-                                                <div className="rounded-md border bg-muted/20 p-3">
+                                                <div className="rounded-xl border bg-background/80 p-4 shadow-sm">
                                                     <div className="text-sm font-medium">
                                                         Result logs
                                                     </div>
@@ -694,7 +755,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                                         ))}
                                                     </div>
                                                 </div>
-                                                <div className="rounded-md border bg-muted/20 p-3">
+                                                <div className="rounded-xl border bg-background/80 p-4 shadow-sm">
                                                     <div className="text-sm font-medium">
                                                         Executed SQL
                                                     </div>
@@ -717,9 +778,19 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
 
                                 <Separator />
 
-                                <div className="rounded-lg border p-4">
-                                    <div className="text-sm font-medium">
-                                        SQL preview
+                                <div className="rounded-xl border bg-card/60 p-4 shadow-sm">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <div className="text-sm font-medium">
+                                            SQL preview
+                                        </div>
+                                        <Badge variant="outline">
+                                            {preview.plan.sqlStatements.length}{' '}
+                                            statement
+                                            {preview.plan.sqlStatements
+                                                .length === 1
+                                                ? ''
+                                                : 's'}
+                                        </Badge>
                                     </div>
                                     <p className="mt-1 text-sm text-muted-foreground">
                                         This preview is generated from the
@@ -728,7 +799,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({
                                         disabled until the apply workflow is
                                         explicitly confirmed.
                                     </p>
-                                    <pre className="mt-4 overflow-x-auto rounded-md bg-muted p-4 text-xs leading-6">
+                                    <pre className="mt-4 overflow-x-auto rounded-xl border bg-background/90 p-4 text-xs leading-6 shadow-sm">
                                         <code>
                                             {preview.plan.sqlStatements.length >
                                             0

@@ -155,15 +155,37 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
                 </DialogHeader>
 
                 <div className="space-y-4">
+                    <div className="rounded-xl border bg-muted/15 p-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                                Source{' '}
+                                {version
+                                    ? getRestoreVersionHeading(version)
+                                    : 'Selected version'}
+                            </span>
+                            <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                                Target Development
+                            </span>
+                            <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                                Copy, do not mutate snapshot
+                            </span>
+                        </div>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Restoring copies the selected immutable version back
+                            into the mutable Development head. The stored
+                            version itself is never edited.
+                        </p>
+                    </div>
+
                     {version ? <RestoreWarningPanel version={version} /> : null}
 
                     {errorMessage ? (
-                        <p className="text-sm text-destructive">
+                        <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
                             {errorMessage}
-                        </p>
+                        </div>
                     ) : null}
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 rounded-xl border bg-card/60 p-4 shadow-sm">
                         <Label htmlFor="restore-confirmation-text">
                             Confirmation text
                         </Label>

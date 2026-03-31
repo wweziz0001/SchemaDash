@@ -18,6 +18,7 @@ import { supportsCustomTypes } from '@/lib/domain/database-capabilities';
 import { DBMLSection } from './dbml-section/dbml-section';
 import { RefsSection } from './refs-section/refs-section';
 import { VisualsSection } from './visuals-section/visuals-section';
+import { VersionsSection } from './versions-section/versions-section';
 
 export interface SidePanelProps {}
 
@@ -59,6 +60,9 @@ export const SidePanel: React.FC<SidePanelProps> = () => {
                                 <SelectItem value="visuals">
                                     {t('side_panel.visuals_section.visuals')}
                                 </SelectItem>
+                                <SelectItem value="versions">
+                                    {t('side_panel.versions_section.versions')}
+                                </SelectItem>
                                 {canShowCustomTypes ? (
                                     <SelectItem value="customTypes">
                                         {t(
@@ -79,6 +83,8 @@ export const SidePanel: React.FC<SidePanelProps> = () => {
                 <RefsSection />
             ) : selectedSidebarSection === 'visuals' ? (
                 <VisualsSection />
+            ) : selectedSidebarSection === 'versions' ? (
+                <VersionsSection />
             ) : (
                 <CustomTypesSection />
             )}

@@ -3,6 +3,7 @@ import type {
     LayoutContext,
     SidebarSection,
     VisualsTab,
+    VersionsTab,
 } from './layout-context';
 import { layoutContext } from './layout-context';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
@@ -29,6 +30,8 @@ export const LayoutProvider: React.FC<React.PropsWithChildren> = ({
         React.useState<SidebarSection>('tables');
     const [selectedVisualsTab, setSelectedVisualsTab] =
         React.useState<VisualsTab>('areas');
+    const [selectedVersionsTab, setSelectedVersionsTab] =
+        React.useState<VersionsTab>('version');
     const [isSidePanelShowed, setIsSidePanelShowed] =
         React.useState<boolean>(isDesktop);
 
@@ -146,6 +149,8 @@ export const LayoutProvider: React.FC<React.PropsWithChildren> = ({
                 closeAllCustomTypesInSidebar,
                 selectedVisualsTab,
                 selectVisualsTab: setSelectedVisualsTab,
+                selectedVersionsTab,
+                selectVersionsTab: setSelectedVersionsTab,
             }}
         >
             {children}

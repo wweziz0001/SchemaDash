@@ -10,8 +10,10 @@ import {
 } from '@/components/dialog/dialog';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { Separator } from '@/components/separator/separator';
+import { cn } from '@/lib/utils';
 import { useOptionalDiagramWorkflow } from '../context/diagram-workflow-context';
 import { buildReviewGrouping } from '../lib/review-grouping';
+import { WorkflowMetricCard } from './workflow-metric-card';
 
 const badgeVariantByStatus = {
     added: 'default',
@@ -25,6 +27,15 @@ const statusChipClassName = {
     removed: 'bg-destructive text-destructive-foreground',
     changed: 'bg-amber-500 text-black hover:bg-amber-500',
     unchanged: '',
+} as const;
+
+const bucketSurfaceClassName = {
+    added: 'border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/20',
+    removed:
+        'border-rose-200 bg-rose-50/60 dark:border-rose-900 dark:bg-rose-950/20',
+    changed:
+        'border-amber-200 bg-amber-50/60 dark:border-amber-900 dark:bg-amber-950/20',
+    unchanged: 'border-border bg-background/80',
 } as const;
 
 export interface ReviewChangesDialogProps {
@@ -75,119 +86,64 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                 ) : (
                     <ScrollArea className="min-h-0 flex-1 pr-4">
                         <div className="flex flex-col gap-6 pb-6">
+                            <div className="rounded-xl border bg-muted/15 p-4 shadow-sm">
+                                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                    <div className="space-y-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <Badge variant="secondary">
+                                                Structured review
+                                            </Badge>
+                                            <Badge variant="outline">
+                                                Baseline Live Database
+                                            </Badge>
+                                            <Badge variant="outline">
+                                                Target Development
+                                            </Badge>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">
+                                            Review grouped schema changes before
+                                            moving into validation or migration.
+                                            This surface stays read-only and is
+                                            optimized for fast inspection.
+                                        </p>
+                                    </div>
+                                    <Badge variant="outline">Read-only</Badge>
+                                </div>
+                            </div>
+
                             <div className="grid gap-3 md:grid-cols-3">
-                                <div className="rounded-lg border p-4">
-                                    <div className="text-sm font-medium text-muted-foreground">
-                                        Tables
-                                    </div>
-                                    <div className="mt-2 text-2xl font-semibold">
-                                        {
-                                            reviewGrouping.compareResult.summary
-                                                .tables.total
-                                        }
-                                    </div>
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        <Badge variant="outline">
-                                            +
-                                            {
-                                                reviewGrouping.compareResult
-                                                    .summary.tables.added
-                                            }
-                                        </Badge>
-                                        <Badge variant="outline">
-                                            ~
-                                            {
-                                                reviewGrouping.compareResult
-                                                    .summary.tables.changed
-                                            }
-                                        </Badge>
-                                        <Badge variant="outline">
-                                            -
-                                            {
-                                                reviewGrouping.compareResult
-                                                    .summary.tables.removed
-                                            }
-                                        </Badge>
-                                    </div>
-                                </div>
-                                <div className="rounded-lg border p-4">
-                                    <div className="text-sm font-medium text-muted-foreground">
-                                        Fields
-                                    </div>
-                                    <div className="mt-2 text-2xl font-semibold">
-                                        {
-                                            reviewGrouping.compareResult.summary
-                                                .fields.total
-                                        }
-                                    </div>
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        <Badge variant="outline">
-                                            +
-                                            {
-                                                reviewGrouping.compareResult
-                                                    .summary.fields.added
-                                            }
-                                        </Badge>
-                                        <Badge variant="outline">
-                                            ~
-                                            {
-                                                reviewGrouping.compareResult
-                                                    .summary.fields.changed
-                                            }
-                                        </Badge>
-                                        <Badge variant="outline">
-                                            -
-                                            {
-                                                reviewGrouping.compareResult
-                                                    .summary.fields.removed
-                                            }
-                                        </Badge>
-                                    </div>
-                                </div>
-                                <div className="rounded-lg border p-4">
-                                    <div className="text-sm font-medium text-muted-foreground">
-                                        Relationships
-                                    </div>
-                                    <div className="mt-2 text-2xl font-semibold">
-                                        {
-                                            reviewGrouping.compareResult.summary
-                                                .relationships.total
-                                        }
-                                    </div>
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        <Badge variant="outline">
-                                            +
-                                            {
-                                                reviewGrouping.compareResult
-                                                    .summary.relationships.added
-                                            }
-                                        </Badge>
-                                        <Badge variant="outline">
-                                            ~
-                                            {
-                                                reviewGrouping.compareResult
-                                                    .summary.relationships
-                                                    .changed
-                                            }
-                                        </Badge>
-                                        <Badge variant="outline">
-                                            -
-                                            {
-                                                reviewGrouping.compareResult
-                                                    .summary.relationships
-                                                    .removed
-                                            }
-                                        </Badge>
-                                    </div>
-                                </div>
+                                <WorkflowMetricCard
+                                    label="Tables"
+                                    value={
+                                        reviewGrouping.compareResult.summary
+                                            .tables.total
+                                    }
+                                    detail={`+${reviewGrouping.compareResult.summary.tables.added} added, ~${reviewGrouping.compareResult.summary.tables.changed} changed, -${reviewGrouping.compareResult.summary.tables.removed} removed`}
+                                />
+                                <WorkflowMetricCard
+                                    label="Fields"
+                                    value={
+                                        reviewGrouping.compareResult.summary
+                                            .fields.total
+                                    }
+                                    detail={`+${reviewGrouping.compareResult.summary.fields.added} added, ~${reviewGrouping.compareResult.summary.fields.changed} changed, -${reviewGrouping.compareResult.summary.fields.removed} removed`}
+                                />
+                                <WorkflowMetricCard
+                                    label="Relationships"
+                                    value={
+                                        reviewGrouping.compareResult.summary
+                                            .relationships.total
+                                    }
+                                    detail={`+${reviewGrouping.compareResult.summary.relationships.added} added, ~${reviewGrouping.compareResult.summary.relationships.changed} changed, -${reviewGrouping.compareResult.summary.relationships.removed} removed`}
+                                />
                             </div>
 
                             {reviewGrouping.sections.map((section) => (
                                 <section
                                     key={section.key}
-                                    className="rounded-lg border"
+                                    className="rounded-xl border bg-card/60 shadow-sm"
                                 >
-                                    <div className="flex flex-col gap-2 border-b p-4 md:flex-row md:items-center md:justify-between">
+                                    <div className="flex flex-col gap-2 border-b bg-muted/15 p-4 md:flex-row md:items-center md:justify-between">
                                         <div>
                                             <h3 className="text-base font-semibold">
                                                 {section.title}
@@ -202,16 +158,21 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                     </div>
                                     <div className="flex flex-col gap-4 p-4">
                                         {section.buckets.length === 0 ? (
-                                            <div className="text-sm text-muted-foreground">
+                                            <div className="rounded-lg border border-dashed bg-background/80 p-4 text-sm text-muted-foreground">
                                                 No changes in this category.
                                             </div>
                                         ) : (
                                             section.buckets.map((bucket) => (
                                                 <div
                                                     key={`${section.key}:${bucket.status}`}
-                                                    className="space-y-3"
+                                                    className={cn(
+                                                        'space-y-3 rounded-xl border p-4',
+                                                        bucketSurfaceClassName[
+                                                            bucket.status
+                                                        ]
+                                                    )}
                                                 >
-                                                    <div className="flex items-center gap-3">
+                                                    <div className="flex flex-wrap items-center gap-3">
                                                         <Badge
                                                             variant={
                                                                 badgeVariantByStatus[
@@ -242,7 +203,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                                     key={
                                                                         item.id
                                                                     }
-                                                                    className="rounded-md border bg-muted/20 p-3"
+                                                                    className="rounded-lg border bg-background/85 p-3 shadow-sm"
                                                                 >
                                                                     <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                                                                         <div className="font-medium">
@@ -320,7 +281,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                 (section) => (
                                                     <div
                                                         key={section.key}
-                                                        className="rounded-lg border p-4"
+                                                        className="rounded-xl border bg-card/60 p-4 shadow-sm"
                                                     >
                                                         <div className="flex items-center justify-between gap-2">
                                                             <div className="font-medium">
@@ -342,7 +303,13 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                                 (bucket) => (
                                                                     <div
                                                                         key={`${section.key}:${bucket.status}`}
-                                                                        className="space-y-2"
+                                                                        className={cn(
+                                                                            'space-y-2 rounded-lg border p-3',
+                                                                            bucketSurfaceClassName[
+                                                                                bucket
+                                                                                    .status
+                                                                            ]
+                                                                        )}
                                                                     >
                                                                         <div className="flex items-center gap-2">
                                                                             <Badge
