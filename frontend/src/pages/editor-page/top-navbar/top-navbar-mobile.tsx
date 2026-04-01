@@ -66,9 +66,6 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                             <SchemaSyncToolbarButton />
                         ) : null}
                         <ActiveDiagramParticipants />
-                        <Button asChild size="sm" variant="outline">
-                            <Link to="/">Library</Link>
-                        </Button>
                         {isAdmin ? (
                             <Button asChild size="sm" variant="outline">
                                 <Link to="/admin">Admin</Link>
