@@ -10,14 +10,16 @@ import {
     ChevronRight,
     FolderKanban,
     LayoutGrid,
+    PencilLine,
     RefreshCw,
     Settings,
+    Share2,
     Shield,
     Trash2,
     Upload,
     UserRound,
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/button/button';
 import {
     Card,
@@ -39,6 +41,7 @@ import {
 } from '@/components/dialog/dialog';
 import { DiagramIcon } from '@/components/diagram-icon/diagram-icon';
 import { Input } from '@/components/input/input';
+import { Label } from '@/components/label/label';
 import {
     Select,
     SelectContent,
@@ -55,10 +58,20 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/table/table';
-import type { SavedCollection } from '@/context/storage-context/storage-context';
+import { useAlert } from '@/context/alert-context/alert-context';
+import type {
+    SavedCollection,
+    SavedDiagram,
+} from '@/context/storage-context/storage-context';
+import { SharingSettingsDialog } from '@/dialogs/open-diagram-dialog/sharing-settings-dialog';
+import { DiagramRowActionsMenu } from '@/dialogs/open-diagram-dialog/diagram-row-actions-menu/diagram-row-actions-menu';
+import { useSharingSettingsDialogApi } from '@/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api';
 import { useAuth } from '@/hooks/use-auth';
 import { useConfig } from '@/hooks/use-config';
+import { useDialog } from '@/hooks/use-dialog';
 import { useLocalConfig } from '@/hooks/use-local-config';
+import { useSchemaDash } from '@/hooks/use-schemadash';
+import { useStorage } from '@/hooks/use-storage';
 import { adminClient } from '@/lib/api/admin-client';
 import { RequestError } from '@/lib/api/request';
 import {
@@ -328,7 +341,26 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
     onOpenChange,
 }) => {
     const navigate = useNavigate();
+    const { showAlert } = useAlert();
     const auth = useAuth();
+    const { currentDiagram, loadDiagram } = useSchemaDash();
+    const {
+        createCollection,
+        createProject,
+        deleteCollection,
+        deleteDiagram,
+        deleteProject,
+        listProjectDiagrams,
+        updateCollection,
+        updateProject,
+        updateSavedDiagram,
+    } = useStorage();
+    const {
+        closeOpenDiagramDialog,
+        openCreateDiagramDialog,
+        openImportDiagramDialog,
+    } = useDialog();
+    const sharingApi = useSharingSettingsDialogApi();
     const configContext = useConfig() ?? emptyUtilityContext;
     const localConfig = useLocalConfig() ?? emptyLocalConfigContext;
     const { config, updateConfig } = configContext;
@@ -356,6 +388,11 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
         useState<AdminOverviewResponse | null>(null);
     const [adminLoading, setAdminLoading] = useState(false);
     const [adminError, setAdminError] = useState<string | null>(null);
+    const [sharingSubject, setSharingSubject] = useState<{
+        type: 'project' | 'diagram';
+        id: string;
+        name: string;
+    } | null>(null);
 
     const deferredSearch = useDeferredValue(searchTerm);
     const normalizedSearch = useMemo(
@@ -468,6 +505,16 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
             null,
         [diagramRows, selectedDiagramId]
     );
+    const canManageSelectedProject = Boolean(
+        selectedProject &&
+        !selectedProject.localOnly &&
+        selectedProject.access === 'owner'
+    );
+    const canManageSelectedDiagram = Boolean(
+        selectedDiagram &&
+        !selectedDiagram.diagram.localOnly &&
+        selectedDiagram.diagram.access === 'owner'
+    );
 
     useEffect(() => {
         if (!isProjectLibraryTab(activeTab)) {
@@ -570,6 +617,7 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
     }, [activeTab, filteredUtilitySections]);
 
     const isAdmin = auth.enabled && auth.user?.role === 'admin';
+    const currentDiagramId = currentDiagram?.id;
 
     const loadAdminOverview = useCallback(async () => {
         if (!isAdmin) {
@@ -618,6 +666,275 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
 
     const libraryCopy = getLibraryCopy(activeTab, selectedCollection);
 
+    const refreshLibrary = useCallback(async () => {
+        await Promise.all([baseCatalog.refresh(), activeCatalog.refresh()]);
+    }, [activeCatalog, baseCatalog]);
+
+    const promptForName = useCallback((title: string, value = '') => {
+        const result = window.prompt(title, value)?.trim();
+        return result && result.length > 0 ? result : undefined;
+    }, []);
+
+    const promptForDescription = useCallback((title: string, value = '') => {
+        const result = window.prompt(title, value)?.trim();
+        return result && result.length > 0 ? result : null;
+    }, []);
+
+    const handleCreateCollection = useCallback(async () => {
+        const name = promptForName('Create collection', '');
+        if (!name) {
+            return;
+        }
+
+        const description = promptForDescription('Collection description', '');
+        const collection = await createCollection({ description, name });
+        await refreshLibrary();
+        setActiveTab('collections');
+        setSelectedCollectionId(collection.id);
+    }, [createCollection, promptForDescription, promptForName, refreshLibrary]);
+
+    const handleRenameCollection = useCallback(async () => {
+        if (!selectedCollection) {
+            return;
+        }
+
+        const name = promptForName(
+            'Rename collection',
+            selectedCollection.name
+        );
+        if (!name) {
+            return;
+        }
+
+        const description = promptForDescription(
+            'Collection description',
+            selectedCollection.description ?? ''
+        );
+
+        await updateCollection(selectedCollection.id, { description, name });
+        await refreshLibrary();
+    }, [
+        promptForDescription,
+        promptForName,
+        refreshLibrary,
+        selectedCollection,
+        updateCollection,
+    ]);
+
+    const handleDeleteCollection = useCallback(() => {
+        if (!selectedCollection) {
+            return;
+        }
+
+        showAlert({
+            actionLabel: 'Delete',
+            closeLabel: 'Cancel',
+            description: `This will delete "${selectedCollection.name}".`,
+            onAction: async () => {
+                await deleteCollection(selectedCollection.id);
+                setSelectedCollectionId(undefined);
+                await refreshLibrary();
+            },
+            title: 'Delete collection',
+        });
+    }, [deleteCollection, refreshLibrary, selectedCollection, showAlert]);
+
+    const handleCreateProject = useCallback(async () => {
+        const name = promptForName('Create project', '');
+        if (!name) {
+            return;
+        }
+
+        const description = promptForDescription('Project description', '');
+        const project = await createProject({
+            collectionId:
+                activeTab === 'collections'
+                    ? (selectedCollectionId ?? null)
+                    : activeTab === 'unorganized'
+                      ? null
+                      : (selectedProject?.collectionId ?? null),
+            description,
+            name,
+        });
+
+        await refreshLibrary();
+        setSelectedProjectId(project.id);
+        if (activeTab === 'collections' && project.collectionId) {
+            setSelectedCollectionId(project.collectionId);
+        }
+    }, [
+        activeTab,
+        createProject,
+        promptForDescription,
+        promptForName,
+        refreshLibrary,
+        selectedCollectionId,
+        selectedProject?.collectionId,
+    ]);
+
+    const handleRenameProject = useCallback(async () => {
+        if (!selectedProject) {
+            return;
+        }
+
+        const name = promptForName('Rename project', selectedProject.name);
+        if (!name) {
+            return;
+        }
+
+        const description = promptForDescription(
+            'Project description',
+            selectedProject.description ?? ''
+        );
+
+        await updateProject(selectedProject.id, { description, name });
+        await refreshLibrary();
+    }, [
+        promptForDescription,
+        promptForName,
+        refreshLibrary,
+        selectedProject,
+        updateProject,
+    ]);
+
+    const handleMoveProject = useCallback(
+        async (nextCollectionId: string) => {
+            if (!selectedProject) {
+                return;
+            }
+
+            await updateProject(selectedProject.id, {
+                collectionId:
+                    nextCollectionId === '__unassigned__'
+                        ? null
+                        : nextCollectionId,
+            });
+            await refreshLibrary();
+        },
+        [refreshLibrary, selectedProject, updateProject]
+    );
+
+    const handleDeleteProject = useCallback(() => {
+        if (!selectedProject) {
+            return;
+        }
+
+        showAlert({
+            actionLabel: 'Delete',
+            closeLabel: 'Cancel',
+            description: `This will delete "${selectedProject.name}" and move it into trash.`,
+            onAction: async () => {
+                const diagramsInProject = await listProjectDiagrams(
+                    selectedProject.id
+                );
+                await deleteProject(selectedProject.id);
+                if (
+                    currentDiagramId &&
+                    diagramsInProject.some(
+                        (diagram) => diagram.id === currentDiagramId
+                    )
+                ) {
+                    navigate('/workspace');
+                }
+                await refreshLibrary();
+            },
+            title: 'Delete project',
+        });
+    }, [
+        currentDiagramId,
+        deleteProject,
+        listProjectDiagrams,
+        navigate,
+        refreshLibrary,
+        selectedProject,
+        showAlert,
+    ]);
+
+    const handleRenameDiagram = useCallback(
+        async (diagram: SavedDiagram) => {
+            const name = promptForName('Rename diagram', diagram.name);
+            if (!name) {
+                return;
+            }
+
+            await updateSavedDiagram(diagram.id, {
+                description: diagram.description,
+                name,
+                projectId: diagram.projectId,
+            });
+
+            if (diagram.id === currentDiagramId) {
+                await loadDiagram(diagram.id);
+            }
+
+            await refreshLibrary();
+        },
+        [
+            currentDiagramId,
+            loadDiagram,
+            promptForName,
+            refreshLibrary,
+            updateSavedDiagram,
+        ]
+    );
+
+    const handleMoveDiagram = useCallback(
+        async (diagramId: string, projectId: string) => {
+            await updateSavedDiagram(diagramId, { projectId });
+            await refreshLibrary();
+            setSelectedProjectId(projectId);
+        },
+        [refreshLibrary, updateSavedDiagram]
+    );
+
+    const handleDeleteDiagram = useCallback(
+        (diagram: SavedDiagram) => {
+            showAlert({
+                actionLabel: 'Delete',
+                closeLabel: 'Cancel',
+                description:
+                    'This removes the saved diagram from the workspace.',
+                onAction: async () => {
+                    await deleteDiagram(diagram.id);
+                    if (diagram.id === currentDiagramId) {
+                        navigate('/workspace');
+                    }
+                    await refreshLibrary();
+                },
+                title: 'Delete diagram',
+            });
+        },
+        [currentDiagramId, deleteDiagram, navigate, refreshLibrary, showAlert]
+    );
+
+    const handleOpenProjectSharing = useCallback(() => {
+        if (
+            !selectedProject ||
+            selectedProject.localOnly ||
+            selectedProject.access !== 'owner'
+        ) {
+            return;
+        }
+
+        setSharingSubject({
+            id: selectedProject.id,
+            name: selectedProject.name,
+            type: 'project',
+        });
+    }, [selectedProject]);
+
+    const handleOpenDiagramSharing = useCallback((diagram: SavedDiagram) => {
+        if (diagram.localOnly || diagram.access !== 'owner') {
+            return;
+        }
+
+        setSharingSubject({
+            id: diagram.id,
+            name: diagram.name,
+            type: 'diagram',
+        });
+    }, []);
+
     const openDiagram = useCallback(
         async (diagramId?: string) => {
             if (!diagramId) {
@@ -655,6 +972,7 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
                         </TableHead>
                         <TableHead>Last modified</TableHead>
                         <TableHead className="text-center">Tables</TableHead>
+                        <TableHead />
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -710,6 +1028,40 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
                             </TableCell>
                             <TableCell className="text-center">
                                 {item.diagram.tableCount}
+                            </TableCell>
+                            <TableCell className="p-0 pr-1 text-right">
+                                {activeTab !== 'trash' ? (
+                                    <DiagramRowActionsMenu
+                                        canDelete={
+                                            !item.diagram.localOnly &&
+                                            item.diagram.access === 'owner'
+                                        }
+                                        canRename={
+                                            !item.diagram.localOnly &&
+                                            item.diagram.access === 'owner'
+                                        }
+                                        canShare={
+                                            !item.diagram.localOnly &&
+                                            item.diagram.access === 'owner'
+                                        }
+                                        onDelete={() =>
+                                            handleDeleteDiagram(item.diagram)
+                                        }
+                                        onOpen={() =>
+                                            void openDiagram(item.diagram.id)
+                                        }
+                                        onRename={() =>
+                                            void handleRenameDiagram(
+                                                item.diagram
+                                            )
+                                        }
+                                        onShare={() =>
+                                            handleOpenDiagramSharing(
+                                                item.diagram
+                                            )
+                                        }
+                                    />
+                                ) : null}
                             </TableCell>
                         </TableRow>
                     ))}
@@ -1017,7 +1369,7 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {adminOverview.users.recent.map((user) => (
+                                {adminOverview.users.items.map((user) => (
                                     <TableRow key={user.id}>
                                         <TableCell>
                                             {user.displayName}
@@ -1194,21 +1546,47 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
                             </div>
 
                             <div className="flex min-h-0 flex-col gap-3 rounded-lg border p-3">
-                                <div>
-                                    <h2 className="text-sm font-semibold">
-                                        {activeTab === 'collections'
-                                            ? libraryCopy.panelTitle
-                                            : isProjectLibraryTab(activeTab)
-                                              ? libraryCopy.panelTitle
-                                              : 'Sections'}
-                                    </h2>
-                                    <p className="text-xs text-muted-foreground">
-                                        {activeTab === 'collections'
-                                            ? libraryCopy.panelDescription
-                                            : isProjectLibraryTab(activeTab)
-                                              ? libraryCopy.panelDescription
-                                              : 'Choose the section to open in the detail panel.'}
-                                    </p>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <h2 className="text-sm font-semibold">
+                                            {activeTab === 'collections'
+                                                ? libraryCopy.panelTitle
+                                                : isProjectLibraryTab(activeTab)
+                                                  ? libraryCopy.panelTitle
+                                                  : 'Sections'}
+                                        </h2>
+                                        <p className="text-xs text-muted-foreground">
+                                            {activeTab === 'collections'
+                                                ? libraryCopy.panelDescription
+                                                : isProjectLibraryTab(activeTab)
+                                                  ? libraryCopy.panelDescription
+                                                  : 'Choose the section to open in the detail panel.'}
+                                        </p>
+                                    </div>
+                                    {activeTab === 'collections' ? (
+                                        <Button
+                                            size="sm"
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={() =>
+                                                void handleCreateCollection()
+                                            }
+                                        >
+                                            New collection
+                                        </Button>
+                                    ) : null}
+                                    {isProjectLibraryTab(activeTab) ? (
+                                        <Button
+                                            size="sm"
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={() =>
+                                                void handleCreateProject()
+                                            }
+                                        >
+                                            New project
+                                        </Button>
+                                    ) : null}
                                 </div>
 
                                 <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-auto">
@@ -1314,6 +1692,85 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
 
                                     {libraryTabActive ? (
                                         <div className="flex flex-wrap gap-2">
+                                            {activeTab === 'collections' ? (
+                                                <>
+                                                    <Button
+                                                        size="sm"
+                                                        type="button"
+                                                        variant="secondary"
+                                                        disabled={
+                                                            !selectedCollection
+                                                        }
+                                                        onClick={() =>
+                                                            void handleRenameCollection()
+                                                        }
+                                                    >
+                                                        <PencilLine className="mr-2 size-4" />
+                                                        Rename
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        type="button"
+                                                        variant="secondary"
+                                                        disabled={
+                                                            !selectedCollection
+                                                        }
+                                                        onClick={
+                                                            handleDeleteCollection
+                                                        }
+                                                    >
+                                                        <Trash2 className="mr-2 size-4" />
+                                                        Delete
+                                                    </Button>
+                                                </>
+                                            ) : null}
+                                            {isProjectLibraryTab(activeTab) &&
+                                            selectedProject ? (
+                                                <>
+                                                    <Button
+                                                        size="sm"
+                                                        type="button"
+                                                        variant="secondary"
+                                                        disabled={
+                                                            !canManageSelectedProject
+                                                        }
+                                                        onClick={() =>
+                                                            void handleRenameProject()
+                                                        }
+                                                    >
+                                                        <PencilLine className="mr-2 size-4" />
+                                                        Rename project
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        type="button"
+                                                        variant="secondary"
+                                                        disabled={
+                                                            !canManageSelectedProject
+                                                        }
+                                                        onClick={
+                                                            handleOpenProjectSharing
+                                                        }
+                                                    >
+                                                        <Share2 className="mr-2 size-4" />
+                                                        Share project
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        type="button"
+                                                        variant="secondary"
+                                                        disabled={
+                                                            !canManageSelectedProject
+                                                        }
+                                                        onClick={
+                                                            handleDeleteProject
+                                                        }
+                                                    >
+                                                        <Trash2 className="mr-2 size-4" />
+                                                        Delete project
+                                                    </Button>
+                                                </>
+                                            ) : null}
                                             <Select
                                                 onValueChange={(value) =>
                                                     activeCatalog.setSort(
@@ -1349,6 +1806,121 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
                                 <div className="min-h-0 flex-1 overflow-auto">
                                     {libraryTabActive ? (
                                         <>
+                                            {isProjectLibraryTab(activeTab) &&
+                                            selectedProject &&
+                                            activeTab !== 'trash' ? (
+                                                <div className="mb-3 grid gap-3 md:grid-cols-2">
+                                                    <div className="space-y-2">
+                                                        <Label>
+                                                            Project collection
+                                                        </Label>
+                                                        <Select
+                                                            disabled={
+                                                                !canManageSelectedProject
+                                                            }
+                                                            onValueChange={(
+                                                                value
+                                                            ) =>
+                                                                void handleMoveProject(
+                                                                    value
+                                                                )
+                                                            }
+                                                            value={
+                                                                selectedProject.collectionId ??
+                                                                '__unassigned__'
+                                                            }
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Choose collection" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="__unassigned__">
+                                                                    Unorganized
+                                                                </SelectItem>
+                                                                {baseCatalog.collections.map(
+                                                                    (
+                                                                        collection
+                                                                    ) => (
+                                                                        <SelectItem
+                                                                            key={
+                                                                                collection.id
+                                                                            }
+                                                                            value={
+                                                                                collection.id
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                collection.name
+                                                                            }
+                                                                        </SelectItem>
+                                                                    )
+                                                                )}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    {selectedDiagram ? (
+                                                        <div className="space-y-2">
+                                                            <Label>
+                                                                Diagram project
+                                                            </Label>
+                                                            <Select
+                                                                disabled={
+                                                                    !canManageSelectedDiagram
+                                                                }
+                                                                onValueChange={(
+                                                                    value
+                                                                ) =>
+                                                                    void handleMoveDiagram(
+                                                                        selectedDiagram
+                                                                            .diagram
+                                                                            .id,
+                                                                        value
+                                                                    )
+                                                                }
+                                                                value={
+                                                                    selectedDiagram
+                                                                        .diagram
+                                                                        .projectId
+                                                                }
+                                                            >
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Move diagram" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {baseCatalog.projects
+                                                                        .filter(
+                                                                            (
+                                                                                project
+                                                                            ) =>
+                                                                                project.status !==
+                                                                                'deleted'
+                                                                        )
+                                                                        .map(
+                                                                            (
+                                                                                project
+                                                                            ) => (
+                                                                                <SelectItem
+                                                                                    key={
+                                                                                        project.id
+                                                                                    }
+                                                                                    value={
+                                                                                        project.id
+                                                                                    }
+                                                                                >
+                                                                                    {
+                                                                                        project.name
+                                                                                    }
+                                                                                </SelectItem>
+                                                                            )
+                                                                        )}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            ) : null}
+
                                             {activeTab === 'collections' &&
                                             selectedCollection ? (
                                                 <div className="mb-3 grid gap-3 sm:grid-cols-3">
@@ -1425,22 +1997,27 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
 
                     {libraryTabActive ? (
                         <div className="flex gap-2">
-                            <Button asChild type="button" variant="secondary">
-                                <Link
-                                    to="/workspace?action=import"
-                                    onClick={() => onOpenChange(false)}
-                                >
-                                    <Upload className="mr-2 size-4" />
-                                    Import
-                                </Link>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => {
+                                    onOpenChange(false);
+                                    openImportDiagramDialog({});
+                                }}
+                            >
+                                <Upload className="mr-2 size-4" />
+                                Import
                             </Button>
-                            <Button asChild type="button" variant="secondary">
-                                <Link
-                                    to="/workspace?action=create"
-                                    onClick={() => onOpenChange(false)}
-                                >
-                                    Create diagram
-                                </Link>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => {
+                                    onOpenChange(false);
+                                    closeOpenDiagramDialog();
+                                    openCreateDiagramDialog();
+                                }}
+                            >
+                                Create diagram
                             </Button>
                             <Button
                                 type="button"
@@ -1470,6 +2047,24 @@ export const LibraryDialog: React.FC<LibraryDialogProps> = ({
                     )}
                 </DialogFooter>
             </DialogContent>
+            <SharingSettingsDialog
+                addPerson={sharingApi.addPerson}
+                loadSharing={sharingApi.loadSharing}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen) {
+                        setSharingSubject(null);
+                    }
+                }}
+                onSaved={async () => {
+                    await refreshLibrary();
+                }}
+                open={sharingSubject !== null}
+                removePerson={sharingApi.removePerson}
+                searchUsers={sharingApi.searchUsers}
+                subject={sharingSubject}
+                updateGeneralAccess={sharingApi.updateGeneralAccess}
+                updatePerson={sharingApi.updatePerson}
+            />
         </Dialog>
     );
 };
