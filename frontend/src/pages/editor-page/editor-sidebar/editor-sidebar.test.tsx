@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EditorSidebar } from './editor-sidebar';
 import { SidebarProvider } from '@/components/sidebar/sidebar';
@@ -9,6 +10,60 @@ const navigateMock = vi.fn();
 const logoutMock = vi.fn();
 const setThemeMock = vi.fn();
 const getSavedDiagramMock = vi.fn();
+const listCollectionsMock = vi.fn();
+const listProjectsMock = vi.fn();
+const listProjectDiagramsMock = vi.fn();
+
+const collectionsFixture = [
+    {
+        id: 'collection-1',
+        name: 'Core Models',
+        description: 'Primary shared schemas',
+        ownerUserId: 'user-1',
+        projectCount: 1,
+        diagramCount: 1,
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-20T00:00:00.000Z'),
+    },
+];
+
+const projectsFixture = [
+    {
+        id: 'project-1',
+        name: 'Warehouse',
+        description: 'Inventory domain',
+        collectionId: 'collection-1',
+        ownerUserId: 'user-1',
+        visibility: 'workspace' as const,
+        status: 'active' as const,
+        sharingScope: 'authenticated' as const,
+        sharingAccess: 'edit' as const,
+        access: 'owner' as const,
+        diagramCount: 1,
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-20T00:00:00.000Z'),
+    },
+];
+
+const diagramsFixture = [
+    {
+        id: 'diagram-1',
+        projectId: 'project-1',
+        ownerUserId: 'user-1',
+        name: 'Warehouse ERD',
+        description: 'Inventory tables',
+        databaseType: 'postgresql',
+        databaseEdition: null,
+        visibility: 'workspace' as const,
+        status: 'active' as const,
+        sharingScope: 'authenticated' as const,
+        sharingAccess: 'edit' as const,
+        access: 'owner' as const,
+        tableCount: 12,
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-31T00:00:00.000Z'),
+    },
+];
 
 vi.mock('../top-navbar/current-diagram-share-button', () => ({
     CurrentDiagramShareButton: () => (
@@ -84,6 +139,9 @@ vi.mock('@/hooks/use-auth', () => ({
 vi.mock('@/hooks/use-storage', () => ({
     useStorage: () => ({
         getSavedDiagram: getSavedDiagramMock,
+        listCollections: listCollectionsMock,
+        listProjects: listProjectsMock,
+        listProjectDiagrams: listProjectDiagramsMock,
     }),
 }));
 
@@ -114,16 +172,23 @@ vi.mock('@/dialogs/open-diagram-dialog/sharing-settings-dialog', () => ({
         ) : null,
 }));
 
-vi.mock('react-router-dom', () => ({
-    useNavigate: () => navigateMock,
-}));
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual('react-router-dom');
+
+    return {
+        ...actual,
+        useNavigate: () => navigateMock,
+    };
+});
 
 describe('EditorSidebar account menu', () => {
     const renderSidebar = () =>
         render(
-            <SidebarProvider>
-                <EditorSidebar />
-            </SidebarProvider>
+            <MemoryRouter>
+                <SidebarProvider>
+                    <EditorSidebar />
+                </SidebarProvider>
+            </MemoryRouter>
         );
 
     beforeEach(() => {
@@ -131,6 +196,9 @@ describe('EditorSidebar account menu', () => {
         logoutMock.mockReset();
         setThemeMock.mockReset();
         getSavedDiagramMock.mockReset();
+        listCollectionsMock.mockReset();
+        listProjectsMock.mockReset();
+        listProjectDiagramsMock.mockReset();
         getSavedDiagramMock.mockResolvedValue({
             id: 'diagram-1',
             projectId: 'project-1',
@@ -148,6 +216,9 @@ describe('EditorSidebar account menu', () => {
             createdAt: new Date('2026-03-01T00:00:00.000Z'),
             updatedAt: new Date('2026-03-31T00:00:00.000Z'),
         });
+        listCollectionsMock.mockResolvedValue(collectionsFixture);
+        listProjectsMock.mockResolvedValue(projectsFixture);
+        listProjectDiagramsMock.mockResolvedValue(diagramsFixture);
     });
 
     it('removes the social footer actions and renders the account trigger', async () => {
@@ -198,7 +269,7 @@ describe('EditorSidebar account menu', () => {
         });
     });
 
-    it('navigates to existing routes from the account menu', async () => {
+    it('navigates to existing routes and opens the library modal from settings', async () => {
         const user = userEvent.setup();
 
         renderSidebar();
@@ -221,7 +292,10 @@ describe('EditorSidebar account menu', () => {
         await user.click(trigger);
         await user.click(screen.getByRole('menuitem', { name: 'Settings' }));
 
-        expect(navigateMock).toHaveBeenCalledWith('/settings');
+        expect(navigateMock).toHaveBeenCalledTimes(1);
+        expect(await screen.findByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('Browse and refine')).toBeInTheDocument();
+        expect(screen.getByText('Warehouse ERD')).toBeInTheDocument();
     });
 
     it('reuses sharing, theme, and logout flows from the existing app', async () => {
