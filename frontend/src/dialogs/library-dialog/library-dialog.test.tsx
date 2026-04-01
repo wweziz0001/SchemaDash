@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { TooltipProvider } from '@/components/tooltip/tooltip';
 import { LibraryDialog } from './library-dialog';
 
 const listCollectionsMock = vi.fn();
@@ -96,7 +97,13 @@ describe('LibraryDialog', () => {
 
         render(
             <MemoryRouter>
-                <LibraryDialog open onOpenChange={onOpenChange} />
+                <TooltipProvider>
+                    <LibraryDialog
+                        initialTab="all"
+                        open
+                        onOpenChange={onOpenChange}
+                    />
+                </TooltipProvider>
             </MemoryRouter>
         );
 
@@ -108,17 +115,15 @@ describe('LibraryDialog', () => {
         expect(
             screen.getByRole('button', { name: 'Shared with Me' })
         ).toBeInTheDocument();
-        expect(screen.getByText('Saved diagrams')).toBeInTheDocument();
-        expect(
-            await screen.findByRole('link', { name: 'Open diagram' })
-        ).toBeInTheDocument();
+        expect(screen.getByText('Projects')).toBeInTheDocument();
+        expect(await screen.findByText('Warehouse ERD')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', { name: 'Unorganized' }));
         expect(
-            await screen.findByText('Needs organization')
+            await screen.findByText('Unorganized projects')
         ).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', { name: 'Close' }));
+        await user.click(screen.getAllByRole('button', { name: 'Close' })[0]);
 
         await waitFor(() => {
             expect(onOpenChange).toHaveBeenCalledWith(false);

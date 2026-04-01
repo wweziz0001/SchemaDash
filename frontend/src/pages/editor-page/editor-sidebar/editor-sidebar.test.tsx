@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EditorSidebar } from './editor-sidebar';
 import { SidebarProvider } from '@/components/sidebar/sidebar';
+import { TooltipProvider } from '@/components/tooltip/tooltip';
 
 const navigateMock = vi.fn();
 const logoutMock = vi.fn();
@@ -185,9 +186,11 @@ describe('EditorSidebar account menu', () => {
     const renderSidebar = () =>
         render(
             <MemoryRouter>
-                <SidebarProvider>
-                    <EditorSidebar />
-                </SidebarProvider>
+                <TooltipProvider>
+                    <SidebarProvider>
+                        <EditorSidebar />
+                    </SidebarProvider>
+                </TooltipProvider>
             </MemoryRouter>
         );
 
@@ -294,7 +297,9 @@ describe('EditorSidebar account menu', () => {
 
         expect(navigateMock).toHaveBeenCalledTimes(1);
         expect(await screen.findByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByText('Saved diagrams')).toBeInTheDocument();
+        expect(screen.getAllByText('Appearance').length).toBeGreaterThan(0);
+
+        await user.click(screen.getByRole('button', { name: 'All Diagrams' }));
         expect(screen.getByText('Warehouse ERD')).toBeInTheDocument();
     });
 

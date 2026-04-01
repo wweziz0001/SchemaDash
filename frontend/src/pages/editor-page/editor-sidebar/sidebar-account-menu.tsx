@@ -323,6 +323,7 @@ export const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({
                 updateGeneralAccess={sharingApi.updateGeneralAccess}
             />
             <LibraryDialog
+                initialTab="settings"
                 open={libraryDialogOpen}
                 onOpenChange={setLibraryDialogOpen}
             />
