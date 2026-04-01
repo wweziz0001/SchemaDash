@@ -6,9 +6,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/tooltip/tooltip';
 import { LibraryDialog } from './library-dialog';
 
+const closeOpenDiagramDialogMock = vi.fn();
+const createCollectionMock = vi.fn();
+const createProjectMock = vi.fn();
+const deleteCollectionMock = vi.fn();
+const deleteDiagramMock = vi.fn();
+const deleteProjectMock = vi.fn();
 const listCollectionsMock = vi.fn();
-const listProjectsMock = vi.fn();
 const listProjectDiagramsMock = vi.fn();
+const listProjectsMock = vi.fn();
+const loadDiagramMock = vi.fn();
+const openCreateDiagramDialogMock = vi.fn();
+const openImportDiagramDialogMock = vi.fn();
+const showAlertMock = vi.fn();
+const updateCollectionMock = vi.fn();
+const updateConfigMock = vi.fn();
+const updateProjectMock = vi.fn();
+const updateSavedDiagramMock = vi.fn();
 
 const collectionsFixture = [
     {
@@ -61,51 +75,161 @@ const diagramsFixture = [
     },
 ];
 
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string) => key,
+    }),
+}));
+
 vi.mock('@/hooks/use-auth', () => ({
     useAuth: () => ({
+        authenticated: true,
         enabled: true,
+        mode: 'local',
         user: {
             id: 'user-1',
             email: 'ada@example.com',
             displayName: 'Ada Lovelace',
             role: 'admin',
+            authProvider: 'local',
+            status: 'active',
         },
+    }),
+}));
+
+vi.mock('@/hooks/use-config', () => ({
+    useConfig: () => ({
+        config: {
+            defaultDiagramId: 'diagram-1',
+        },
+        updateConfig: updateConfigMock,
+    }),
+}));
+
+vi.mock('@/hooks/use-local-config', () => ({
+    useLocalConfig: () => ({
+        setShowCardinality: vi.fn(),
+        setShowDBViews: vi.fn(),
+        setShowFieldAttributes: vi.fn(),
+        setShowMiniMapOnCanvas: vi.fn(),
+        setTheme: vi.fn(),
+        showCardinality: true,
+        showDBViews: true,
+        showFieldAttributes: true,
+        showMiniMapOnCanvas: true,
+        theme: 'system',
+    }),
+}));
+
+vi.mock('@/hooks/use-dialog', () => ({
+    useDialog: () => ({
+        closeOpenDiagramDialog: closeOpenDiagramDialogMock,
+        openCreateDiagramDialog: openCreateDiagramDialogMock,
+        openImportDiagramDialog: openImportDiagramDialogMock,
+    }),
+}));
+
+vi.mock('@/hooks/use-schemadash', () => ({
+    useSchemaDash: () => ({
+        currentDiagram: {
+            id: 'diagram-1',
+        },
+        loadDiagram: loadDiagramMock,
+    }),
+}));
+
+vi.mock('@/context/alert-context/alert-context', () => ({
+    useAlert: () => ({
+        showAlert: showAlertMock,
     }),
 }));
 
 vi.mock('@/hooks/use-storage', () => ({
     useStorage: () => ({
+        createCollection: createCollectionMock,
+        createProject: createProjectMock,
+        deleteCollection: deleteCollectionMock,
+        deleteDiagram: deleteDiagramMock,
+        deleteProject: deleteProjectMock,
         listCollections: listCollectionsMock,
-        listProjects: listProjectsMock,
         listProjectDiagrams: listProjectDiagramsMock,
+        listProjects: listProjectsMock,
+        updateCollection: updateCollectionMock,
+        updateProject: updateProjectMock,
+        updateSavedDiagram: updateSavedDiagramMock,
     }),
 }));
 
+vi.mock(
+    '@/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api',
+    () => ({
+        useSharingSettingsDialogApi: () => ({
+            addPerson: vi.fn(),
+            loadSharing: vi.fn(),
+            removePerson: vi.fn(),
+            searchUsers: vi.fn(),
+            updateGeneralAccess: vi.fn(),
+            updatePerson: vi.fn(),
+        }),
+    })
+);
+
+vi.mock('@/dialogs/open-diagram-dialog/sharing-settings-dialog', () => ({
+    SharingSettingsDialog: () => null,
+}));
+
 describe('LibraryDialog', () => {
-    beforeEach(() => {
-        listCollectionsMock.mockReset();
-        listProjectsMock.mockReset();
-        listProjectDiagramsMock.mockReset();
-        listCollectionsMock.mockResolvedValue(collectionsFixture);
-        listProjectsMock.mockResolvedValue(projectsFixture);
-        listProjectDiagramsMock.mockResolvedValue(diagramsFixture);
-    });
-
-    it('renders the modal library shell and supports close/open interactions', async () => {
-        const user = userEvent.setup();
-        const onOpenChange = vi.fn();
-
+    const renderDialog = (initialTab: 'all' | 'collections' = 'all') =>
         render(
             <MemoryRouter>
                 <TooltipProvider>
                     <LibraryDialog
-                        initialTab="all"
+                        initialTab={initialTab}
                         open
-                        onOpenChange={onOpenChange}
+                        onOpenChange={vi.fn()}
                     />
                 </TooltipProvider>
             </MemoryRouter>
         );
+
+    beforeEach(() => {
+        closeOpenDiagramDialogMock.mockReset();
+        createCollectionMock.mockReset();
+        createProjectMock.mockReset();
+        deleteCollectionMock.mockReset();
+        deleteDiagramMock.mockReset();
+        deleteProjectMock.mockReset();
+        listCollectionsMock.mockReset();
+        listProjectDiagramsMock.mockReset();
+        listProjectsMock.mockReset();
+        loadDiagramMock.mockReset();
+        openCreateDiagramDialogMock.mockReset();
+        openImportDiagramDialogMock.mockReset();
+        showAlertMock.mockReset();
+        updateCollectionMock.mockReset();
+        updateConfigMock.mockReset();
+        updateProjectMock.mockReset();
+        updateSavedDiagramMock.mockReset();
+
+        listCollectionsMock.mockResolvedValue(collectionsFixture);
+        listProjectsMock.mockResolvedValue(projectsFixture);
+        listProjectDiagramsMock.mockResolvedValue(diagramsFixture);
+        createCollectionMock.mockResolvedValue({
+            ...collectionsFixture[0],
+            id: 'collection-2',
+            name: 'New collection',
+        });
+        createProjectMock.mockResolvedValue({
+            ...projectsFixture[0],
+            id: 'project-2',
+            name: 'New project',
+        });
+    });
+
+    it('renders the workspace modal shell and supports tab switching', async () => {
+        const user = userEvent.setup();
+
+        renderDialog();
 
         expect(await screen.findByRole('dialog')).toBeInTheDocument();
         expect(screen.getByText('Workspace')).toBeInTheDocument();
@@ -122,11 +246,90 @@ describe('LibraryDialog', () => {
         expect(
             await screen.findByText('Unorganized projects')
         ).toBeInTheDocument();
+    });
 
-        await user.click(screen.getAllByRole('button', { name: 'Close' })[0]);
+    it('creates projects and opens create/import dialogs without route navigation', async () => {
+        const user = userEvent.setup();
+        const onOpenChange = vi.fn();
+        const promptSpy = vi
+            .spyOn(window, 'prompt')
+            .mockReturnValueOnce('Ops project')
+            .mockReturnValueOnce('Project description');
+
+        render(
+            <MemoryRouter>
+                <TooltipProvider>
+                    <LibraryDialog
+                        initialTab="all"
+                        open
+                        onOpenChange={onOpenChange}
+                    />
+                </TooltipProvider>
+            </MemoryRouter>
+        );
+
+        expect(await screen.findByText('Warehouse ERD')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: 'New project' }));
 
         await waitFor(() => {
-            expect(onOpenChange).toHaveBeenCalledWith(false);
+            expect(createProjectMock).toHaveBeenCalledWith({
+                collectionId: 'collection-1',
+                description: 'Project description',
+                name: 'Ops project',
+            });
         });
+
+        await user.click(
+            screen.getByRole('button', { name: 'Create diagram' })
+        );
+
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+        expect(closeOpenDiagramDialogMock).toHaveBeenCalledTimes(1);
+        expect(openCreateDiagramDialogMock).toHaveBeenCalledTimes(1);
+
+        await user.click(screen.getByRole('button', { name: 'Import' }));
+
+        expect(openImportDiagramDialogMock).toHaveBeenCalledWith({});
+
+        promptSpy.mockRestore();
+    });
+
+    it('creates and renames collections from the collections tab', async () => {
+        const user = userEvent.setup();
+        const promptSpy = vi
+            .spyOn(window, 'prompt')
+            .mockReturnValueOnce('Renamed collection')
+            .mockReturnValueOnce('Updated description')
+            .mockReturnValueOnce('New collection')
+            .mockReturnValueOnce('Collection description');
+
+        renderDialog('collections');
+
+        expect(
+            await screen.findByRole('button', { name: 'New collection' })
+        ).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: 'Rename' }));
+
+        await waitFor(() => {
+            expect(updateCollectionMock).toHaveBeenCalledWith('collection-1', {
+                description: 'Updated description',
+                name: 'Renamed collection',
+            });
+        });
+
+        await user.click(
+            screen.getByRole('button', { name: 'New collection' })
+        );
+
+        await waitFor(() => {
+            expect(createCollectionMock).toHaveBeenCalledWith({
+                description: 'Collection description',
+                name: 'New collection',
+            });
+        });
+
+        promptSpy.mockRestore();
     });
 });
