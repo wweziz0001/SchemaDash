@@ -30,7 +30,7 @@ import { useSchemaDash } from '@/hooks/use-schemadash';
 import { supportsCustomTypes } from '@/lib/domain/database-capabilities';
 import { useDialog } from '@/hooks/use-dialog';
 import { Separator } from '@/components/separator/separator';
-import { SidebarAccountTriggerButton } from './sidebar-account-trigger-button';
+import { SidebarAccountMenu } from './sidebar-account-menu';
 
 export interface SidebarItem {
     title: string;
@@ -242,7 +242,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
             <CurrentDiagramShareButton />
             <SidebarFooter>
                 <SidebarMenu>
-                    <SidebarAccountTriggerButton
+                    <SidebarAccountMenu
                         className={editorSidebarButtonClassName}
                     />
                 </SidebarMenu>
