@@ -294,7 +294,7 @@ describe('EditorSidebar account menu', () => {
 
         expect(navigateMock).toHaveBeenCalledTimes(1);
         expect(await screen.findByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByText('Browse and refine')).toBeInTheDocument();
+        expect(screen.getByText('Saved diagrams')).toBeInTheDocument();
         expect(screen.getByText('Warehouse ERD')).toBeInTheDocument();
     });
 

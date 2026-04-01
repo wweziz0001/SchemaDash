@@ -108,7 +108,7 @@ describe('LibraryDialog', () => {
         expect(
             screen.getByRole('button', { name: 'Shared with Me' })
         ).toBeInTheDocument();
-        expect(screen.getByText('Browse and refine')).toBeInTheDocument();
+        expect(screen.getByText('Saved diagrams')).toBeInTheDocument();
         expect(
             await screen.findByRole('link', { name: 'Open diagram' })
         ).toBeInTheDocument();
