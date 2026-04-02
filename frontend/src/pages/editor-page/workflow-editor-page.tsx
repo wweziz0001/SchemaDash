@@ -1,9 +1,7 @@
 import React from 'react';
 import { Spinner } from '@/components/spinner/spinner';
-import {
-    DiagramWorkflowProvider,
-    useDiagramWorkflow,
-} from '@/features/diagram-workflow/context/diagram-workflow-context';
+import { DiagramWorkflowProvider } from '@/context/diagram-workflow-context/diagram-workflow-provider';
+import { useDiagramWorkflow } from '@/context/diagram-workflow-context/use-diagram-workflow';
 import { EditorPage } from './editor-page';
 import { TopNavbarMock } from './top-navbar/top-navbar-mock';
 

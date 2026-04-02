@@ -4,14 +4,14 @@ import { Button } from '@/components/button/button';
 import { EmptyState } from '@/components/empty-state/empty-state';
 import { Input } from '@/components/input/input';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
-import { CreateVersionDialog } from '@/features/diagram-workflow/components/create-version-dialog';
-import { RestoreVersionDialog } from '@/features/diagram-workflow/components/restore-version-dialog';
-import { VersionListItem } from '@/features/diagram-workflow/components/version-list-item';
-import type { DiagramWorkflowVersionSummary } from '@/features/diagram-workflow/api/diagram-workflow-client';
-import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
-import { formatVersionTimestamp } from '@/features/diagram-workflow/lib/version-labels';
+import { CreateVersionDialog } from '@/dialogs/create-version-dialog/create-version-dialog';
+import { RestoreVersionDialog } from '@/dialogs/restore-version-dialog/restore-version-dialog';
+import type { DiagramWorkflowVersionSummary } from '@/lib/api/diagram-workflow-client';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { formatVersionTimestamp } from '@/lib/diagram-workflow/version-labels';
 import { History, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { VersionListItem } from './version-list-item';
 
 export interface VersionTabProps {}
 

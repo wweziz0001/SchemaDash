@@ -11,10 +11,10 @@ import { Button } from '@/components/button/button';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { Link } from 'react-router-dom';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
-import { WorkflowModeSwitcher } from '@/features/diagram-workflow/components/workflow-mode-switcher';
-import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
-import { ReviewDropdown } from '@/features/diagram-workflow/components/review-dropdown';
-import { VersionViewBadge } from '@/features/diagram-workflow/components/version-view-badge';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { VersionViewBadge } from './workflow/version-view-badge';
+import { WorkflowActionsMenu } from './workflow/workflow-actions-menu';
+import { WorkflowModeSwitcher } from './workflow/workflow-mode-switcher';
 
 export interface TopNavbarProps {}
 
@@ -70,7 +70,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                     <div className="h-6 w-px shrink-0 bg-border" />
                 ) : null}
                 <div className="flex items-center gap-2">
-                    <ReviewDropdown />
+                    <WorkflowActionsMenu />
                     {workflow?.activeMode === 'development' ? (
                         <SchemaSyncToolbarButton />
                     ) : null}

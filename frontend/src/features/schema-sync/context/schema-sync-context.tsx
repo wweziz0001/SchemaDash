@@ -14,8 +14,8 @@ import {
     SchemaSyncContext,
     type SchemaSyncContextValue,
 } from './schema-sync-context-object';
-import { diagramWorkflowClient } from '@/features/diagram-workflow/api/diagram-workflow-client';
-import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
+import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 
 export const SchemaSyncProvider: React.FC<React.PropsWithChildren> = ({
     children,

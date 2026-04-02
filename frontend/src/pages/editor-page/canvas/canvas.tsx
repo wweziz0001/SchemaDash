@@ -121,10 +121,10 @@ import { filterTable } from '@/lib/domain/diagram-filter/filter';
 import { defaultSchemas } from '@/lib/data/default-schemas';
 import { useDiff } from '@/context/diff-context/use-diff';
 import { useClickAway } from 'react-use';
+import { CompareSummaryChip } from './workflow/compare-summary-chip';
+import { LiveStatusChip } from './workflow/live-status-chip';
 import { LivePresenceCursors } from './live-presence-cursors';
-import { useOptionalDiagramWorkflow } from '@/features/diagram-workflow/context/diagram-workflow-context';
-import { LiveStatusChip } from '@/features/diagram-workflow/components/live-status-chip';
-import { CompareSummaryChip } from '@/features/diagram-workflow/components/compare-summary-chip';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 
 const HIGHLIGHTED_EDGE_Z_INDEX = 1;
 const DEFAULT_EDGE_Z_INDEX = 0;
