@@ -74,6 +74,8 @@ const sections = [
 
 const navItemClasses =
     'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[15px] transition-colors';
+const panelCardClasses = 'rounded-[18px] border-border/70 bg-card shadow-none';
+const subtleTextClasses = 'text-[15px] text-muted-foreground';
 
 const SettingSwitch = ({
     checked,
@@ -87,13 +89,13 @@ const SettingSwitch = ({
         aria-pressed={checked}
         className={cn(
             'relative inline-flex h-7 w-12 items-center rounded-full transition-colors',
-            checked ? 'bg-rose-500' : 'bg-stone-300'
+            checked ? 'bg-rose-500' : 'bg-stone-300 dark:bg-stone-700'
         )}
         onClick={onClick}
     >
         <span
             className={cn(
-                'inline-block size-5 rounded-full bg-white shadow-sm transition-transform',
+                'inline-block size-5 rounded-full bg-white shadow-sm transition-transform dark:bg-stone-100',
                 checked ? 'translate-x-6' : 'translate-x-1'
             )}
         />
@@ -114,14 +116,14 @@ const DetailRow = ({
 }) => (
     <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-4">
-            <div className="flex size-9 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500">
+            <div className="flex size-9 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground">
                 <Icon className="size-4" />
             </div>
             <div className="min-w-0">
-                <div className="text-[15px] font-medium text-stone-900">
+                <div className="text-[15px] font-medium text-foreground">
                     {title}
                 </div>
-                <div className="truncate text-[15px] text-stone-500">
+                <div className="truncate text-[15px] text-muted-foreground">
                     {value}
                 </div>
             </div>
@@ -139,13 +141,13 @@ const AccountInfoField = ({
     label: string;
     value: React.ReactNode;
 }) => (
-    <div className="flex items-center gap-4 rounded-2xl bg-stone-100/80 px-4 py-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500">
+    <div className="flex items-center gap-4 rounded-2xl bg-muted/60 px-4 py-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground">
             <Icon className="size-4" />
         </div>
         <div className="min-w-0">
-            <div className="text-[14px] text-stone-500">{label}</div>
-            <div className="truncate pt-0.5 text-[15px] font-semibold text-stone-900">
+            <div className="text-[14px] text-muted-foreground">{label}</div>
+            <div className="truncate pt-0.5 text-[15px] font-semibold text-foreground">
                 {value}
             </div>
         </div>
@@ -261,9 +263,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
     const renderProfile = () => (
         <div className="space-y-4">
-            <Card className="rounded-[18px] border-stone-200 shadow-none">
+            <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-[16px] font-semibold text-stone-900">
+                    <CardTitle className="text-[16px] font-semibold text-foreground">
                         Account Details
                     </CardTitle>
                 </CardHeader>
@@ -274,7 +276,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                         value={displayName}
                     />
                     <div className="shrink-0 space-y-2 text-right">
-                        <Badge className="rounded-xl bg-stone-100 px-3 py-1 text-[13px] font-medium text-stone-700 hover:bg-stone-100">
+                        <Badge className="rounded-xl bg-muted px-3 py-1 text-[13px] font-medium text-muted-foreground hover:bg-muted">
                             Team Plan (Basic) (Trial)
                         </Badge>
                         <div className="text-[14px] font-medium text-rose-500">
@@ -297,9 +299,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 </CardContent>
             </Card>
 
-            <Card className="rounded-[18px] border-stone-200 shadow-none">
+            <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-[16px] font-semibold text-stone-900">
+                    <CardTitle className="text-[16px] font-semibold text-foreground">
                         Auto-Save Settings
                     </CardTitle>
                 </CardHeader>
@@ -318,15 +320,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 </CardContent>
             </Card>
 
-            <Card className="rounded-[18px] border-stone-200 shadow-none">
+            <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-[16px] font-semibold text-stone-900">
+                    <CardTitle className="text-[16px] font-semibold text-foreground">
                         Language
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                     <div className="flex items-center gap-4">
-                        <div className="flex size-9 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500">
+                        <div className="flex size-9 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground">
                             <Globe className="size-4" />
                         </div>
                         <Select
@@ -335,7 +337,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                             }}
                             value={currentLanguage}
                         >
-                            <SelectTrigger className="h-11 rounded-xl border-stone-200 bg-white text-[15px] shadow-none">
+                            <SelectTrigger className="h-11 rounded-xl border-border/70 bg-background text-[15px] text-foreground shadow-none">
                                 <SelectValue placeholder="Choose language" />
                             </SelectTrigger>
                             <SelectContent>
@@ -358,7 +360,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <Button
                         type="button"
                         variant="outline"
-                        className="h-11 rounded-xl border-stone-200 px-4"
+                        className="h-11 rounded-xl border-border/70 px-4"
                         onClick={() => void auth.logout()}
                     >
                         <LogOut className="mr-2 size-4" />
@@ -371,12 +373,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
     const renderAccount = () => (
         <div className="space-y-4">
-            <Card className="rounded-[18px] border-stone-200 shadow-none">
+            <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-[16px] font-semibold text-stone-900">
+                    <CardTitle className="text-[16px] font-semibold text-foreground">
                         Workspace snapshot
                     </CardTitle>
-                    <p className="text-[15px] text-stone-500">
+                    <p className={subtleTextClasses}>
                         Current saved workspace counts available in this
                         session.
                     </p>
@@ -399,12 +401,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     />
                 </CardContent>
             </Card>
-            <Card className="rounded-[18px] border-stone-200 shadow-none">
+            <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-[16px] font-semibold text-stone-900">
+                    <CardTitle className="text-[16px] font-semibold text-foreground">
                         Account Details
                     </CardTitle>
-                    <p className="text-[15px] text-stone-500">
+                    <p className={subtleTextClasses}>
                         The current user context attached to this SchemaDash
                         session.
                     </p>
@@ -434,20 +436,20 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     );
 
     const renderApiKeys = () => (
-        <Card className="rounded-[18px] border-stone-200 shadow-none">
+        <Card className={panelCardClasses}>
             <CardHeader className="pb-3">
-                <CardTitle className="text-[16px] font-semibold text-stone-900">
+                <CardTitle className="text-[16px] font-semibold text-foreground">
                     API Keys
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 pt-0 text-[15px] text-stone-500">
+            <CardContent className="space-y-4 pt-0 text-[15px] text-muted-foreground">
                 <p>
                     API key management is not configured in this workspace yet.
                 </p>
                 <Button
                     type="button"
                     variant="outline"
-                    className="rounded-xl border-stone-200"
+                    className="rounded-xl border-border/70"
                     disabled
                 >
                     Generate key
@@ -457,14 +459,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     );
 
     const renderAppearance = () => (
-        <Card className="rounded-[18px] border-stone-200 shadow-none">
+        <Card className={panelCardClasses}>
             <CardHeader className="pb-3">
-                <CardTitle className="text-[16px] font-semibold text-stone-900">
+                <CardTitle className="text-[16px] font-semibold text-foreground">
                     Appearance
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
-                <div className="text-[15px] text-stone-500">Theme</div>
+                <div className={subtleTextClasses}>Theme</div>
                 <Select
                     onValueChange={(value) =>
                         localConfig.setTheme(
@@ -473,7 +475,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     }
                     value={localConfig.theme}
                 >
-                    <SelectTrigger className="h-11 rounded-xl border-stone-200 bg-white text-[15px] shadow-none">
+                    <SelectTrigger className="h-11 rounded-xl border-border/70 bg-background text-[15px] text-foreground shadow-none">
                         <SelectValue placeholder="Choose theme" />
                     </SelectTrigger>
                     <SelectContent>
@@ -488,9 +490,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
     const renderCanvas = () => (
         <div className="space-y-4">
-            <Card className="rounded-[18px] border-stone-200 shadow-none">
+            <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-[16px] font-semibold text-stone-900">
+                    <CardTitle className="text-[16px] font-semibold text-foreground">
                         Canvas Preferences
                     </CardTitle>
                 </CardHeader>
@@ -557,30 +559,30 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     );
 
     const renderSubscription = () => (
-        <Card className="rounded-[18px] border-stone-200 shadow-none">
+        <Card className={panelCardClasses}>
             <CardHeader className="pb-3">
-                <CardTitle className="text-[16px] font-semibold text-stone-900">
+                <CardTitle className="text-[16px] font-semibold text-foreground">
                     Subscription
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-0 text-[15px]">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <div className="font-medium text-stone-900">
+                        <div className="font-medium text-foreground">
                             Team Plan
                         </div>
-                        <div className="text-stone-500">
+                        <div className="text-muted-foreground">
                             Basic workspace access for the current session.
                         </div>
                     </div>
-                    <Badge className="rounded-xl bg-stone-100 px-3 py-1 text-[13px] font-medium text-stone-700 hover:bg-stone-100">
+                    <Badge className="rounded-xl bg-muted px-3 py-1 text-[13px] font-medium text-muted-foreground hover:bg-muted">
                         Basic (Trial)
                     </Badge>
                 </div>
                 <Button
                     type="button"
                     variant="outline"
-                    className="rounded-xl border-stone-200"
+                    className="rounded-xl border-border/70"
                 >
                     Check Plans
                 </Button>
@@ -608,7 +610,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="overflow-hidden border-stone-200 bg-white p-0 shadow-2xl sm:max-w-[980px] sm:rounded-xl">
+            <DialogContent className="overflow-hidden border-border/70 bg-background p-0 text-foreground shadow-2xl sm:max-w-[980px] sm:rounded-xl">
                 <div className="sr-only">
                     <DialogTitle>Workspace settings</DialogTitle>
                     <DialogDescription>
@@ -618,11 +620,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 </div>
 
                 <div className="grid min-h-[720px] grid-cols-[228px_minmax(0,1fr)]">
-                    <aside className="bg-stone-50/80">
+                    <aside className="bg-muted/35">
                         <div className="flex h-full flex-col">
                             {sections.map((section, sectionIndex) => (
                                 <div key={section.group}>
-                                    <div className="px-5 pb-3 pt-5 text-[15px] font-medium text-stone-500">
+                                    <div className="px-5 pb-3 pt-5 text-[15px] font-medium text-muted-foreground">
                                         {section.group}
                                     </div>
                                     <div className="space-y-1 px-2">
@@ -638,8 +640,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                                     className={cn(
                                                         navItemClasses,
                                                         active
-                                                            ? 'bg-stone-100 text-stone-950'
-                                                            : 'text-stone-600 hover:bg-stone-100/80'
+                                                            ? 'bg-accent text-accent-foreground'
+                                                            : 'text-muted-foreground hover:bg-accent/70 hover:text-accent-foreground'
                                                     )}
                                                     onClick={() =>
                                                         setSelectedSection(
@@ -647,7 +649,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                                         )
                                                     }
                                                 >
-                                                    <Icon className="size-4 shrink-0 text-stone-500" />
+                                                    <Icon className="size-4 shrink-0 text-current" />
                                                     <span className="font-medium">
                                                         {item.label}
                                                     </span>
@@ -656,26 +658,26 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                         })}
                                     </div>
                                     {sectionIndex < sections.length - 1 ? (
-                                        <Separator className="mt-5 bg-stone-200" />
+                                        <Separator className="mt-5 bg-border/70" />
                                     ) : null}
                                 </div>
                             ))}
                         </div>
                     </aside>
 
-                    <section className="bg-white">
+                    <section className="bg-background">
                         <div className="flex h-full flex-col">
                             <header className="flex items-center gap-4 p-5">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex size-6 items-center justify-center rounded-md border border-stone-200 bg-white text-stone-900">
+                                    <div className="flex size-6 items-center justify-center rounded-md border border-border/70 bg-background text-foreground">
                                         <ActiveIcon className="size-3.5" />
                                     </div>
                                     <Separator
                                         orientation="vertical"
-                                        className="h-5 bg-stone-200"
+                                        className="h-5 bg-border/70"
                                     />
                                 </div>
-                                <h2 className="text-[32px] font-medium tracking-[-0.03em] text-stone-900">
+                                <h2 className="text-[32px] font-medium tracking-[-0.03em] text-foreground">
                                     {activeSection.label}
                                 </h2>
                             </header>
@@ -690,7 +692,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 </div>
 
                 <DialogClose asChild>
-                    <button className="absolute right-5 top-5 rounded-sm text-stone-500 transition-colors hover:text-stone-900">
+                    <button className="absolute right-5 top-5 rounded-sm text-muted-foreground transition-colors hover:text-foreground">
                         <X className="size-4" />
                         <span className="sr-only">Close</span>
                     </button>
