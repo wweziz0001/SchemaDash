@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/tooltip/tooltip';
 import { SettingsDialog } from './settings-dialog';
 
+const logoutMock = vi.fn();
 const setShowCardinalityMock = vi.fn();
 const setShowDBViewsMock = vi.fn();
 const setShowFieldAttributesMock = vi.fn();
@@ -13,9 +14,15 @@ const setThemeMock = vi.fn();
 
 vi.mock('@/hooks/use-auth', () => ({
     useAuth: () => ({
+        authenticated: true,
         enabled: true,
         mode: 'local',
         serverReachable: true,
+        logout: logoutMock,
+        user: {
+            email: 'wweziz37@gmail.com',
+            displayName: 'Wweziz',
+        },
     }),
 }));
 
@@ -42,8 +49,28 @@ vi.mock('@/hooks/use-local-config', () => ({
     }),
 }));
 
+vi.mock('@/i18n/i18n', () => ({
+    languages: [
+        {
+            code: 'ar',
+            name: 'Arabic',
+            nativeName: 'العربية',
+        },
+    ],
+}));
+
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        i18n: {
+            changeLanguage: vi.fn(),
+            languages: ['ar'],
+        },
+    }),
+}));
+
 describe('SettingsDialog', () => {
     beforeEach(() => {
+        logoutMock.mockReset();
         setShowCardinalityMock.mockReset();
         setShowDBViewsMock.mockReset();
         setShowFieldAttributesMock.mockReset();
@@ -51,7 +78,7 @@ describe('SettingsDialog', () => {
         setThemeMock.mockReset();
     });
 
-    it('renders a settings-only workspace modal and switches sections', async () => {
+    it('renders the profile-styled settings modal and switches sections', async () => {
         const user = userEvent.setup();
 
         render(
@@ -62,18 +89,20 @@ describe('SettingsDialog', () => {
 
         expect(await screen.findByRole('dialog')).toBeInTheDocument();
         expect(screen.getByText('Workspace settings')).toBeInTheDocument();
-        expect(screen.getAllByText('Appearance').length).toBeGreaterThan(0);
+        expect(
+            screen.getByRole('heading', { name: 'Profile' })
+        ).toBeInTheDocument();
+        expect(screen.getByText('Account Details')).toBeInTheDocument();
+        expect(screen.getByText('Auto-Save Settings')).toBeInTheDocument();
+        expect(screen.getByText('Language')).toBeInTheDocument();
         expect(screen.queryByText('All Diagrams')).not.toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', { name: /Canvas/ }));
-        expect(
-            await screen.findByText('Canvas preferences')
-        ).toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: 'Appearance' }));
+        expect(screen.getAllByText('Appearance').length).toBeGreaterThan(0);
         expect(screen.getByText('Show minimap')).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', { name: /Defaults/ }));
-        expect(
-            await screen.findByText('Default diagram id')
-        ).toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: 'Subscription' }));
+        expect(screen.getAllByText('Subscription').length).toBeGreaterThan(0);
+        expect(screen.getByText('Check Plans')).toBeInTheDocument();
     });
 });

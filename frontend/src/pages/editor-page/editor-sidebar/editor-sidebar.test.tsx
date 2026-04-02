@@ -92,6 +92,16 @@ vi.mock('react-i18next', () => ({
     }),
 }));
 
+vi.mock('@/i18n/i18n', () => ({
+    languages: [
+        {
+            code: 'ar',
+            name: 'Arabic',
+            nativeName: 'العربية',
+        },
+    ],
+}));
+
 vi.mock('@/hooks/use-breakpoint', () => ({
     useBreakpoint: () => ({
         isMd: true,
@@ -329,11 +339,17 @@ describe('EditorSidebar account menu', () => {
         expect(navigateMock).toHaveBeenCalledTimes(1);
         expect(await screen.findByRole('dialog')).toBeInTheDocument();
         expect(screen.getByText('Workspace settings')).toBeInTheDocument();
+        expect(
+            screen.getByRole('heading', { name: 'Profile' })
+        ).toBeInTheDocument();
+        expect(screen.getByText('Account Details')).toBeInTheDocument();
         expect(screen.queryByText('Warehouse ERD')).not.toBeInTheDocument();
         expect(
             screen.queryByRole('button', { name: 'All Diagrams' })
         ).not.toBeInTheDocument();
-        expect(screen.getAllByText('Appearance').length).toBeGreaterThan(0);
+        expect(
+            screen.getByRole('button', { name: 'Subscription' })
+        ).toBeInTheDocument();
     });
 
     it('reuses sharing, theme, and logout flows from the existing app', async () => {
