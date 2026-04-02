@@ -2,9 +2,20 @@ import { useAuth } from '@/hooks/use-auth';
 import { useStorage } from '@/hooks/use-storage';
 import type {
     SavedCollection,
-    SavedDiagram,
     SavedProject,
 } from '@/context/storage-context/storage-context';
+import {
+    buildLibraryDiagramItems,
+    buildLibraryProjectQuery,
+    filterProjectsForLibraryView,
+    filterSharedLibraryItems,
+    filterSharedProjects,
+    sortLibraryItems,
+    type LibraryDiagramItem,
+    type LibrarySort,
+    type LibraryView,
+} from '@/lib/dashboard/library-catalog';
+import { normalizeSearchTerm } from '@/lib/utils/search';
 import {
     useCallback,
     useDeferredValue,
@@ -12,94 +23,6 @@ import {
     useMemo,
     useState,
 } from 'react';
-
-export type LibraryView =
-    | 'all'
-    | 'shared'
-    | 'unorganized'
-    | 'trash'
-    | 'collection';
-
-export type LibrarySort = 'updated' | 'created' | 'name' | 'tables';
-
-export interface LibraryDiagramItem {
-    diagram: SavedDiagram;
-    project: SavedProject;
-    collection: SavedCollection | null;
-    isShared: boolean;
-    isOwnedByCurrentUser: boolean;
-}
-
-export const normalizeSearchTerm = (value: string) => {
-    const normalized = value.trim();
-    return normalized.length > 0 ? normalized : undefined;
-};
-
-const matchesSharedResource = (
-    project: SavedProject,
-    diagram: SavedDiagram,
-    userId?: string
-) => {
-    if (!userId) {
-        return false;
-    }
-
-    return (
-        project.access !== 'owner' ||
-        diagram.access !== 'owner' ||
-        project.ownerUserId !== userId ||
-        diagram.ownerUserId !== userId
-    );
-};
-
-const sortItems = (items: LibraryDiagramItem[], sort: LibrarySort) => {
-    return [...items].sort((left, right) => {
-        if (sort === 'name') {
-            return left.diagram.name.localeCompare(right.diagram.name);
-        }
-
-        if (sort === 'created') {
-            return (
-                right.diagram.createdAt.getTime() -
-                left.diagram.createdAt.getTime()
-            );
-        }
-
-        if (sort === 'tables') {
-            return right.diagram.tableCount - left.diagram.tableCount;
-        }
-
-        return (
-            right.diagram.updatedAt.getTime() - left.diagram.updatedAt.getTime()
-        );
-    });
-};
-
-const filterProjectsForView = (
-    projects: SavedProject[],
-    view: LibraryView,
-    collectionId?: string
-) => {
-    return projects.filter((project) => {
-        if (view === 'trash') {
-            return project.status === 'deleted';
-        }
-
-        if (project.status === 'deleted') {
-            return false;
-        }
-
-        if (view === 'unorganized') {
-            return project.collectionId === null;
-        }
-
-        if (view === 'collection') {
-            return project.collectionId === collectionId;
-        }
-
-        return true;
-    });
-};
 
 export const useLibraryCatalog = (options: {
     view: LibraryView;
@@ -131,30 +54,21 @@ export const useLibraryCatalog = (options: {
         setError(null);
 
         try {
-            const projectQuery =
-                options.view === 'unorganized'
-                    ? {
-                          search: normalizedSearch,
-                          unassigned: true,
-                      }
-                    : options.view === 'collection' && options.collectionId
-                      ? {
-                            search: normalizedSearch,
-                            collectionId: options.collectionId,
-                        }
-                      : {
-                            search: normalizedSearch,
-                        };
-
             const [nextCollections, nextProjects] = await Promise.all([
                 listCollections(),
-                listProjects(projectQuery),
+                listProjects(
+                    buildLibraryProjectQuery({
+                        collectionId: options.collectionId,
+                        search: normalizedSearch,
+                        view: options.view,
+                    })
+                ),
             ]);
 
             const collectionById = new Map(
                 nextCollections.map((collection) => [collection.id, collection])
             );
-            const visibleProjects = filterProjectsForView(
+            const visibleProjects = filterProjectsForLibraryView(
                 nextProjects,
                 options.view,
                 options.collectionId
@@ -167,53 +81,28 @@ export const useLibraryCatalog = (options: {
                     }),
                 }))
             );
-
-            const nextItems = projectDiagrams
-                .flatMap(({ project, diagrams }) =>
-                    diagrams.map((diagram) => {
-                        const isShared = matchesSharedResource(
-                            project,
-                            diagram,
-                            user?.id
-                        );
-
-                        return {
-                            diagram,
-                            project,
-                            collection: project.collectionId
-                                ? (collectionById.get(project.collectionId) ??
-                                  null)
-                                : null,
-                            isShared,
-                            isOwnedByCurrentUser:
-                                project.ownerUserId === user?.id &&
-                                diagram.ownerUserId === user?.id,
-                        };
-                    })
-                )
-                .filter((item) =>
-                    options.view === 'shared' ? item.isShared : true
-                );
+            const nextItems =
+                options.view === 'shared'
+                    ? filterSharedLibraryItems(
+                          buildLibraryDiagramItems({
+                              collectionById,
+                              projectDiagrams,
+                              userId: user?.id,
+                          })
+                      )
+                    : buildLibraryDiagramItems({
+                          collectionById,
+                          projectDiagrams,
+                          userId: user?.id,
+                      });
 
             setCollections(nextCollections);
             setProjects(
                 options.view === 'shared'
-                    ? visibleProjects.filter((project) =>
-                          projectDiagrams.some(
-                              ({ project: currentProject, diagrams }) =>
-                                  currentProject.id === project.id &&
-                                  diagrams.some((diagram) =>
-                                      matchesSharedResource(
-                                          project,
-                                          diagram,
-                                          user?.id
-                                      )
-                                  )
-                          )
-                      )
+                    ? filterSharedProjects(projectDiagrams, user?.id)
                     : visibleProjects
             );
-            setItems(sortItems(nextItems, sort));
+            setItems(sortLibraryItems(nextItems, sort));
         } catch (nextError) {
             console.error(nextError);
             setError('Unable to load this library view right now.');
@@ -251,3 +140,5 @@ export const useLibraryCatalog = (options: {
         setSort,
     };
 };
+
+export type { LibraryDiagramItem, LibrarySort, LibraryView };

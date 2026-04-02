@@ -47,6 +47,7 @@ import { useStorage } from '@/hooks/use-storage';
 import type { DatabaseEdition } from '@/lib/domain/database-edition';
 import type { DatabaseType } from '@/lib/domain/database-type';
 import { cn } from '@/lib/utils';
+import { matchesSearch, normalizeSearchTerm } from '@/lib/utils/search';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { BaseDialogProps } from '../common/base-dialog-props';
@@ -56,22 +57,6 @@ import { useSharingSettingsDialogApi } from './use-sharing-settings-dialog-api';
 
 const ALL_COLLECTION_VALUE = '__all__';
 const UNASSIGNED_COLLECTION_VALUE = '__unassigned__';
-
-const normalizeSearchTerm = (value: string) => {
-    const normalized = value.trim().toLowerCase();
-    return normalized.length > 0 ? normalized : undefined;
-};
-
-const matchesSearch = (
-    values: Array<string | null | undefined>,
-    searchTerm?: string
-) => {
-    if (!searchTerm) {
-        return true;
-    }
-
-    return values.some((value) => value?.toLowerCase().includes(searchTerm));
-};
 
 export interface OpenDiagramDialogProps extends BaseDialogProps {
     canClose?: boolean;
@@ -121,7 +106,7 @@ export const OpenDiagramDialog: React.FC<OpenDiagramDialogProps> = ({
     const lastAppliedSearchTermRef = useRef<string | undefined>();
     const deferredSearchInput = useDeferredValue(searchTerm);
     const normalizedSearchTerm = useMemo(
-        () => normalizeSearchTerm(deferredSearchInput),
+        () => normalizeSearchTerm(deferredSearchInput, { lowerCase: true }),
         [deferredSearchInput]
     );
 
