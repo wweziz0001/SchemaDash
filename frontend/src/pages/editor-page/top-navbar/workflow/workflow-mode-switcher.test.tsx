@@ -69,4 +69,21 @@ describe('workflow mode switcher', () => {
         expect(setActiveMode).toHaveBeenCalledWith('live');
         expect(setActiveMode).toHaveBeenCalledWith('compare');
     });
+
+    it('hides compare once the editor is already in compare mode', () => {
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            diagramId: 'diagram-1',
+            activeMode: 'compare',
+            liveModeEnabled: true,
+            compareModeEnabled: true,
+            setActiveMode: vi.fn(),
+        } as never);
+
+        render(<WorkflowModeSwitcher />);
+
+        expect(screen.queryByRole('button', { name: 'Compare' })).toBeNull();
+        expect(
+            screen.getByRole('button', { name: 'Development' })
+        ).toBeTruthy();
+    });
 });
