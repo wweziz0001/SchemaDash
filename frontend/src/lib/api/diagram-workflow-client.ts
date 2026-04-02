@@ -1,5 +1,5 @@
 import { requestJson } from '@/lib/api/request';
-import type { DiagramDto } from '@/lib/api/persistence-client';
+import type { DiagramDto } from '@/lib/persistence/persistence-types';
 import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 
 export type DiagramWorkflowSyncStatus =

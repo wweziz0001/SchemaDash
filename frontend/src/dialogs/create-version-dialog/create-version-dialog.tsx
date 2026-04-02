@@ -13,7 +13,7 @@ import { Input } from '@/components/input/input';
 import { Label } from '@/components/label/label';
 import { Textarea } from '@/components/textarea/textarea';
 import { useToast } from '@/components/toast/use-toast';
-import { serializeDiagram } from '@/lib/api/persistence-client';
+import { serializeDiagram } from '@/lib/persistence/diagram-serialization';
 import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';

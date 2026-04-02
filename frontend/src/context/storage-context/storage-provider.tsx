@@ -18,21 +18,21 @@ import type { Area } from '@/lib/domain/area';
 import type { DBCustomType } from '@/lib/domain/db-custom-type';
 import type { DiagramFilter } from '@/lib/domain/diagram-filter/diagram-filter';
 import type { Note } from '@/lib/domain/note';
-import {
-    deserializeCollectionSummary,
-    deserializeDiagram,
-    deserializeProjectSummary,
-    type PersistedCollectionSummary,
-    type PersistedDiagramCollaborationState,
-    type PersistedDiagramEditSession,
-    type PersistedDiagramSummary,
-    type PersistedProjectSummary,
-    type PersistedUserSummary,
-    persistenceClient,
-    serializeDiagram,
-    type PersistedDiagramRecord,
-} from '@/lib/api/persistence-client';
+import { persistenceClient } from '@/lib/api/persistence-client';
 import { getCollaborationClientId } from '@/lib/persistence/collaboration-client-id';
+import {
+    deserializeDiagram,
+    serializeDiagram,
+} from '@/lib/persistence/diagram-serialization';
+import type {
+    PersistedCollectionSummary,
+    PersistedDiagramCollaborationState,
+    PersistedDiagramEditSession,
+    PersistedDiagramRecord,
+    PersistedDiagramSummary,
+    PersistedProjectSummary,
+    PersistedUserSummary,
+} from '@/lib/persistence/persistence-types';
 import { getCurrentShareToken } from '@/lib/persistence/share-token';
 import { cloneDiagram } from '@/lib/clone';
 import { RequestError } from '@/lib/api/request';
@@ -560,7 +560,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
 
     const cacheProject = useCallback(
         async (project: PersistedProjectSummary): Promise<SavedProject> => {
-            const cached = toCachedProject(deserializeProjectSummary(project));
+            const cached = toCachedProject(project);
             await db.saved_projects.put(cached);
             return toSavedProject(cached, project.diagramCount);
         },
@@ -571,12 +571,11 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
         async (
             collection: PersistedCollectionSummary
         ): Promise<SavedCollection> => {
-            const normalized = deserializeCollectionSummary(collection);
-            const cached = toCachedCollection(normalized);
+            const cached = toCachedCollection(collection);
             await db.saved_collections.put(cached);
             return toSavedCollection(cached, {
-                projectCount: normalized.projectCount,
-                diagramCount: normalized.diagramCount,
+                projectCount: collection.projectCount,
+                diagramCount: collection.diagramCount,
             });
         },
         [db]

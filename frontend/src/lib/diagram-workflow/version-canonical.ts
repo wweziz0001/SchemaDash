@@ -3,7 +3,7 @@ import {
     type CanonicalSchema,
 } from '@schemadash/schema-sync-core';
 import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
-import { deserializeDiagram } from '@/lib/api/persistence-client';
+import { deserializeDiagram } from '@/lib/persistence/diagram-serialization';
 import type { DiagramWorkflowVersionRecord } from '@/lib/api/diagram-workflow-client';
 
 export const getAuthoritativeVersionCanonicalSchema = (

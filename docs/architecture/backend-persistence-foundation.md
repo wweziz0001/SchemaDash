@@ -7,22 +7,22 @@ SchemaDash now has a minimal self-hosted backend foundation for durable applicat
 ## What Was Added
 
 - A validated Fastify backend foundation with:
-  - structured logging
-  - environment-based configuration
-  - centralized route registration
-  - health and bootstrap endpoints
+    - structured logging
+    - environment-based configuration
+    - centralized route registration
+    - health and bootstrap endpoints
 - A dedicated application persistence store in SQLite for:
-  - placeholder users
-  - projects
-  - diagrams
-  - ownership metadata
-  - visibility/status metadata
-  - timestamps
+    - placeholder users
+    - projects
+    - diagrams
+    - ownership metadata
+    - visibility/status metadata
+    - timestamps
 - A frontend storage boundary that:
-  - keeps Dexie as the editor’s local working cache
-  - hydrates from the backend when available
-  - syncs diagrams back to the backend for durable storage
-  - falls back to local-only behavior if the backend is unavailable
+    - keeps Dexie as the editor’s local working cache
+    - hydrates from the backend when available
+    - syncs diagrams back to the backend for durable storage
+    - falls back to local-only behavior if the backend is unavailable
 
 ## Repository Shape
 
@@ -38,8 +38,10 @@ SchemaDash now has a minimal self-hosted backend foundation for durable applicat
   Business logic for persistence and schema-sync workflows.
 - `src/context/storage-context`
   Hybrid local/remote storage provider used by the existing editor.
-- `src/features/persistence/api`
-  Frontend client for the new persistence API.
+- `frontend/src/lib/api/persistence-client.ts`
+  Frontend client for the persistence API.
+- `frontend/src/lib/persistence/*`
+  Frontend persistence models, diagram serialization helpers, and share-token runtime utilities.
 
 ## Current Model
 

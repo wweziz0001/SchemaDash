@@ -47,7 +47,7 @@ import { ToastAction } from '@/components/toast/toast';
 import type {
     PersistedDiagramCollaborationEvent,
     ResourceAccess,
-} from '@/lib/api/persistence-client';
+} from '@/lib/persistence/persistence-types';
 import { getCurrentShareToken } from '@/lib/persistence/share-token';
 
 export interface SchemaDashProviderProps {

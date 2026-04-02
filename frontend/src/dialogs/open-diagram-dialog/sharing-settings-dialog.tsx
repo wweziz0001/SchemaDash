@@ -21,11 +21,9 @@ import {
     SelectValue,
 } from '@/components/select/select';
 import type {
-    PersistedSharingSettings,
-    PersistedUserSummary,
     SharingAccess,
     SharingScope,
-} from '@/lib/api/persistence-client';
+} from '@/lib/persistence/persistence-types';
 import { cn } from '@/lib/utils';
 import {
     Clock3,
@@ -39,61 +37,23 @@ import {
     Users,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type {
+    SharingDialogSubject,
+    SharingSettingsDialogApi,
+} from './use-sharing-settings-dialog-api';
 
 type ExpirationPreset = 'never' | '1h' | '1d' | '7d' | 'custom';
 
 interface SharingSettingsDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    subject: {
-        type: 'project' | 'diagram';
-        id: string;
-        name: string;
-    } | null;
-    loadSharing: (subject: {
-        type: 'project' | 'diagram';
-        id: string;
-    }) => Promise<PersistedSharingSettings>;
-    searchUsers: (query: string) => Promise<PersistedUserSummary[]>;
-    addPerson: (
-        subject: {
-            type: 'project' | 'diagram';
-            id: string;
-        },
-        params: {
-            userId: string;
-            access: SharingAccess;
-        }
-    ) => Promise<PersistedSharingSettings>;
-    updatePerson: (
-        subject: {
-            type: 'project' | 'diagram';
-            id: string;
-        },
-        userId: string,
-        params: {
-            access: SharingAccess;
-        }
-    ) => Promise<PersistedSharingSettings>;
-    removePerson: (
-        subject: {
-            type: 'project' | 'diagram';
-            id: string;
-        },
-        userId: string
-    ) => Promise<PersistedSharingSettings>;
-    updateGeneralAccess: (
-        subject: {
-            type: 'project' | 'diagram';
-            id: string;
-        },
-        params: {
-            scope: SharingScope;
-            access: SharingAccess;
-            expiresAt?: string | null;
-            rotateLinkToken?: boolean;
-        }
-    ) => Promise<PersistedSharingSettings>;
+    subject: SharingDialogSubject | null;
+    loadSharing: SharingSettingsDialogApi['loadSharing'];
+    searchUsers: SharingSettingsDialogApi['searchUsers'];
+    addPerson: SharingSettingsDialogApi['addPerson'];
+    updatePerson: SharingSettingsDialogApi['updatePerson'];
+    removePerson: SharingSettingsDialogApi['removePerson'];
+    updateGeneralAccess: SharingSettingsDialogApi['updateGeneralAccess'];
     onSaved?: () => Promise<void> | void;
 }
 

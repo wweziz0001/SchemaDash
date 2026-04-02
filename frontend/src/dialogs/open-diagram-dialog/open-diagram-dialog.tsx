@@ -50,9 +50,9 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { BaseDialogProps } from '../common/base-dialog-props';
-import { useSharingDialogApi } from '@/hooks/use-sharing-dialog-api';
 import { DiagramRowActionsMenu } from './diagram-row-actions-menu/diagram-row-actions-menu';
 import { SharingSettingsDialog } from './sharing-settings-dialog';
+import { useSharingSettingsDialogApi } from './use-sharing-settings-dialog-api';
 
 const ALL_COLLECTION_VALUE = '__all__';
 const UNASSIGNED_COLLECTION_VALUE = '__unassigned__';
@@ -98,7 +98,7 @@ export const OpenDiagramDialog: React.FC<OpenDiagramDialogProps> = ({
         updateSavedDiagram,
         deleteDiagram,
     } = useStorage();
-    const sharingApi = useSharingDialogApi();
+    const sharingApi = useSharingSettingsDialogApi();
     const { showAlert } = useAlert();
     const { diagramId: currentDiagramId, loadDiagram } = useSchemaDash();
     const [collections, setCollections] = useState<SavedCollection[]>([]);

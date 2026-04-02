@@ -38,11 +38,11 @@ Key subfolders:
 - `frontend/src/components/` -> shared UI primitives and reusable composite widgets.
 - `frontend/src/context/` -> cross-cutting React providers for storage, editor state, dialogs, history, theme, diff, layout, and keyboard shortcuts.
 - `frontend/src/dialogs/` -> global dialog entrypoints for create/open/save/import/export/editor actions.
-- `frontend/src/features/` -> cross-page product features such as auth, admin, persistence sharing helpers, and schema sync.
 - `frontend/src/pages/` -> routed pages: dashboard, editor, shared viewers, admin, templates, examples.
 - `frontend/src/lib/` -> domain models, import/export logic, DBML support, SQL tooling, utility helpers, and runtime env access.
 - `frontend/src/assets/`, `frontend/public/`, `frontend/src/templates-data/` -> images, examples, and template data.
 - `frontend/test/` -> frontend test support.
+- `frontend/src/features/` does not exist anymore; former feature-owned code has been redistributed into the native folders above.
 
 Important entry files:
 
@@ -191,12 +191,12 @@ Purpose: authenticate users, bootstrap the first admin, protect backend routes, 
 Frontend:
 
 - `frontend/src/app.tsx`
-- `frontend/src/features/auth/api/auth-client.ts`
-- `frontend/src/features/auth/context/auth-provider.tsx`
-- `frontend/src/features/auth/context/auth-context.ts`
-- `frontend/src/features/auth/hooks/use-auth.ts`
-- `frontend/src/features/auth/components/bootstrap-page.tsx`
-- `frontend/src/features/auth/components/sign-in-page.tsx`
+- `frontend/src/lib/api/auth-client.ts`
+- `frontend/src/context/auth-context/auth-provider.tsx`
+- `frontend/src/context/auth-context/auth-context.ts`
+- `frontend/src/hooks/use-auth.ts`
+- `frontend/src/pages/bootstrap-page/bootstrap-page.tsx`
+- `frontend/src/pages/sign-in-page/sign-in-page.tsx`
 
 Backend:
 
@@ -244,7 +244,8 @@ Backend:
 Shared / model / config:
 
 - `frontend/src/context/storage-context/storage-provider.tsx`
-- `frontend/src/features/persistence/api/persistence-client.ts`
+- `frontend/src/lib/api/persistence-client.ts`
+- `frontend/src/lib/persistence/persistence-types.ts`
 - `backend/src/schemas/persistence.ts`
 
 Notes:
@@ -298,7 +299,9 @@ Purpose: save, open, update, delete, and cache persisted projects and diagrams w
 Frontend:
 
 - `frontend/src/context/storage-context/storage-provider.tsx`
-- `frontend/src/features/persistence/api/persistence-client.ts`
+- `frontend/src/lib/api/persistence-client.ts`
+- `frontend/src/lib/persistence/persistence-types.ts`
+- `frontend/src/lib/persistence/diagram-serialization.ts`
 - `frontend/src/dialogs/save-diagram-dialog/save-diagram-dialog.tsx`
 - `frontend/src/dialogs/open-diagram-dialog/open-diagram-dialog.tsx`
 - `frontend/src/pages/editor-page/use-diagram-loader.tsx`
@@ -327,13 +330,13 @@ Purpose: expose project/diagram sharing controls, user-level access grants, and 
 
 Frontend:
 
-- `frontend/src/features/persistence/hooks/use-sharing-dialog-api.ts`
+- `frontend/src/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api.ts`
 - `frontend/src/dialogs/open-diagram-dialog/sharing-settings-dialog.tsx`
 - `frontend/src/pages/shared-project-page/shared-project-page.tsx`
 - `frontend/src/pages/shared-project-page/shared-project-diagram-page.tsx`
 - `frontend/src/pages/shared-project-page/shared-diagram-page.tsx`
 - `frontend/src/pages/shared-project-page/shared-diagram-loader.tsx`
-- `frontend/src/features/persistence/share-token.ts`
+- `frontend/src/lib/persistence/share-token.ts`
 - `frontend/src/lib/api/request.ts`
 
 Backend:
@@ -346,7 +349,8 @@ Backend:
 Shared / model / config:
 
 - `backend/src/schemas/persistence.ts`
-- `frontend/src/features/persistence/api/persistence-client.ts`
+- `frontend/src/lib/api/persistence-client.ts`
+- `frontend/src/lib/persistence/persistence-types.ts`
 
 Notes:
 
@@ -375,8 +379,9 @@ Backend:
 Shared / model / config:
 
 - `backend/src/schemas/persistence.ts`
-- `frontend/src/features/persistence/api/persistence-client.ts`
-- `frontend/src/features/persistence/collaboration-client-id.ts`
+- `frontend/src/lib/api/persistence-client.ts`
+- `frontend/src/lib/persistence/persistence-types.ts`
+- `frontend/src/lib/persistence/collaboration-client-id.ts`
 
 Notes:
 
@@ -389,12 +394,10 @@ Purpose: manage live PostgreSQL connections, import canonical schemas, preview d
 
 Frontend:
 
-- `frontend/src/features/schema-sync/api/schema-sync-client.ts`
-- `frontend/src/features/schema-sync/context/schema-sync-context.tsx`
-- `frontend/src/features/schema-sync/context/schema-sync-context-object.ts`
-- `frontend/src/features/schema-sync/dialogs/schema-sync-dialog.tsx`
-- `frontend/src/features/schema-sync/components/schema-sync-toolbar-button.tsx`
-- `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
+- `frontend/src/lib/api/schema-sync-client.ts`
+- `frontend/src/dialogs/schema-sync-dialog/schema-sync-dialog.tsx`
+- `frontend/src/pages/editor-page/top-navbar/workflow/schema-sync-toolbar-button.tsx`
+- `frontend/src/lib/schema-sync/canonical-adapters.ts`
 - `frontend/src/lib/domain/schema-sync.ts`
 
 Backend:
@@ -494,8 +497,8 @@ Purpose: expose a basic self-hosted admin overview and runtime health/deployment
 
 Frontend:
 
-- `frontend/src/features/admin/api/admin-client.ts`
-- `frontend/src/features/admin/components/admin-route-guard.tsx`
+- `frontend/src/lib/api/admin-client.ts`
+- `frontend/src/pages/admin-page/admin-route-guard.tsx`
 - `frontend/src/pages/admin-page/admin-page.tsx`
 
 Backend:
@@ -533,14 +536,14 @@ Notes:
 - Backend app builder: `backend/src/app.ts`
 - Backend dependency assembly: `backend/src/context/app-context.ts`
 - API registration points:
-  - `backend/src/routes/auth-routes.ts`
-  - `backend/src/routes/admin-routes.ts`
-  - `backend/src/routes/health-routes.ts`
-  - `backend/src/routes/persistence-routes.ts`
-  - `backend/src/routes/schema-sync-routes.ts`
+    - `backend/src/routes/auth-routes.ts`
+    - `backend/src/routes/admin-routes.ts`
+    - `backend/src/routes/health-routes.ts`
+    - `backend/src/routes/persistence-routes.ts`
+    - `backend/src/routes/schema-sync-routes.ts`
 - Backend database initialization:
-  - `backend/src/repositories/app-repository.ts`
-  - `backend/src/repositories/metadata-repository.ts`
+    - `backend/src/repositories/app-repository.ts`
+    - `backend/src/repositories/metadata-repository.ts`
 - Frontend API request wrapper: `frontend/src/lib/api/request.ts`
 - Shared schema-sync package entry: `packages/schema-sync-core/src/index.ts`
 
@@ -565,11 +568,11 @@ Notes:
 
 ### Authentication flow
 
-1. Frontend calls `frontend/src/features/auth/api/auth-client.ts`.
+1. Frontend calls `frontend/src/lib/api/auth-client.ts`.
 2. Backend auth routes delegate to `backend/src/services/auth-service.ts`.
 3. `AuthService` handles bootstrap, password login, OIDC redirect/callback, and cookie-backed session lookup.
 4. `backend/src/security/request-access.ts` enforces authenticated/admin/operational access per route.
-5. `frontend/src/app.tsx` and `frontend/src/features/admin/components/admin-route-guard.tsx` consume the resulting session state.
+5. `frontend/src/app.tsx` and `frontend/src/pages/admin-page/admin-route-guard.tsx` consume the resulting session state.
 
 ### Opening a diagram flow
 
@@ -581,9 +584,9 @@ Notes:
 
 ### Schema sync flow
 
-1. `SchemaSyncProvider` loads connection summaries through `schema-sync-client`.
+1. The schema-sync dialog loads connection summaries through `schema-sync-client`.
 2. Import: `POST /api/schema/import-live` returns a canonical schema and baseline snapshot id.
-3. Frontend converts the canonical schema into the editor model with `frontend/src/features/schema-sync/lib/canonical-adapters.ts`.
+3. Frontend converts the canonical schema into the editor model with `frontend/src/lib/schema-sync/canonical-adapters.ts`.
 4. Preview: current diagram is converted back into canonical form and sent to `POST /api/schema/diff`.
 5. Backend uses `packages/schema-sync-core/` plus `SchemaSyncService` to produce a `ChangePlan`.
 6. Apply: frontend submits the plan id plus destructive confirmation to `POST /api/schema/apply`.
@@ -600,7 +603,7 @@ Notes:
 1. Export dialogs pull current diagram state from `SchemaDashProvider`.
 2. SQL export uses `frontend/src/lib/data/sql-export/export-sql-script.ts`, with deterministic or AI-assisted generation depending on source/target dialect.
 3. Image export uses `frontend/src/dialogs/export-image-dialog/export-image-dialog.tsx` plus export-image context/hooks.
-4. Backup export/import uses `frontend/src/features/persistence/api/persistence-client.ts` against `/api/backups/export` and `/api/backups/import`.
+4. Backup export/import uses `frontend/src/lib/api/persistence-client.ts` against `/api/backups/export` and `/api/backups/import`.
 
 ### Shared-viewer flow
 
@@ -669,26 +672,26 @@ Feature dependencies:
 ## 9. Recommended Next Steps
 
 - Clean up later:
-  - Split `StorageProvider`, `SchemaDashProvider`, and `PersistenceService` into narrower modules.
-  - Consolidate stale or overlapping architecture docs so README links match real files.
-  - Separate collaboration concerns from generic persistence where possible.
+    - Split `StorageProvider`, `SchemaDashProvider`, and `PersistenceService` into narrower modules.
+    - Consolidate stale or overlapping architecture docs so README links match real files.
+    - Separate collaboration concerns from generic persistence where possible.
 
 - Leave alone for now:
-  - `packages/schema-sync-core/` boundaries are useful and should stay shared.
-  - Backend route registration in `backend/src/app.ts` is clear and stable.
-  - The route/page split in `frontend/src/router.tsx` is understandable and already lazy-loaded.
+    - `packages/schema-sync-core/` boundaries are useful and should stay shared.
+    - Backend route registration in `backend/src/app.ts` is clear and stable.
+    - The route/page split in `frontend/src/router.tsx` is understandable and already lazy-loaded.
 
 - Safe areas to modify:
-  - Templates/examples pages and data files.
-  - Admin page presentation.
-  - Shared UI primitives when changes are small and tested.
-  - New docs under `docs/`.
+    - Templates/examples pages and data files.
+    - Admin page presentation.
+    - Shared UI primitives when changes are small and tested.
+    - New docs under `docs/`.
 
 - High-risk areas:
-  - `frontend/src/context/storage-context/storage-provider.tsx`
-  - `frontend/src/context/schemadash-context/schemadash-provider.tsx`
-  - `backend/src/services/persistence-service.ts`
-  - `backend/src/repositories/app-repository.ts`
-  - `backend/src/repositories/metadata-repository.ts`
-  - `frontend/src/features/schema-sync/lib/canonical-adapters.ts`
-  - `packages/schema-sync-core/src/types.ts`
+    - `frontend/src/context/storage-context/storage-provider.tsx`
+    - `frontend/src/context/schemadash-context/schemadash-provider.tsx`
+    - `backend/src/services/persistence-service.ts`
+    - `backend/src/repositories/app-repository.ts`
+    - `backend/src/repositories/metadata-repository.ts`
+    - `frontend/src/lib/schema-sync/canonical-adapters.ts`
+    - `packages/schema-sync-core/src/types.ts`

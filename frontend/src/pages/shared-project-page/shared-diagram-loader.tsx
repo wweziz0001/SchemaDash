@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
-import {
-    deserializeDiagram,
-    persistenceClient,
-    type PersistedDiagramRecord,
-} from '@/lib/api/persistence-client';
+import { persistenceClient } from '@/lib/api/persistence-client';
 import type { Diagram } from '@/lib/domain/diagram';
+import { deserializeDiagram } from '@/lib/persistence/diagram-serialization';
+import type { PersistedDiagramRecord } from '@/lib/persistence/persistence-types';
 
 export const useSharedDiagram = (
     load: () => Promise<PersistedDiagramRecord>

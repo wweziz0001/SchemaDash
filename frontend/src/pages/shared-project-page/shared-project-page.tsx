@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Button } from '@/components/button/button';
-import {
-    persistenceClient,
-    type PersistedDiagramSummary,
-    type PersistedProjectSummary,
-} from '@/lib/api/persistence-client';
+import { persistenceClient } from '@/lib/api/persistence-client';
+import type {
+    PersistedDiagramSummary,
+    PersistedProjectSummary,
+} from '@/lib/persistence/persistence-types';
 
 export const SharedProjectPage: React.FC = () => {
     const { projectId, shareToken } = useParams<{
