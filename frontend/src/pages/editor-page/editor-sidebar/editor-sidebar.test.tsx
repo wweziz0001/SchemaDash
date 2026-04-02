@@ -9,6 +9,10 @@ import { TooltipProvider } from '@/components/tooltip/tooltip';
 
 const navigateMock = vi.fn();
 const logoutMock = vi.fn();
+const setShowCardinalityMock = vi.fn();
+const setShowDBViewsMock = vi.fn();
+const setShowFieldAttributesMock = vi.fn();
+const setShowMiniMapOnCanvasMock = vi.fn();
 const setThemeMock = vi.fn();
 const getSavedDiagramMock = vi.fn();
 const listCollectionsMock = vi.fn();
@@ -98,6 +102,29 @@ vi.mock('@/hooks/use-theme', () => ({
     useTheme: () => ({
         effectiveTheme: 'light',
         setTheme: setThemeMock,
+    }),
+}));
+
+vi.mock('@/hooks/use-local-config', () => ({
+    useLocalConfig: () => ({
+        setShowCardinality: setShowCardinalityMock,
+        setShowDBViews: setShowDBViewsMock,
+        setShowFieldAttributes: setShowFieldAttributesMock,
+        setShowMiniMapOnCanvas: setShowMiniMapOnCanvasMock,
+        setTheme: setThemeMock,
+        showCardinality: true,
+        showDBViews: true,
+        showFieldAttributes: true,
+        showMiniMapOnCanvas: true,
+        theme: 'system',
+    }),
+}));
+
+vi.mock('@/hooks/use-config', () => ({
+    useConfig: () => ({
+        config: {
+            defaultDiagramId: 'diagram-1',
+        },
     }),
 }));
 
@@ -197,6 +224,10 @@ describe('EditorSidebar account menu', () => {
     beforeEach(() => {
         navigateMock.mockReset();
         logoutMock.mockReset();
+        setShowCardinalityMock.mockReset();
+        setShowDBViewsMock.mockReset();
+        setShowFieldAttributesMock.mockReset();
+        setShowMiniMapOnCanvasMock.mockReset();
         setThemeMock.mockReset();
         getSavedDiagramMock.mockReset();
         listCollectionsMock.mockReset();
@@ -297,10 +328,12 @@ describe('EditorSidebar account menu', () => {
 
         expect(navigateMock).toHaveBeenCalledTimes(1);
         expect(await screen.findByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('Workspace settings')).toBeInTheDocument();
+        expect(screen.queryByText('Warehouse ERD')).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'All Diagrams' })
+        ).not.toBeInTheDocument();
         expect(screen.getAllByText('Appearance').length).toBeGreaterThan(0);
-
-        await user.click(screen.getByRole('button', { name: 'All Diagrams' }));
-        expect(screen.getByText('Warehouse ERD')).toBeInTheDocument();
     });
 
     it('reuses sharing, theme, and logout flows from the existing app', async () => {
