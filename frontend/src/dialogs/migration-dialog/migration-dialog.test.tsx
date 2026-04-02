@@ -9,7 +9,7 @@ import {
     hashCanonicalSchema,
     type CanonicalSchema,
 } from '@schemadash/schema-sync-core';
-import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
+import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
 import { diagramMigrationClient } from '@/lib/api/diagram-migration-client';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { MigrationDialog } from './migration-dialog';

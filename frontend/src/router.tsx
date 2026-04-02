@@ -109,7 +109,7 @@ export const routes: RouteObject[] = [
                 path: 'admin',
                 async lazy() {
                     const { AdminRouteGuard } =
-                        await import('./features/admin/components/admin-route-guard');
+                        await import('./pages/admin-page/admin-route-guard');
                     const { AdminPage } =
                         await import('./pages/admin-page/admin-page');
 

@@ -4,10 +4,10 @@ import { router } from './router';
 import { TooltipProvider } from './components/tooltip/tooltip';
 import { HelmetData } from './helmet/helmet-data';
 import { HelmetProvider } from 'react-helmet-async';
-import { AuthProvider } from './features/auth/context/auth-provider';
-import { BootstrapPage } from './features/auth/components/bootstrap-page';
-import { SignInPage } from './features/auth/components/sign-in-page';
-import { useAuth } from './features/auth/hooks/use-auth';
+import { AuthProvider } from './context/auth-context/auth-provider';
+import { BootstrapPage } from './pages/bootstrap-page/bootstrap-page';
+import { SignInPage } from './pages/sign-in-page/sign-in-page';
+import { useAuth } from './hooks/use-auth';
 
 const AppContent = () => {
     const { ready, enabled, authenticated, serverReachable, bootstrap } =

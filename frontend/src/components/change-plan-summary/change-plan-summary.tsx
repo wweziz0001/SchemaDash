@@ -21,7 +21,7 @@ const summarizeKinds = (changes: SchemaChange[]) => {
         );
 };
 
-export const MigrationSummary: React.FC<{
+export const ChangePlanSummary: React.FC<{
     plan: ChangePlan;
 }> = ({ plan }) => {
     const changeKinds = useMemo(

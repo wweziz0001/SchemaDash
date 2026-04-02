@@ -10,15 +10,16 @@ import {
 } from '@/components/card/card';
 import { Input } from '@/components/input/input';
 import { RequestError } from '@/lib/api/request';
-import { useAuth } from '../hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 
-export const BootstrapPage: React.FC = () => {
-    const { bootstrap, bootstrapAdmin, mode, startOidcLogin } = useAuth();
-    const [displayName, setDisplayName] = useState('SchemaDash Admin');
+export const SignInPage: React.FC = () => {
+    const { login, mode, startOidcLogin } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [setupCode, setSetupCode] = useState('');
-    const [error, setError] = useState<string | null>(null);
+    const searchParams = new URLSearchParams(window.location.search);
+    const [error, setError] = useState<string | null>(
+        searchParams.get('authErrorMessage')
+    );
     const [submitting, setSubmitting] = useState(false);
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -27,24 +28,12 @@ export const BootstrapPage: React.FC = () => {
         setSubmitting(true);
 
         try {
-            if (mode === 'oidc') {
-                startOidcLogin(
-                    `${window.location.pathname}${window.location.search}${window.location.hash}`
-                );
-                return;
-            }
-
-            await bootstrapAdmin({
-                email,
-                password,
-                displayName,
-                setupCode,
-            });
+            await login({ email, password });
         } catch (nextError) {
             if (nextError instanceof RequestError) {
                 setError(nextError.message);
             } else {
-                setError('Unable to initialize the first administrator.');
+                setError('Unable to sign in right now.');
             }
         } finally {
             setSubmitting(false);
@@ -53,7 +42,7 @@ export const BootstrapPage: React.FC = () => {
 
     return (
         <main className="flex min-h-screen items-center justify-center bg-stone-950 px-4 py-10 text-stone-100">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_35%),linear-gradient(135deg,rgba(24,24,27,0.95),rgba(12,10,9,1))]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.24),transparent_35%),linear-gradient(135deg,rgba(24,24,27,0.95),rgba(12,10,9,1))]" />
             <div className="relative z-10 w-full max-w-md">
                 <div className="mb-6 flex items-center justify-center gap-3">
                     <img
@@ -62,18 +51,18 @@ export const BootstrapPage: React.FC = () => {
                         className="h-5 w-auto"
                     />
                     <span className="text-sm uppercase tracking-[0.3em] text-stone-400">
-                        Initial Admin Setup
+                        Self-Hosted Access
                     </span>
                 </div>
                 <Card className="border-stone-800/80 bg-stone-900/90 shadow-2xl shadow-black/40">
                     <CardHeader>
                         <CardTitle className="text-2xl text-stone-50">
-                            Initialize the first administrator
+                            Sign in to SchemaDash
                         </CardTitle>
                         <CardDescription className="text-stone-400">
                             {mode === 'oidc'
-                                ? 'Use the operator-approved OIDC identity to finish first-run bootstrap for this deployment.'
-                                : 'Create the first administrator account. This bootstrap flow locks after a successful setup.'}
+                                ? 'Single sign-on is enabled for this deployment.'
+                                : 'Password authentication is enabled for this deployment.'}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -83,32 +72,12 @@ export const BootstrapPage: React.FC = () => {
                                     <div className="space-y-2">
                                         <label
                                             className="text-sm font-medium text-stone-200"
-                                            htmlFor="chartdb-bootstrap-name"
-                                        >
-                                            Display name
-                                        </label>
-                                        <Input
-                                            id="chartdb-bootstrap-name"
-                                            value={displayName}
-                                            onChange={(event) =>
-                                                setDisplayName(
-                                                    event.target.value
-                                                )
-                                            }
-                                            autoComplete="name"
-                                            required
-                                            className="border-stone-700 bg-stone-950/70 text-stone-50"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label
-                                            className="text-sm font-medium text-stone-200"
-                                            htmlFor="chartdb-bootstrap-email"
+                                            htmlFor="chartdb-email"
                                         >
                                             Email
                                         </label>
                                         <Input
-                                            id="chartdb-bootstrap-email"
+                                            id="chartdb-email"
                                             type="email"
                                             value={email}
                                             onChange={(event) =>
@@ -122,53 +91,27 @@ export const BootstrapPage: React.FC = () => {
                                     <div className="space-y-2">
                                         <label
                                             className="text-sm font-medium text-stone-200"
-                                            htmlFor="chartdb-bootstrap-password"
+                                            htmlFor="chartdb-password"
                                         >
                                             Password
                                         </label>
                                         <Input
-                                            id="chartdb-bootstrap-password"
+                                            id="chartdb-password"
                                             type="password"
                                             value={password}
                                             onChange={(event) =>
                                                 setPassword(event.target.value)
                                             }
-                                            autoComplete="new-password"
-                                            minLength={12}
+                                            autoComplete="current-password"
                                             required
                                             className="border-stone-700 bg-stone-950/70 text-stone-50"
                                         />
                                     </div>
-                                    {bootstrap.setupCodeRequired ? (
-                                        <div className="space-y-2">
-                                            <label
-                                                className="text-sm font-medium text-stone-200"
-                                                htmlFor="chartdb-bootstrap-setup-code"
-                                            >
-                                                Setup code
-                                            </label>
-                                            <Input
-                                                id="chartdb-bootstrap-setup-code"
-                                                value={setupCode}
-                                                onChange={(event) =>
-                                                    setSetupCode(
-                                                        event.target.value
-                                                    )
-                                                }
-                                                autoCapitalize="characters"
-                                                autoCorrect="off"
-                                                required
-                                                className="border-stone-700 bg-stone-950/70 font-mono uppercase tracking-[0.2em] text-stone-50"
-                                            />
-                                        </div>
-                                    ) : null}
                                 </>
                             ) : (
                                 <p className="text-sm leading-6 text-stone-300">
-                                    Continue with the bootstrap-approved
-                                    identity provider account. Non-bootstrap
-                                    OIDC users are blocked until the first
-                                    administrator is created.
+                                    Continue with your identity provider to
+                                    access this SchemaDash deployment.
                                 </p>
                             )}
                             {error ? (
@@ -177,17 +120,27 @@ export const BootstrapPage: React.FC = () => {
                                 </p>
                             ) : null}
                             <Button
-                                type="submit"
-                                className="w-full bg-sky-400 text-stone-950 hover:bg-sky-300"
+                                type={mode === 'oidc' ? 'button' : 'submit'}
+                                className="w-full bg-amber-400 text-stone-950 hover:bg-amber-300"
                                 disabled={submitting}
+                                onClick={
+                                    mode === 'oidc'
+                                        ? () => {
+                                              setSubmitting(true);
+                                              startOidcLogin(
+                                                  `${window.location.pathname}${window.location.hash}`
+                                              );
+                                          }
+                                        : undefined
+                                }
                             >
                                 {submitting
                                     ? mode === 'oidc'
                                         ? 'Redirecting...'
-                                        : 'Initializing...'
+                                        : 'Signing in...'
                                     : mode === 'oidc'
                                       ? 'Continue with Single Sign-On'
-                                      : 'Create first administrator'}
+                                      : 'Sign in'}
                             </Button>
                         </form>
                     </CardContent>

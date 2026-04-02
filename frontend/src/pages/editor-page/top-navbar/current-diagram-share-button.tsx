@@ -3,7 +3,7 @@ import { Button } from '@/components/button/button';
 import { SharingSettingsDialog } from '@/dialogs/open-diagram-dialog/sharing-settings-dialog';
 import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useStorage } from '@/hooks/use-storage';
-import { useSharingDialogApi } from '@/features/persistence/hooks/use-sharing-dialog-api';
+import { useSharingDialogApi } from '@/hooks/use-sharing-dialog-api';
 import type { SavedDiagram } from '@/context/storage-context/storage-context';
 import { Share2 } from 'lucide-react';
 

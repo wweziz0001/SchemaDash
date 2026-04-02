@@ -12,6 +12,7 @@ import type { CreateDiagramDialogProps } from '@/dialogs/create-diagram-dialog/c
 import type { SaveDiagramDialogProps } from '@/dialogs/save-diagram-dialog/save-diagram-dialog';
 import type { ExportBackupDialogProps } from '@/dialogs/export-backup-dialog/export-backup-dialog';
 import type { ImportBackupDialogProps } from '@/dialogs/import-backup-dialog/import-backup-dialog';
+import type { SchemaSyncDialogProps } from '@/dialogs/schema-sync-dialog/schema-sync-dialog';
 
 export interface DialogContext {
     // Create diagram dialog
@@ -87,6 +88,12 @@ export interface DialogContext {
         params?: Omit<ImportBackupDialogProps, 'dialog'>
     ) => void;
     closeImportBackupDialog: () => void;
+
+    // Schema sync dialog
+    openSchemaSyncDialog: (
+        params?: Omit<SchemaSyncDialogProps, 'dialog'>
+    ) => void;
+    closeSchemaSyncDialog: () => void;
 }
 
 export const dialogContext = createContext<DialogContext>({
@@ -116,4 +123,6 @@ export const dialogContext = createContext<DialogContext>({
     closeExportBackupDialog: emptyFn,
     openImportBackupDialog: emptyFn,
     closeImportBackupDialog: emptyFn,
+    openSchemaSyncDialog: emptyFn,
+    closeSchemaSyncDialog: emptyFn,
 });

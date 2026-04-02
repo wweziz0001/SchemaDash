@@ -3,7 +3,7 @@ import {
     deserializeDiagram,
     persistenceClient,
     type PersistedDiagramRecord,
-} from '@/features/persistence/api/persistence-client';
+} from '@/lib/api/persistence-client';
 import type { Diagram } from '@/lib/domain/diagram';
 
 export const useSharedDiagram = (

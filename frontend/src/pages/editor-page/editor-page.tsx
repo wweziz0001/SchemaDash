@@ -26,8 +26,6 @@ import { useDiagramLoader } from './use-diagram-loader';
 import { DiffProvider } from '@/context/diff-context/diff-provider';
 import { TopNavbarMock } from './top-navbar/top-navbar-mock';
 import { DiagramFilterProvider } from '@/context/diagram-filter-context/diagram-filter-provider';
-import { SchemaSyncProvider } from '@/features/schema-sync/context/schema-sync-context';
-import { SchemaSyncDialog } from '@/features/schema-sync/dialogs/schema-sync-dialog';
 import type { Diagram } from '@/lib/domain/diagram';
 import { WorkflowDevelopmentDiagramSync } from './workflow/workflow-development-diagram-sync';
 
@@ -81,7 +79,7 @@ const EditorPageComponent: React.FC<{
     ]);
 
     return (
-        <SchemaSyncProvider>
+        <>
             <WorkflowDevelopmentDiagramSync />
             <Helmet>
                 <title>
@@ -116,9 +114,8 @@ const EditorPageComponent: React.FC<{
                     )}
                 </Suspense>
             </section>
-            <SchemaSyncDialog />
             <Toaster />
-        </SchemaSyncProvider>
+        </>
     );
 };
 

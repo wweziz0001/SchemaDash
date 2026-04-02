@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { LibraryPage } from './library-page';
-import { useLibraryCatalog } from '@/features/dashboard/hooks/use-library-catalog';
+import { useLibraryCatalog } from './use-library-catalog';
 import { useOutletContext } from 'react-router-dom';
 import type { DashboardShellContextValue } from './dashboard-shell-context';
 

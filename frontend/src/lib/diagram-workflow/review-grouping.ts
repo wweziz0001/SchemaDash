@@ -3,7 +3,7 @@ import {
     type CompareSchemaResult,
 } from '@schemadash/schema-sync-core/compare-types';
 import { compareCanonicalSchemas } from '@schemadash/schema-sync-core/compare';
-import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
+import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
 import type { Diagram } from '@/lib/domain/diagram';
 import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 

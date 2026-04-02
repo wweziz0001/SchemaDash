@@ -1,4 +1,4 @@
-import { useAuth } from '@/features/auth/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 import { useStorage } from '@/hooks/use-storage';
 import type {
     SavedCollection,

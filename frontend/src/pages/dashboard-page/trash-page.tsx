@@ -8,7 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/card/card';
-import { useLibraryCatalog } from '@/features/dashboard/hooks/use-library-catalog';
+import { useLibraryCatalog } from './use-library-catalog';
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',

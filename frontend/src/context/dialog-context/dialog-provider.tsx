@@ -24,6 +24,8 @@ import { ExportDiagramDialog } from '@/dialogs/export-diagram-dialog/export-diag
 import { ImportDiagramDialog } from '@/dialogs/import-diagram-dialog/import-diagram-dialog';
 import { ExportBackupDialog } from '@/dialogs/export-backup-dialog/export-backup-dialog';
 import { ImportBackupDialog } from '@/dialogs/import-backup-dialog/import-backup-dialog';
+import type { SchemaSyncDialogProps } from '@/dialogs/schema-sync-dialog/schema-sync-dialog';
+import { SchemaSyncDialog } from '@/dialogs/schema-sync-dialog/schema-sync-dialog';
 
 export const DialogProvider: React.FC<React.PropsWithChildren> = ({
     children,
@@ -156,6 +158,19 @@ export const DialogProvider: React.FC<React.PropsWithChildren> = ({
     // Import backup dialog
     const [openImportBackupDialog, setOpenImportBackupDialog] = useState(false);
 
+    // Schema sync dialog
+    const [openSchemaSyncDialog, setOpenSchemaSyncDialog] = useState(false);
+    const [schemaSyncDialogParams, setSchemaSyncDialogParams] =
+        useState<Omit<SchemaSyncDialogProps, 'dialog'>>();
+    const openSchemaSyncDialogHandler: DialogContext['openSchemaSyncDialog'] =
+        useCallback(
+            (params) => {
+                setSchemaSyncDialogParams(params);
+                setOpenSchemaSyncDialog(true);
+            },
+            [setOpenSchemaSyncDialog]
+        );
+
     return (
         <dialogContext.Provider
             value={{
@@ -191,6 +206,8 @@ export const DialogProvider: React.FC<React.PropsWithChildren> = ({
                 closeExportBackupDialog: () => setOpenExportBackupDialog(false),
                 openImportBackupDialog: () => setOpenImportBackupDialog(true),
                 closeImportBackupDialog: () => setOpenImportBackupDialog(false),
+                openSchemaSyncDialog: openSchemaSyncDialogHandler,
+                closeSchemaSyncDialog: () => setOpenSchemaSyncDialog(false),
             }}
         >
             {children}
@@ -231,6 +248,10 @@ export const DialogProvider: React.FC<React.PropsWithChildren> = ({
             <ImportDiagramDialog dialog={{ open: openImportDiagramDialog }} />
             <ExportBackupDialog dialog={{ open: openExportBackupDialog }} />
             <ImportBackupDialog dialog={{ open: openImportBackupDialog }} />
+            <SchemaSyncDialog
+                dialog={{ open: openSchemaSyncDialog }}
+                {...schemaSyncDialogParams}
+            />
         </dialogContext.Provider>
     );
 };

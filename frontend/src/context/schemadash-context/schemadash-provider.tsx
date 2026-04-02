@@ -47,8 +47,8 @@ import { ToastAction } from '@/components/toast/toast';
 import type {
     PersistedDiagramCollaborationEvent,
     ResourceAccess,
-} from '@/features/persistence/api/persistence-client';
-import { getCurrentShareToken } from '@/features/persistence/share-token';
+} from '@/lib/api/persistence-client';
+import { getCurrentShareToken } from '@/lib/persistence/share-token';
 
 export interface SchemaDashProviderProps {
     diagram?: Diagram;

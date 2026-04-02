@@ -9,7 +9,7 @@ import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/d
 import { RestoreVersionDialog } from './restore-version-dialog';
 import { useStorage } from '@/hooks/use-storage';
 import { useSchemaDash } from '@/hooks/use-schemadash';
-import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
+import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
 
 const toast = vi.fn();
 
@@ -25,10 +25,8 @@ vi.mock('@/hooks/use-schemadash', () => ({
     useSchemaDash: vi.fn(),
 }));
 
-vi.mock('@/features/persistence/api/persistence-client', async () => {
-    const actual = await vi.importActual(
-        '@/features/persistence/api/persistence-client'
-    );
+vi.mock('@/lib/api/persistence-client', async () => {
+    const actual = await vi.importActual('@/lib/api/persistence-client');
 
     return {
         ...actual,
@@ -44,7 +42,7 @@ vi.mock('@/lib/api/diagram-workflow-client', () => ({
     },
 }));
 
-vi.mock('@/features/schema-sync/lib/canonical-adapters', () => ({
+vi.mock('@/lib/schema-sync/canonical-adapters', () => ({
     diagramToCanonicalSchema: vi.fn(),
 }));
 

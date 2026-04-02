@@ -27,10 +27,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/select/select';
-import type {
-    LibraryDiagramItem,
-    LibrarySort,
-} from '@/features/dashboard/hooks/use-library-catalog';
+import type { LibraryDiagramItem, LibrarySort } from './use-library-catalog';
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',

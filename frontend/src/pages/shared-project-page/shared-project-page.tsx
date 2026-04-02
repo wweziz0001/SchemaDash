@@ -5,7 +5,7 @@ import {
     persistenceClient,
     type PersistedDiagramSummary,
     type PersistedProjectSummary,
-} from '@/features/persistence/api/persistence-client';
+} from '@/lib/api/persistence-client';
 
 export const SharedProjectPage: React.FC = () => {
     const { projectId, shareToken } = useParams<{

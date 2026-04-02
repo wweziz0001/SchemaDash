@@ -31,9 +31,9 @@ import {
     persistenceClient,
     serializeDiagram,
     type PersistedDiagramRecord,
-} from '@/features/persistence/api/persistence-client';
-import { getCollaborationClientId } from '@/features/persistence/collaboration-client-id';
-import { getCurrentShareToken } from '@/features/persistence/share-token';
+} from '@/lib/api/persistence-client';
+import { getCollaborationClientId } from '@/lib/persistence/collaboration-client-id';
+import { getCurrentShareToken } from '@/lib/persistence/share-token';
 import { cloneDiagram } from '@/lib/clone';
 import { RequestError } from '@/lib/api/request';
 import type {

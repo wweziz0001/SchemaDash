@@ -1,6 +1,6 @@
 import React from 'react';
 import { LibraryPage } from './library-page';
-import { useLibraryCatalog } from '@/features/dashboard/hooks/use-library-catalog';
+import { useLibraryCatalog } from './use-library-catalog';
 
 export const UnorganizedPage: React.FC = () => {
     const catalog = useLibraryCatalog({

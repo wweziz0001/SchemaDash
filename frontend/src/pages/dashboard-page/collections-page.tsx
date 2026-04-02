@@ -12,7 +12,7 @@ import {
 } from '@/components/card/card';
 import { Button } from '@/components/button/button';
 import type { DashboardShellContextValue } from './dashboard-shell-context';
-import { normalizeSearchTerm } from '@/features/dashboard/hooks/use-library-catalog';
+import { normalizeSearchTerm } from './use-library-catalog';
 
 export const CollectionsPage: React.FC = () => {
     const { collections, loadingCollections } =

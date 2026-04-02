@@ -7,8 +7,10 @@ import type {
 import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 import { compareCanonicalSchemas } from '@schemadash/schema-sync-core/compare';
 import type { DBField, DBRelationship, DBTable, Diagram } from '@/lib/domain';
-import { diagramToCanonicalSchema } from '@/features/schema-sync/lib/canonical-adapters';
-import { canonicalSchemaToDiagram } from '@/features/schema-sync/lib/canonical-adapters';
+import {
+    canonicalSchemaToDiagram,
+    diagramToCanonicalSchema,
+} from '@/lib/schema-sync/canonical-adapters';
 
 export interface CompareTableVisual {
     id: string;
