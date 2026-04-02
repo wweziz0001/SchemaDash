@@ -7,6 +7,7 @@ import {
     LogOut,
     Mail,
     Palette,
+    Shield,
     UserRound,
     X,
 } from 'lucide-react';
@@ -128,6 +129,28 @@ const DetailRow = ({
             </div>
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
+    </div>
+);
+
+const AccountInfoField = ({
+    icon: Icon,
+    label,
+    value,
+}: {
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    value: React.ReactNode;
+}) => (
+    <div className="flex items-center gap-4 rounded-2xl bg-stone-100/80 px-4 py-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500">
+            <Icon className="size-4" />
+        </div>
+        <div className="min-w-0">
+            <div className="text-[14px] text-stone-500">{label}</div>
+            <div className="truncate pt-0.5 text-[15px] font-semibold text-stone-900">
+                {value}
+            </div>
+        </div>
     </div>
 );
 
@@ -351,38 +374,39 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                         session.
                     </p>
                 </CardHeader>
-                <CardContent className="pt-0">
-                    <SummaryList
-                        items={[
-                            {
-                                label: 'Display name',
-                                value: displayName,
-                            },
-                            {
-                                label: 'Email',
-                                value:
-                                    auth.user?.email?.trim() ??
-                                    'Not applicable',
-                            },
-                            {
-                                label: 'Role',
-                                value: auth.user?.role ?? 'local',
-                            },
-                            {
-                                label: 'Auth provider',
-                                value:
-                                    auth.user?.authProvider ??
-                                    (auth.enabled
-                                        ? (auth.mode ?? 'enabled')
-                                        : 'disabled'),
-                            },
-                            {
-                                label: 'Status',
-                                value:
-                                    auth.user?.status ??
-                                    (auth.authenticated ? 'active' : 'local'),
-                            },
-                        ]}
+                <CardContent className="space-y-3 pt-0">
+                    <AccountInfoField
+                        icon={UserRound}
+                        label="Display name"
+                        value={displayName}
+                    />
+                    <AccountInfoField
+                        icon={Mail}
+                        label="Email"
+                        value={auth.user?.email?.trim() ?? 'Not applicable'}
+                    />
+                    <AccountInfoField
+                        icon={Shield}
+                        label="Role"
+                        value={auth.user?.role ?? 'local'}
+                    />
+                    <AccountInfoField
+                        icon={KeyRound}
+                        label="Auth provider"
+                        value={
+                            auth.user?.authProvider ??
+                            (auth.enabled
+                                ? (auth.mode ?? 'enabled')
+                                : 'disabled')
+                        }
+                    />
+                    <AccountInfoField
+                        icon={LayoutGrid}
+                        label="Status"
+                        value={
+                            auth.user?.status ??
+                            (auth.authenticated ? 'active' : 'local')
+                        }
                     />
                 </CardContent>
             </Card>
