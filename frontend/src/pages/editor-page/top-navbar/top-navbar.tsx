@@ -12,7 +12,6 @@ import { Link } from 'react-router-dom';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { VersionViewBadge } from './workflow/version-view-badge';
-import { WorkflowActionsMenu } from './workflow/workflow-actions-menu';
 import { SchemaSyncToolbarButton } from './workflow/schema-sync-toolbar-button';
 import { WorkflowModeSwitcher } from './workflow/workflow-mode-switcher';
 
@@ -63,7 +62,6 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                 {showWorkflowChrome ? (
                     <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
                         <WorkflowModeSwitcher />
-                        <WorkflowActionsMenu />
                         <VersionViewBadge />
                     </div>
                 ) : null}

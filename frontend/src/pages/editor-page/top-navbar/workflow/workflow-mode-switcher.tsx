@@ -3,6 +3,7 @@ import { Button } from '@/components/button/button';
 import { cn } from '@/lib/utils';
 import { Database, GitBranch, GitCompareArrows } from 'lucide-react';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { WorkflowActionsMenu } from './workflow-actions-menu';
 
 export const WorkflowModeSwitcher: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();
@@ -81,8 +82,8 @@ export const WorkflowModeSwitcher: React.FC = () => {
                 role="none"
                 className="mx-2 h-6 w-px shrink-0 bg-border"
             />
-            {showCompareButton ? (
-                <div className="flex items-center gap-0">
+            <div className="flex items-center gap-0">
+                {showCompareButton ? (
                     <Button
                         size="sm"
                         variant="ghost"
@@ -101,8 +102,10 @@ export const WorkflowModeSwitcher: React.FC = () => {
                         <GitCompareArrows className="size-3.5 text-muted-foreground" />
                         <span>Compare</span>
                     </Button>
-                </div>
-            ) : null}
+                ) : (
+                    <WorkflowActionsMenu />
+                )}
+            </div>
         </div>
     );
 };

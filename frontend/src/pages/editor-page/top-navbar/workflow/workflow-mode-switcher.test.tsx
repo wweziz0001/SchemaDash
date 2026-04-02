@@ -76,6 +76,7 @@ describe('workflow mode switcher', () => {
             activeMode: 'compare',
             liveModeEnabled: true,
             compareModeEnabled: true,
+            compareSourceKind: 'live',
             setActiveMode: vi.fn(),
         } as never);
 
@@ -85,5 +86,7 @@ describe('workflow mode switcher', () => {
         expect(
             screen.getByRole('button', { name: 'Development' })
         ).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Finish' })).toBeTruthy();
     });
 });

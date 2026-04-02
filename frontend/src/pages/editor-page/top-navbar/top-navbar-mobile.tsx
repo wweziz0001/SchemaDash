@@ -11,7 +11,6 @@ import { Link } from 'react-router-dom';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { VersionViewBadge } from './workflow/version-view-badge';
-import { WorkflowActionsMenu } from './workflow/workflow-actions-menu';
 import { SchemaSyncToolbarButton } from './workflow/schema-sync-toolbar-button';
 import { WorkflowModeSwitcher } from './workflow/workflow-mode-switcher';
 
@@ -94,7 +93,6 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                     <div className="rounded-xl border bg-muted/15 p-2 shadow-sm">
                         <div className="flex flex-wrap items-center justify-center gap-2 pb-2">
                             <WorkflowModeSwitcher />
-                            <WorkflowActionsMenu />
                         </div>
                         <div className="flex flex-wrap justify-center gap-2">
                             <VersionViewBadge />
