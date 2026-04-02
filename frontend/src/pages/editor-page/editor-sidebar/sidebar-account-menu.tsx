@@ -12,7 +12,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/dropdown-menu/dropdown-menu';
-import { LibraryDialog } from '@/dialogs/library-dialog/library-dialog';
+import { SettingsDialog } from '@/dialogs/settings-dialog/settings-dialog';
 import { SharingSettingsDialog } from '@/dialogs/open-diagram-dialog/sharing-settings-dialog';
 import { useSharingSettingsDialogApi } from '@/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api';
 import {
@@ -80,7 +80,7 @@ export const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({
     const { effectiveTheme, setTheme } = useTheme();
     const sharingApi = useSharingSettingsDialogApi();
     const [menuOpen, setMenuOpen] = useState(false);
-    const [libraryDialogOpen, setLibraryDialogOpen] = useState(false);
+    const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
     const [sharingDialogOpen, setSharingDialogOpen] = useState(false);
     const [savedDiagram, setSavedDiagram] = useState<
         SavedDiagram | undefined
@@ -151,9 +151,9 @@ export const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({
         setSharingDialogOpen(true);
     };
 
-    const handleOpenLibrary = () => {
+    const handleOpenSettings = () => {
         setMenuOpen(false);
-        setLibraryDialogOpen(true);
+        setSettingsDialogOpen(true);
     };
 
     const handleLogout = () => {
@@ -247,7 +247,7 @@ export const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({
 
                     <DropdownMenuItem
                         className="gap-2 rounded-xl px-3 py-2"
-                        onSelect={handleOpenLibrary}
+                        onSelect={handleOpenSettings}
                     >
                         <Settings className="size-4 text-muted-foreground" />
                         <span>Settings</span>
@@ -322,10 +322,9 @@ export const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({
                 removePerson={sharingApi.removePerson}
                 updateGeneralAccess={sharingApi.updateGeneralAccess}
             />
-            <LibraryDialog
-                initialTab="settings"
-                open={libraryDialogOpen}
-                onOpenChange={setLibraryDialogOpen}
+            <SettingsDialog
+                open={settingsDialogOpen}
+                onOpenChange={setSettingsDialogOpen}
             />
         </>
     );
