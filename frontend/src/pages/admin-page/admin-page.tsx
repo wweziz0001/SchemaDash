@@ -7,10 +7,19 @@ import {
     LayoutPanelTop,
     RefreshCw,
     Shield,
+    TriangleAlert,
     Users,
 } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import { Alert, AlertDescription, AlertTitle } from '@/components/alert/alert';
 import { Button } from '@/components/button/button';
 import { Badge } from '@/components/badge/badge';
+import { MetricCard } from '@/components/metric-card/metric-card';
+import { SummaryList } from '@/components/summary-list/summary-list';
+import {
+    StatusBadge,
+    type StatusBadgeTone,
+} from '@/components/status-badge/status-badge';
 import {
     Card,
     CardContent,
@@ -26,97 +35,34 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/table/table';
-import {
-    adminClient,
-    type AdminOverviewResponse,
-} from '@/lib/api/admin-client';
+import { adminClient } from '@/lib/api/admin-client';
 import { useAuth } from '@/hooks/use-auth';
 import { RequestError } from '@/lib/api/request';
-
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-});
-
-const formatDateTime = (value: string | null) => {
-    if (!value) {
-        return 'Never';
-    }
-
-    return dateTimeFormatter.format(new Date(value));
-};
+import {
+    adminAuthProviderLabels,
+    formatAdminDateTime,
+    getDiagramSummaryItems,
+    getPlatformSummaryItems,
+    getProjectSummaryItems,
+    type AdminOverviewResponse,
+} from '@/lib/admin/admin-overview';
 
 const statusBadgeClassNames: Record<
     'provisioned' | 'active' | 'disabled',
-    string
+    StatusBadgeTone
 > = {
-    provisioned:
-        'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/10',
-    active: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-200 dark:hover:bg-emerald-500/10',
-    disabled:
-        'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-50 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/10',
+    provisioned: 'warning',
+    active: 'success',
+    disabled: 'danger',
 };
 
-const roleBadgeClassNames: Record<'member' | 'admin', string> = {
-    member: 'border-stone-200 bg-stone-100 text-stone-700 hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-800',
-    admin: 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-50 dark:border-sky-400/30 dark:bg-sky-500/10 dark:text-sky-200 dark:hover:bg-sky-500/10',
-};
-
-const authProviderLabels: Record<'placeholder' | 'local' | 'oidc', string> = {
-    placeholder: 'Placeholder',
-    local: 'Password',
-    oidc: 'OIDC',
+const roleBadgeClassNames: Record<'member' | 'admin', StatusBadgeTone> = {
+    member: 'neutral',
+    admin: 'info',
 };
 
 const surfaceCardClassName =
     'border-stone-200/80 bg-white/80 shadow-sm dark:border-stone-800/80 dark:bg-stone-900/80';
-const insetSurfaceClassName =
-    'flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-stone-100/80 px-4 py-3 dark:border-stone-800 dark:bg-stone-950/60';
-
-const MetricCard = ({
-    title,
-    value,
-    description,
-    icon: Icon,
-}: {
-    title: string;
-    value: number | string;
-    description: string;
-    icon: React.ComponentType<{ className?: string }>;
-}) => (
-    <Card className={surfaceCardClassName}>
-        <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
-            <div>
-                <CardDescription>{title}</CardDescription>
-                <CardTitle className="mt-2 text-3xl">{value}</CardTitle>
-            </div>
-            <div className="rounded-full border border-stone-200 bg-stone-100 p-3 dark:border-stone-700 dark:bg-stone-950/80">
-                <Icon className="size-4 text-amber-500 dark:text-amber-300" />
-            </div>
-        </CardHeader>
-        <CardContent>
-            <p className="text-sm text-stone-500">{description}</p>
-        </CardContent>
-    </Card>
-);
-
-const SummaryList = ({
-    items,
-}: {
-    items: Array<{ label: string; value: string | number }>;
-}) => (
-    <dl className="space-y-3">
-        {items.map((item) => (
-            <div key={item.label} className={insetSurfaceClassName}>
-                <dt className="text-sm text-stone-500">{item.label}</dt>
-                <dd className="text-sm font-medium text-stone-950 dark:text-stone-100">
-                    {item.value}
-                </dd>
-            </div>
-        ))}
-    </dl>
-);
-
 export const AdminPage: React.FC = () => {
     const { user } = useAuth();
     const [overview, setOverview] = useState<AdminOverviewResponse | null>(
@@ -151,12 +97,16 @@ export const AdminPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
+            <Helmet>
+                <title>SchemaDash - Admin</title>
+            </Helmet>
+
             <section className="rounded-[28px] border border-stone-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,245,244,0.92))] p-6 shadow-sm dark:border-stone-800/80 dark:bg-[linear-gradient(135deg,rgba(28,25,23,0.94),rgba(12,10,9,0.9))]">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="space-y-3">
+                    <div className="max-w-3xl space-y-3">
                         <Badge
                             variant="outline"
-                            className="border-amber-500/30 bg-amber-500/10 text-amber-200"
+                            className="w-fit border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
                         >
                             Self-hosted admin
                         </Badge>
@@ -172,20 +122,24 @@ export const AdminPage: React.FC = () => {
                             </p>
                         </div>
                     </div>
-                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                        <div className="text-sm text-stone-500 dark:text-stone-400">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                        <div className="rounded-2xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm text-stone-500 shadow-sm dark:border-stone-800 dark:bg-stone-900/80 dark:text-stone-400">
                             Signed in as{' '}
                             <span className="font-medium text-stone-950 dark:text-stone-100">
                                 {user?.displayName ?? user?.email ?? 'Admin'}
                             </span>
                         </div>
-                        <Button asChild variant="outline">
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="rounded-xl border-stone-200 bg-transparent text-stone-700 hover:bg-stone-100 hover:text-stone-950 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800 dark:hover:text-stone-50"
+                        >
                             <Link to="/">Back to library</Link>
                         </Button>
                         <Button
                             onClick={() => void loadOverview()}
                             disabled={refreshing}
-                            className="bg-amber-400 text-stone-950 hover:bg-amber-300"
+                            className="rounded-xl bg-stone-950 text-stone-50 hover:bg-stone-900 dark:bg-amber-300 dark:text-stone-950 dark:hover:bg-amber-200"
                         >
                             <RefreshCw
                                 className={`mr-2 size-4 ${
@@ -199,19 +153,19 @@ export const AdminPage: React.FC = () => {
             </section>
 
             {error ? (
-                <Card className="border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-                    <CardHeader>
-                        <CardTitle>Dashboard unavailable</CardTitle>
-                        <CardDescription className="text-current">
-                            {error}
-                        </CardDescription>
-                    </CardHeader>
-                </Card>
+                <Alert
+                    variant="destructive"
+                    className="rounded-[24px] border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200"
+                >
+                    <TriangleAlert className="size-4" />
+                    <AlertTitle>Dashboard unavailable</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
             ) : null}
 
             {loading && !overview ? (
-                <Card className={surfaceCardClassName}>
-                    <CardContent className="py-10 text-center text-sm uppercase tracking-[0.3em] text-stone-400">
+                <Card className="border-dashed border-stone-200/80 bg-white/70 dark:border-stone-800/80 dark:bg-stone-900/70">
+                    <CardContent className="py-16 text-center text-sm uppercase tracking-[0.24em] text-stone-400">
                         Loading admin overview
                     </CardContent>
                 </Card>
@@ -221,34 +175,59 @@ export const AdminPage: React.FC = () => {
                 <>
                     <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                         <MetricCard
-                            title="Users"
+                            label="Users"
                             value={overview.metrics.users}
-                            description={`${overview.users.byStatus.active} active accounts`}
-                            icon={Users}
+                            detail={`${overview.users.byStatus.active} active accounts`}
+                            icon={
+                                <Users className="size-4 text-amber-500 dark:text-amber-300" />
+                            }
+                            className={surfaceCardClassName}
+                            detailClassName="mt-3 text-sm text-stone-500 dark:text-stone-400"
+                            valueClassName="text-3xl"
                         />
                         <MetricCard
-                            title="Admins"
+                            label="Admins"
                             value={overview.metrics.admins}
-                            description="Administrators with access to this deployment"
-                            icon={Shield}
+                            detail="Administrators with access to this deployment"
+                            icon={
+                                <Shield className="size-4 text-amber-500 dark:text-amber-300" />
+                            }
+                            className={surfaceCardClassName}
+                            detailClassName="mt-3 text-sm text-stone-500 dark:text-stone-400"
+                            valueClassName="text-3xl"
                         />
                         <MetricCard
-                            title="Collections"
+                            label="Collections"
                             value={overview.metrics.collections}
-                            description="Top-level project groupings"
-                            icon={FolderKanban}
+                            detail="Top-level project groupings"
+                            icon={
+                                <FolderKanban className="size-4 text-amber-500 dark:text-amber-300" />
+                            }
+                            className={surfaceCardClassName}
+                            detailClassName="mt-3 text-sm text-stone-500 dark:text-stone-400"
+                            valueClassName="text-3xl"
                         />
                         <MetricCard
-                            title="Projects"
+                            label="Projects"
                             value={overview.metrics.projects}
-                            description="Saved workspaces persisted in SchemaDash"
-                            icon={LayoutPanelTop}
+                            detail="Saved workspaces persisted in SchemaDash"
+                            icon={
+                                <LayoutPanelTop className="size-4 text-amber-500 dark:text-amber-300" />
+                            }
+                            className={surfaceCardClassName}
+                            detailClassName="mt-3 text-sm text-stone-500 dark:text-stone-400"
+                            valueClassName="text-3xl"
                         />
                         <MetricCard
-                            title="Diagrams"
+                            label="Diagrams"
                             value={overview.metrics.diagrams}
-                            description={`${overview.metrics.activeSessions} active sessions right now`}
-                            icon={Database}
+                            detail={`${overview.metrics.activeSessions} active sessions right now`}
+                            icon={
+                                <Database className="size-4 text-amber-500 dark:text-amber-300" />
+                            }
+                            className={surfaceCardClassName}
+                            detailClassName="mt-3 text-sm text-stone-500 dark:text-stone-400"
+                            valueClassName="text-3xl"
                         />
                     </section>
 
@@ -262,44 +241,7 @@ export const AdminPage: React.FC = () => {
                             </CardHeader>
                             <CardContent>
                                 <SummaryList
-                                    items={[
-                                        {
-                                            label: 'Environment',
-                                            value: overview.platform
-                                                .environment,
-                                        },
-                                        {
-                                            label: 'Auth mode',
-                                            value: overview.platform.authMode,
-                                        },
-                                        {
-                                            label: 'Bootstrap state',
-                                            value: overview.platform
-                                                .adminInitialized
-                                                ? 'Complete'
-                                                : overview.platform
-                                                        .bootstrapRequired
-                                                  ? 'Pending'
-                                                  : 'Not required',
-                                        },
-                                        {
-                                            label: 'OIDC config',
-                                            value: overview.platform
-                                                .oidcConfigured
-                                                ? 'Configured'
-                                                : 'Not configured',
-                                        },
-                                        {
-                                            label: 'Persistence',
-                                            value: `${overview.platform.persistence.app} / ${overview.platform.persistence.schemaSync}`,
-                                        },
-                                        {
-                                            label: 'Generated',
-                                            value: formatDateTime(
-                                                overview.generatedAt
-                                            ),
-                                        },
-                                    ]}
+                                    items={getPlatformSummaryItems(overview)}
                                 />
                             </CardContent>
                         </Card>
@@ -314,38 +256,7 @@ export const AdminPage: React.FC = () => {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <SummaryList
-                                    items={[
-                                        {
-                                            label: 'Active projects',
-                                            value: overview.projects.byStatus
-                                                .active,
-                                        },
-                                        {
-                                            label: 'Archived projects',
-                                            value: overview.projects.byStatus
-                                                .archived,
-                                        },
-                                        {
-                                            label: 'Deleted projects',
-                                            value: overview.projects.byStatus
-                                                .deleted,
-                                        },
-                                        {
-                                            label: 'Private visibility',
-                                            value: overview.projects
-                                                .byVisibility.private,
-                                        },
-                                        {
-                                            label: 'Workspace visibility',
-                                            value: overview.projects
-                                                .byVisibility.workspace,
-                                        },
-                                        {
-                                            label: 'Public visibility',
-                                            value: overview.projects
-                                                .byVisibility.public,
-                                        },
-                                    ]}
+                                    items={getProjectSummaryItems(overview)}
                                 />
                             </CardContent>
                         </Card>
@@ -360,40 +271,7 @@ export const AdminPage: React.FC = () => {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <SummaryList
-                                    items={[
-                                        {
-                                            label: 'Draft diagrams',
-                                            value: overview.diagrams.byStatus
-                                                .draft,
-                                        },
-                                        {
-                                            label: 'Active diagrams',
-                                            value: overview.diagrams.byStatus
-                                                .active,
-                                        },
-                                        {
-                                            label: 'Archived diagrams',
-                                            value: overview.diagrams.byStatus
-                                                .archived,
-                                        },
-                                        {
-                                            label: 'Public visibility',
-                                            value: overview.diagrams
-                                                .byVisibility.public,
-                                        },
-                                        {
-                                            label: 'Workspace visibility',
-                                            value: overview.diagrams
-                                                .byVisibility.workspace,
-                                        },
-                                        {
-                                            label: 'Sharing records',
-                                            value: overview.sharing.supported
-                                                ? (overview.sharing
-                                                      .totalRecords ?? 0)
-                                                : 'Not available',
-                                        },
-                                    ]}
+                                    items={getDiagramSummaryItems(overview)}
                                 />
                             </CardContent>
                         </Card>
@@ -438,7 +316,7 @@ export const AdminPage: React.FC = () => {
                                                             </div>
                                                             <div className="text-xs text-stone-500 dark:text-stone-400">
                                                                 Created{' '}
-                                                                {formatDateTime(
+                                                                {formatAdminDateTime(
                                                                     account.createdAt
                                                                 )}
                                                             </div>
@@ -448,9 +326,8 @@ export const AdminPage: React.FC = () => {
                                                                 'No email'}
                                                         </TableCell>
                                                         <TableCell>
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={
+                                                            <StatusBadge
+                                                                tone={
                                                                     roleBadgeClassNames[
                                                                         account
                                                                             .role
@@ -458,12 +335,11 @@ export const AdminPage: React.FC = () => {
                                                                 }
                                                             >
                                                                 {account.role}
-                                                            </Badge>
+                                                            </StatusBadge>
                                                         </TableCell>
                                                         <TableCell>
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={
+                                                            <StatusBadge
+                                                                tone={
                                                                     statusBadgeClassNames[
                                                                         account
                                                                             .status
@@ -471,18 +347,18 @@ export const AdminPage: React.FC = () => {
                                                                 }
                                                             >
                                                                 {account.status}
-                                                            </Badge>
+                                                            </StatusBadge>
                                                         </TableCell>
                                                         <TableCell className="text-stone-600 dark:text-stone-300">
                                                             {
-                                                                authProviderLabels[
+                                                                adminAuthProviderLabels[
                                                                     account
                                                                         .authProvider
                                                                 ]
                                                             }
                                                         </TableCell>
                                                         <TableCell className="text-stone-600 dark:text-stone-300">
-                                                            {formatDateTime(
+                                                            {formatAdminDateTime(
                                                                 account.lastLoginAt
                                                             )}
                                                         </TableCell>

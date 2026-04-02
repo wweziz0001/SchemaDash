@@ -26,10 +26,8 @@ import { ProfilePage } from './profile-page';
 import { SettingsPage } from './settings-page';
 import { AdminRouteGuard } from '@/pages/admin-page/admin-route-guard';
 import { AdminPage } from '@/pages/admin-page/admin-page';
-import {
-    adminClient,
-    type AdminOverviewResponse,
-} from '@/lib/api/admin-client';
+import { adminClient } from '@/lib/api/admin-client';
+import type { AdminOverviewResponse } from '@/lib/admin/admin-overview';
 
 vi.mock('@/hooks/use-storage', () => ({
     useStorage: vi.fn(),

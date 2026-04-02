@@ -2,16 +2,15 @@ import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { HelmetProvider } from 'react-helmet-async';
 import {
     authContext,
     type AuthContextValue,
 } from '@/context/auth-context/auth-context';
 import { AdminRouteGuard } from '@/pages/admin-page/admin-route-guard';
 import { AdminPage } from './admin-page';
-import {
-    adminClient,
-    type AdminOverviewResponse,
-} from '@/lib/api/admin-client';
+import { adminClient } from '@/lib/api/admin-client';
+import type { AdminOverviewResponse } from '@/lib/admin/admin-overview';
 
 vi.mock('@/lib/api/admin-client', () => ({
     adminClient: {
@@ -183,11 +182,13 @@ describe('admin page', () => {
         mockedAdminClient.getOverview.mockResolvedValue(overviewFixture);
 
         render(
-            <MemoryRouter>
-                <authContext.Provider value={createAuthValue()}>
-                    <AdminPage />
-                </authContext.Provider>
-            </MemoryRouter>
+            <HelmetProvider>
+                <MemoryRouter>
+                    <authContext.Provider value={createAuthValue()}>
+                        <AdminPage />
+                    </authContext.Provider>
+                </MemoryRouter>
+            </HelmetProvider>
         );
 
         expect(await screen.findByText('Grace Hopper')).toBeInTheDocument();
