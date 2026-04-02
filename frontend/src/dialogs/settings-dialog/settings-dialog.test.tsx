@@ -97,8 +97,24 @@ describe('SettingsDialog', () => {
         expect(screen.getByText('Language')).toBeInTheDocument();
         expect(screen.queryByText('All Diagrams')).not.toBeInTheDocument();
 
+        await user.click(screen.getByRole('button', { name: 'Canva' }));
+        expect(
+            screen.getByRole('heading', { name: 'Canva' })
+        ).toBeInTheDocument();
+        expect(screen.getByText('Canvas preferences')).toBeInTheDocument();
+        expect(screen.getByText('Show minimap')).toBeInTheDocument();
+        expect(screen.getByText('Show database views')).toBeInTheDocument();
+
+        await user.click(
+            screen.getByRole('checkbox', { name: /Show database views/i })
+        );
+        expect(setShowDBViewsMock).toHaveBeenCalledWith(false);
+
         await user.click(screen.getByRole('button', { name: 'Appearance' }));
         expect(screen.getAllByText('Appearance').length).toBeGreaterThan(0);
+        expect(screen.getByText('Theme')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: 'Canva' }));
         expect(screen.getByText('Show minimap')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', { name: 'Subscription' }));

@@ -3,6 +3,7 @@ import {
     CreditCard,
     Globe,
     KeyRound,
+    LayoutGrid,
     LogOut,
     Mail,
     Palette,
@@ -17,6 +18,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/card/card';
+import { DashboardSettingOptionCard } from '@/components/dashboard-page/dashboard-setting-option-card';
 import {
     Dialog,
     DialogClose,
@@ -43,6 +45,7 @@ type SettingsSectionId =
     | 'profile'
     | 'account'
     | 'api-keys'
+    | 'canvas'
     | 'appearance'
     | 'subscription';
 
@@ -53,6 +56,7 @@ const sections = [
             { id: 'profile' as const, icon: UserRound, label: 'Profile' },
             { id: 'account' as const, icon: UserRound, label: 'Account' },
             { id: 'api-keys' as const, icon: KeyRound, label: 'API Keys' },
+            { id: 'canvas' as const, icon: LayoutGrid, label: 'Canva' },
             { id: 'appearance' as const, icon: Palette, label: 'Appearance' },
         ],
     },
@@ -329,96 +333,89 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     );
 
     const renderAppearance = () => (
+        <Card className="rounded-[18px] border-stone-200 shadow-none">
+            <CardHeader className="pb-3">
+                <CardTitle className="text-[16px] font-semibold text-stone-900">
+                    Appearance
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-0">
+                <div className="text-[15px] text-stone-500">Theme</div>
+                <Select
+                    onValueChange={(value) =>
+                        localConfig.setTheme(
+                            value as 'light' | 'dark' | 'system'
+                        )
+                    }
+                    value={localConfig.theme}
+                >
+                    <SelectTrigger className="h-11 rounded-xl border-stone-200 bg-white text-[15px] shadow-none">
+                        <SelectValue placeholder="Choose theme" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="system">System</SelectItem>
+                        <SelectItem value="light">Light</SelectItem>
+                        <SelectItem value="dark">Dark</SelectItem>
+                    </SelectContent>
+                </Select>
+            </CardContent>
+        </Card>
+    );
+
+    const renderCanvas = () => (
         <div className="space-y-4">
-            <Card className="rounded-[18px] border-stone-200 shadow-none">
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-[16px] font-semibold text-stone-900">
-                        Appearance
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 pt-0">
-                    <div className="text-[15px] text-stone-500">Theme</div>
-                    <Select
-                        onValueChange={(value) =>
-                            localConfig.setTheme(
-                                value as 'light' | 'dark' | 'system'
-                            )
-                        }
-                        value={localConfig.theme}
-                    >
-                        <SelectTrigger className="h-11 rounded-xl border-stone-200 bg-white text-[15px] shadow-none">
-                            <SelectValue placeholder="Choose theme" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="system">System</SelectItem>
-                            <SelectItem value="light">Light</SelectItem>
-                            <SelectItem value="dark">Dark</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </CardContent>
-            </Card>
+            <div className="space-y-1">
+                <h3 className="text-[18px] font-semibold text-stone-900">
+                    Canvas
+                </h3>
+                <p className="text-[15px] text-stone-500">
+                    Diagram display and canvas toggles.
+                </p>
+            </div>
 
             <Card className="rounded-[18px] border-stone-200 shadow-none">
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-4">
                     <CardTitle className="text-[16px] font-semibold text-stone-900">
-                        Canvas
+                        Canvas preferences
                     </CardTitle>
+                    <p className="text-[15px] text-stone-500">
+                        Toggle the default diagram presentation options for the
+                        current browser session.
+                    </p>
                 </CardHeader>
-                <CardContent className="space-y-4 pt-0">
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
-                            <div className="text-[15px] font-medium text-stone-900">
-                                Show cardinality
-                            </div>
-                            <div className="text-[14px] text-stone-500">
-                                Keep relationship markers visible.
-                            </div>
-                        </div>
-                        <SettingSwitch
-                            checked={localConfig.showCardinality}
-                            onClick={() =>
-                                localConfig.setShowCardinality(
-                                    !localConfig.showCardinality
-                                )
-                            }
-                        />
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
-                            <div className="text-[15px] font-medium text-stone-900">
-                                Show field attributes
-                            </div>
-                            <div className="text-[14px] text-stone-500">
-                                Display PK, nullability, and metadata.
-                            </div>
-                        </div>
-                        <SettingSwitch
-                            checked={localConfig.showFieldAttributes}
-                            onClick={() =>
-                                localConfig.setShowFieldAttributes(
-                                    !localConfig.showFieldAttributes
-                                )
-                            }
-                        />
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
-                            <div className="text-[15px] font-medium text-stone-900">
-                                Show minimap
-                            </div>
-                            <div className="text-[14px] text-stone-500">
-                                Keep the minimap visible by default.
-                            </div>
-                        </div>
-                        <SettingSwitch
-                            checked={localConfig.showMiniMapOnCanvas}
-                            onClick={() =>
-                                localConfig.setShowMiniMapOnCanvas(
-                                    !localConfig.showMiniMapOnCanvas
-                                )
-                            }
-                        />
-                    </div>
+                <CardContent className="grid gap-4 pt-0 sm:grid-cols-2">
+                    <DashboardSettingOptionCard
+                        checked={localConfig.showCardinality}
+                        description="Keep relationship cardinality markers visible in diagrams."
+                        onCheckedChange={(checked) =>
+                            localConfig.setShowCardinality(checked)
+                        }
+                        title="Show cardinality"
+                    />
+                    <DashboardSettingOptionCard
+                        checked={localConfig.showFieldAttributes}
+                        description="Display PK, nullability, and field metadata on the canvas."
+                        onCheckedChange={(checked) =>
+                            localConfig.setShowFieldAttributes(checked)
+                        }
+                        title="Show field attributes"
+                    />
+                    <DashboardSettingOptionCard
+                        checked={localConfig.showMiniMapOnCanvas}
+                        description="Keep the minimap visible by default."
+                        onCheckedChange={(checked) =>
+                            localConfig.setShowMiniMapOnCanvas(checked)
+                        }
+                        title="Show minimap"
+                    />
+                    <DashboardSettingOptionCard
+                        checked={localConfig.showDBViews}
+                        description="Include database views when the source supports them."
+                        onCheckedChange={(checked) =>
+                            localConfig.setShowDBViews(checked)
+                        }
+                        title="Show database views"
+                    />
                 </CardContent>
             </Card>
         </div>
@@ -462,6 +459,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 return renderAccount();
             case 'api-keys':
                 return renderApiKeys();
+            case 'canvas':
+                return renderCanvas();
             case 'appearance':
                 return renderAppearance();
             case 'subscription':
