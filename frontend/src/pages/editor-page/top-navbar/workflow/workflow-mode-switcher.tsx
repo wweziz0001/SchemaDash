@@ -15,7 +15,7 @@ export const WorkflowModeSwitcher: React.FC = () => {
     const showCompareButton = workflow.activeMode !== 'compare';
 
     return (
-        <div className="absolute right-1/3 z-10 flex -translate-x-1/2 items-center">
+        <div className="flex min-w-0 items-center">
             <div
                 data-orientation="vertical"
                 role="none"
