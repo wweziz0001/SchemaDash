@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseType } from '@/lib/domain/database-type';
 import type { Diagram } from '@/lib/domain/diagram';
@@ -9,6 +10,20 @@ import { ReviewChangesDialog } from './review-changes-dialog';
 
 vi.mock('@/context/diagram-workflow-context/diagram-workflow-context', () => ({
     useOptionalDiagramWorkflow: vi.fn(),
+}));
+
+vi.mock('@/components/resizable/resizable', () => ({
+    ResizablePanelGroup: ({
+        children,
+        className,
+    }: {
+        children: React.ReactNode;
+        className?: string;
+    }) => <div className={className}>{children}</div>,
+    ResizablePanel: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
+    ResizableHandle: () => <div />,
 }));
 
 const mockedUseOptionalDiagramWorkflow = vi.mocked(useOptionalDiagramWorkflow);
@@ -129,7 +144,9 @@ describe('review changes dialog', () => {
         mockedUseOptionalDiagramWorkflow.mockReset();
     });
 
-    it('renders structured compare sections and supplemental migration signals', () => {
+    it('renders the dual-pane review browser and switches between sql and dbml previews', async () => {
+        const user = userEvent.setup();
+
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             workflow: {
                 liveSnapshotId: 'workflow-live-1',
@@ -143,11 +160,22 @@ describe('review changes dialog', () => {
 
         render(<ReviewChangesDialog open={true} onOpenChange={vi.fn()} />);
 
+        expect(screen.getByText('Review Proposed Changes')).toBeTruthy();
+        expect(
+            screen.getByPlaceholderText('Search tables and relationships...')
+        ).toBeTruthy();
+        expect(screen.getByText('Database')).toBeTruthy();
+        expect(screen.getByText('Development')).toBeTruthy();
+        expect(screen.getByText('Revert All')).toBeTruthy();
         expect(screen.getAllByText('Tables').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('Fields').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Relationships').length).toBeGreaterThan(0);
-        expect(screen.getByText('display_name')).toBeTruthy();
-        expect(screen.getByText('Supplemental Migration Signals')).toBeTruthy();
-        expect(screen.getByText('users_email_unique')).toBeTruthy();
+        expect(screen.getAllByText('users').length).toBeGreaterThan(0);
+        expect(screen.getByText(/display_name/i)).toBeTruthy();
+
+        await user.click(screen.getByRole('tab', { name: 'DBML' }));
+
+        expect(
+            screen.getAllByText(/Table\s+"public"\."users"/i).length
+        ).toBeGreaterThan(0);
     });
 });

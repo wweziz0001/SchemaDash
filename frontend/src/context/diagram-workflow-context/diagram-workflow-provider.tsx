@@ -293,15 +293,13 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
     const compareModeEnabled = !!compareBaselineSchema && !!developmentDiagram;
     const compareRenderModel = useMemo(
         () =>
-            requestedMode === 'compare' &&
-            compareBaselineSchema &&
-            developmentDiagram
+            compareBaselineSchema && developmentDiagram
                 ? buildCompareRenderModel({
                       baselineSchema: compareBaselineSchema,
                       developmentDiagram,
                   })
                 : undefined,
-        [compareBaselineSchema, developmentDiagram, requestedMode]
+        [compareBaselineSchema, developmentDiagram]
     );
     const activeMode =
         requestedMode === 'version' && versionDiagram

@@ -12,6 +12,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/dropdown-menu/dropdown-menu';
+import { SettingsDialog } from '@/dialogs/settings-dialog/settings-dialog';
+import { LibraryDialog } from '@/dialogs/library-dialog/library-dialog';
 import { SharingSettingsDialog } from '@/dialogs/open-diagram-dialog/sharing-settings-dialog';
 import { useSharingSettingsDialogApi } from '@/dialogs/open-diagram-dialog/use-sharing-settings-dialog-api';
 import {
@@ -78,7 +80,9 @@ export const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({
     const { getSavedDiagram } = useStorage();
     const { effectiveTheme, setTheme } = useTheme();
     const sharingApi = useSharingSettingsDialogApi();
+    const [libraryDialogOpen, setLibraryDialogOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
     const [sharingDialogOpen, setSharingDialogOpen] = useState(false);
     const [savedDiagram, setSavedDiagram] = useState<
         SavedDiagram | undefined
@@ -147,6 +151,16 @@ export const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({
     const handleOpenSharing = () => {
         setMenuOpen(false);
         setSharingDialogOpen(true);
+    };
+
+    const handleOpenLibrary = () => {
+        setMenuOpen(false);
+        setLibraryDialogOpen(true);
+    };
+
+    const handleOpenSettings = () => {
+        setMenuOpen(false);
+        setSettingsDialogOpen(true);
     };
 
     const handleLogout = () => {
@@ -223,7 +237,7 @@ export const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({
 
                     <DropdownMenuItem
                         className="gap-2 rounded-xl px-3 py-2"
-                        onSelect={() => handleNavigate('/profile')}
+                        onSelect={handleOpenLibrary}
                     >
                         <UserRound className="size-4 text-muted-foreground" />
                         <span>Profile</span>
@@ -240,7 +254,7 @@ export const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({
 
                     <DropdownMenuItem
                         className="gap-2 rounded-xl px-3 py-2"
-                        onSelect={() => handleNavigate('/settings')}
+                        onSelect={handleOpenSettings}
                     >
                         <Settings className="size-4 text-muted-foreground" />
                         <span>Settings</span>
@@ -314,6 +328,15 @@ export const SidebarAccountMenu: React.FC<SidebarAccountMenuProps> = ({
                 updatePerson={sharingApi.updatePerson}
                 removePerson={sharingApi.removePerson}
                 updateGeneralAccess={sharingApi.updateGeneralAccess}
+            />
+            <SettingsDialog
+                open={settingsDialogOpen}
+                onOpenChange={setSettingsDialogOpen}
+            />
+            <LibraryDialog
+                initialTab="settings"
+                open={libraryDialogOpen}
+                onOpenChange={setLibraryDialogOpen}
             />
         </>
     );

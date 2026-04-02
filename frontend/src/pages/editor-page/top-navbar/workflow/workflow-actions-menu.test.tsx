@@ -21,6 +21,16 @@ describe('review dropdown', () => {
             diagramId: 'diagram-1',
             compareModeEnabled: false,
             compareSourceKind: 'live',
+            activeMode: 'development',
+            compareRenderModel: {
+                compareResult: {
+                    summary: {
+                        tables: { total: 1 },
+                        fields: { total: 2 },
+                        relationships: { total: 1 },
+                    },
+                },
+            },
         } as never);
 
         render(<WorkflowActionsMenu />);
@@ -34,10 +44,25 @@ describe('review dropdown', () => {
             diagramId: 'diagram-1',
             compareModeEnabled: true,
             compareSourceKind: 'live',
+            activeMode: 'compare',
+            compareRenderModel: {
+                compareResult: {
+                    summary: {
+                        tables: { total: 1 },
+                        fields: { total: 2 },
+                        relationships: { total: 1 },
+                    },
+                },
+            },
+            setActiveMode: vi.fn(),
         } as never);
 
         render(<WorkflowActionsMenu />);
 
+        expect(screen.getByRole('button', { name: 'Finish' })).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Review' })
+        ).toHaveTextContent('4');
         await user.click(screen.getByRole('button', { name: 'Review' }));
 
         expect(
@@ -53,10 +78,71 @@ describe('review dropdown', () => {
             diagramId: 'diagram-1',
             compareModeEnabled: true,
             compareSourceKind: 'version',
+            activeMode: 'compare',
+            compareRenderModel: {
+                compareResult: {
+                    summary: {
+                        tables: { total: 1 },
+                        fields: { total: 2 },
+                        relationships: { total: 1 },
+                    },
+                },
+            },
         } as never);
 
         render(<WorkflowActionsMenu />);
 
         expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
+    });
+
+    it('stays hidden until compare mode is active', () => {
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            diagramId: 'diagram-1',
+            compareModeEnabled: true,
+            compareSourceKind: 'live',
+            activeMode: 'development',
+            compareRenderModel: {
+                compareResult: {
+                    summary: {
+                        tables: { total: 1 },
+                        fields: { total: 2 },
+                        relationships: { total: 1 },
+                    },
+                },
+            },
+        } as never);
+
+        render(<WorkflowActionsMenu />);
+
+        expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+    });
+
+    it('returns to development when finish is pressed', async () => {
+        const user = userEvent.setup();
+        const setActiveMode = vi.fn();
+
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            diagramId: 'diagram-1',
+            compareModeEnabled: true,
+            compareSourceKind: 'live',
+            activeMode: 'compare',
+            compareRenderModel: {
+                compareResult: {
+                    summary: {
+                        tables: { total: 1 },
+                        fields: { total: 2 },
+                        relationships: { total: 1 },
+                    },
+                },
+            },
+            setActiveMode,
+        } as never);
+
+        render(<WorkflowActionsMenu />);
+
+        await user.click(screen.getByRole('button', { name: 'Finish' }));
+
+        expect(setActiveMode).toHaveBeenCalledWith('development');
     });
 });

@@ -26,14 +26,14 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
 export const LibraryDiagramCard: React.FC<{ item: LibraryDiagramItem }> = ({
     item,
 }) => (
-    <Card className="group border-stone-200/80 bg-white/85 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-stone-800/80 dark:bg-stone-900/80">
+    <Card className="group rounded-2xl border-stone-200 bg-white shadow-sm transition hover:border-stone-300 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-stone-700">
         <CardHeader className="space-y-4">
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <CardTitle className="truncate text-xl">
+                    <CardTitle className="truncate text-lg text-stone-950 dark:text-stone-50">
                         {item.diagram.name}
                     </CardTitle>
-                    <CardDescription className="mt-2 line-clamp-2 min-h-10 text-sm leading-6">
+                    <CardDescription className="mt-2 line-clamp-2 min-h-10 text-sm leading-6 text-stone-500 dark:text-stone-300">
                         {item.diagram.description ??
                             item.project.description ??
                             'Saved schema diagram ready for editing, review, and sharing.'}
@@ -77,7 +77,7 @@ export const LibraryDiagramCard: React.FC<{ item: LibraryDiagramItem }> = ({
             <Button
                 asChild
                 variant="outline"
-                className="w-full justify-between rounded-xl border-stone-200 bg-transparent text-stone-700 hover:bg-stone-100 hover:text-stone-950 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800 dark:hover:text-stone-50"
+                className="w-full justify-between rounded-xl border-stone-200 bg-white text-stone-700 hover:bg-stone-100 hover:text-stone-950 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800 dark:hover:text-stone-50"
             >
                 <Link to={`/diagrams/${item.diagram.id}`}>
                     Open diagram

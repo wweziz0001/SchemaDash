@@ -12,7 +12,6 @@ import { Link } from 'react-router-dom';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { VersionViewBadge } from './workflow/version-view-badge';
-import { WorkflowActionsMenu } from './workflow/workflow-actions-menu';
 import { SchemaSyncToolbarButton } from './workflow/schema-sync-toolbar-button';
 import { WorkflowModeSwitcher } from './workflow/workflow-mode-switcher';
 
@@ -58,27 +57,22 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                 </div>
                 <Menu />
             </div>
-            <DiagramName />
-            <div className="hidden flex-1 items-center justify-end gap-3 py-2 sm:flex md:py-0">
+            <div className="hidden min-w-0 flex-1 items-center justify-center gap-3 py-2 sm:flex md:py-0">
+                <DiagramName />
                 {showWorkflowChrome ? (
-                    <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <WorkflowModeSwitcher />
                         <VersionViewBadge />
                     </div>
                 ) : null}
-                {showWorkflowChrome ? (
-                    <div className="h-6 w-px shrink-0 bg-border" />
-                ) : null}
+            </div>
+            <div className="hidden flex-1 items-center justify-end gap-3 py-2 sm:flex md:py-0">
                 <div className="flex items-center gap-2">
-                    <WorkflowActionsMenu />
                     {workflow?.activeMode === 'development' ? (
                         <SchemaSyncToolbarButton />
                     ) : null}
                     <LastSaved />
                     <ActiveDiagramParticipants />
-                    <Button asChild variant="outline" size="sm">
-                        <Link to="/">Library</Link>
-                    </Button>
                     {enabled ? (
                         <>
                             <span className="max-w-40 truncate text-sm text-muted-foreground">

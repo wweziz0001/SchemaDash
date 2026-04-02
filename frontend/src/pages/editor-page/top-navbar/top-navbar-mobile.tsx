@@ -11,7 +11,6 @@ import { Link } from 'react-router-dom';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { VersionViewBadge } from './workflow/version-view-badge';
-import { WorkflowActionsMenu } from './workflow/workflow-actions-menu';
 import { SchemaSyncToolbarButton } from './workflow/schema-sync-toolbar-button';
 import { WorkflowModeSwitcher } from './workflow/workflow-mode-switcher';
 
@@ -61,14 +60,10 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <WorkflowActionsMenu />
                         {workflow?.activeMode === 'development' ? (
                             <SchemaSyncToolbarButton />
                         ) : null}
                         <ActiveDiagramParticipants />
-                        <Button asChild size="sm" variant="outline">
-                            <Link to="/">Library</Link>
-                        </Button>
                         {isAdmin ? (
                             <Button asChild size="sm" variant="outline">
                                 <Link to="/admin">Admin</Link>
@@ -90,21 +85,19 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                 <Menu />
             </div>
 
-            <div className="flex flex-1 justify-center pb-2 pt-1">
-                <DiagramName />
-            </div>
-            {showWorkflowChrome ? (
-                <div className="pb-3">
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 pb-3 pt-1">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                    <DiagramName />
+                    {showWorkflowChrome ? <WorkflowModeSwitcher /> : null}
+                </div>
+                {showWorkflowChrome ? (
                     <div className="rounded-xl border bg-muted/15 p-2 shadow-sm">
-                        <div className="flex justify-center pb-2">
-                            <WorkflowModeSwitcher />
-                        </div>
                         <div className="flex flex-wrap justify-center gap-2">
                             <VersionViewBadge />
                         </div>
                     </div>
-                </div>
-            ) : null}
+                ) : null}
+            </div>
         </nav>
     );
 };
