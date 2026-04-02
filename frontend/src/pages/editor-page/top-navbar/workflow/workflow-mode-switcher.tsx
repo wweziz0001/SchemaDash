@@ -11,6 +11,8 @@ export const WorkflowModeSwitcher: React.FC = () => {
         return null;
     }
 
+    const showCompareButton = workflow.activeMode !== 'compare';
+
     return (
         <div className="absolute right-1/3 z-10 flex -translate-x-1/2 items-center">
             <div
@@ -79,39 +81,28 @@ export const WorkflowModeSwitcher: React.FC = () => {
                 role="none"
                 className="mx-2 h-6 w-px shrink-0 bg-border"
             />
-            <div className="flex items-center gap-0">
-                <Button
-                    size="sm"
-                    variant={
-                        workflow.activeMode === 'compare'
-                            ? 'secondary'
-                            : 'ghost'
-                    }
-                    className={cn(
-                        'h-6 gap-1.5 rounded-lg px-2.5 text-xs font-medium shadow-none',
-                        workflow.activeMode === 'compare'
-                            ? 'bg-background text-foreground ring-1 ring-border'
-                            : 'text-muted-foreground hover:text-foreground'
-                    )}
-                    onClick={() => workflow.setActiveMode('compare')}
-                    disabled={!workflow.compareModeEnabled}
-                    title={
-                        workflow.compareModeEnabled
-                            ? 'Inspect live database versus development in a read-only compare view'
-                            : 'Sync a live database and load a development diagram to enable compare'
-                    }
-                >
-                    <GitCompareArrows
+            {showCompareButton ? (
+                <div className="flex items-center gap-0">
+                    <Button
+                        size="sm"
+                        variant="ghost"
                         className={cn(
-                            'size-3.5',
-                            workflow.activeMode === 'compare'
-                                ? 'text-teal-600 dark:text-teal-400'
-                                : 'text-muted-foreground'
+                            'h-6 gap-1.5 rounded-lg px-2.5 text-xs font-medium shadow-none',
+                            'text-muted-foreground hover:text-foreground'
                         )}
-                    />
-                    <span>Compare</span>
-                </Button>
-            </div>
+                        onClick={() => workflow.setActiveMode('compare')}
+                        disabled={!workflow.compareModeEnabled}
+                        title={
+                            workflow.compareModeEnabled
+                                ? 'Inspect live database versus development in a read-only compare view'
+                                : 'Sync a live database and load a development diagram to enable compare'
+                        }
+                    >
+                        <GitCompareArrows className="size-3.5 text-muted-foreground" />
+                        <span>Compare</span>
+                    </Button>
+                </div>
+            ) : null}
         </div>
     );
 };
