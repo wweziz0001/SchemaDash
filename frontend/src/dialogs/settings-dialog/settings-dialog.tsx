@@ -19,7 +19,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/card/card';
-import { DashboardSettingOptionCard } from '@/components/dashboard-page/dashboard-setting-option-card';
 import {
     Dialog,
     DialogClose,
@@ -35,7 +34,6 @@ import {
     SelectValue,
 } from '@/components/select/select';
 import { Separator } from '@/components/separator/separator';
-import { SummaryList } from '@/components/summary-list/summary-list';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocalConfig } from '@/hooks/use-local-config';
 import { useStorage } from '@/hooks/use-storage';
@@ -288,18 +286,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <DetailRow
                         icon={Mail}
                         title="Email address"
-                        value={auth.user?.email?.trim() ?? 'Not applicable'}
+                        value={email}
                     />
-                  <DetailRow
+                    <DetailRow
                         icon={Shield}
                         title="Role"
                         value={auth.user?.role ?? 'local'}
                     />
-                  <DetailRow
-                        icon={Shield}
-                        title=""
-                        value=""
-                    />
+                    <DetailRow icon={Shield} title="" value="" />
                 </CardContent>
             </Card>
 
@@ -393,16 +387,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                         title="Collections"
                         value={workspaceSnapshot.collectionCount}
                     />
-                  <DetailRow
+                    <DetailRow
                         icon={Shield}
                         title="Projects"
                         value={workspaceSnapshot.projectCount}
                     />
-                  <DetailRow
+                    <DetailRow
                         icon={Shield}
                         title="Diagrams"
                         value={workspaceSnapshot.diagramCount}
-                    />    
+                    />
                 </CardContent>
             </Card>
             <Card className="rounded-[18px] border-stone-200 shadow-none">
@@ -509,7 +503,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <SettingSwitch
                         checked={localConfig.showCardinality}
                         onClick={() =>
-                            localConfig.setShowCardinality(!localConfig.showCardinality)
+                            localConfig.setShowCardinality(
+                                !localConfig.showCardinality
+                            )
                         }
                     />
                 </CardContent>
@@ -522,7 +518,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <SettingSwitch
                         checked={localConfig.showFieldAttributes}
                         onClick={() =>
-                            localConfig.setShowFieldAttributes(!localConfig.showFieldAttributes)
+                            localConfig.setShowFieldAttributes(
+                                !localConfig.showFieldAttributes
+                            )
                         }
                     />
                 </CardContent>
@@ -535,7 +533,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <SettingSwitch
                         checked={localConfig.showMiniMapOnCanvas}
                         onClick={() =>
-                            localConfig.setShowMiniMapOnCanvas(!localConfig.showMiniMapOnCanvas)
+                            localConfig.setShowMiniMapOnCanvas(
+                                !localConfig.showMiniMapOnCanvas
+                            )
                         }
                     />
                 </CardContent>
