@@ -61,7 +61,6 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <WorkflowActionsMenu />
                         {workflow?.activeMode === 'development' ? (
                             <SchemaSyncToolbarButton />
                         ) : null}
@@ -93,8 +92,9 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
             {showWorkflowChrome ? (
                 <div className="pb-3">
                     <div className="rounded-xl border bg-muted/15 p-2 shadow-sm">
-                        <div className="flex justify-center pb-2">
+                        <div className="flex flex-wrap items-center justify-center gap-2 pb-2">
                             <WorkflowModeSwitcher />
+                            <WorkflowActionsMenu />
                         </div>
                         <div className="flex flex-wrap justify-center gap-2">
                             <VersionViewBadge />

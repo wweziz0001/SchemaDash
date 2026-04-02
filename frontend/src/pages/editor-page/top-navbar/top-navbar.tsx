@@ -63,6 +63,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                 {showWorkflowChrome ? (
                     <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
                         <WorkflowModeSwitcher />
+                        <WorkflowActionsMenu />
                         <VersionViewBadge />
                     </div>
                 ) : null}
@@ -70,7 +71,6 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                     <div className="h-6 w-px shrink-0 bg-border" />
                 ) : null}
                 <div className="flex items-center gap-2">
-                    <WorkflowActionsMenu />
                     {workflow?.activeMode === 'development' ? (
                         <SchemaSyncToolbarButton />
                     ) : null}
