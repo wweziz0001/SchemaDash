@@ -126,31 +126,31 @@ describe('SettingsDialog', () => {
         expect(
             screen.getByRole('heading', { name: 'Canva' })
         ).toBeInTheDocument();
-        expect(screen.getByText('Canvas preferences')).toBeInTheDocument();
+        expect(screen.getByText('Canvas Preferences')).toBeInTheDocument();
         expect(screen.getByText('Show minimap')).toBeInTheDocument();
         expect(screen.getByText('Show database views')).toBeInTheDocument();
 
         await user.click(
-            screen.getByRole('checkbox', { name: /Show database views/i })
+            screen.getAllByRole('button', { name: 'Toggle setting' })[3]
         );
         expect(setShowDBViewsMock).toHaveBeenCalledWith(false);
 
         await user.click(screen.getByRole('button', { name: 'Appearance' }));
         expect(screen.getAllByText('Appearance').length).toBeGreaterThan(0);
         expect(screen.getByText('Theme')).toBeInTheDocument();
+        expect(screen.getByRole('dialog')).toHaveClass('bg-background');
+        expect(screen.getByRole('combobox', { name: '' })).toHaveClass(
+            'bg-background'
+        );
 
         await user.click(screen.getByRole('button', { name: 'Canva' }));
         expect(screen.getByText('Show minimap')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', { name: 'Account' }));
-        expect(screen.getByText('Identity')).toBeInTheDocument();
-        expect(
-            screen.getByText(
-                'The current user context attached to this SchemaDash session.'
-            )
-        ).toBeInTheDocument();
-        expect(screen.getByText('Display name')).toBeInTheDocument();
-        expect(screen.getByText('wweziz37@gmail.com')).toBeInTheDocument();
+        expect(screen.getByText('Account Details')).toBeInTheDocument();
+        expect(screen.getByText('Auth provider')).toBeInTheDocument();
+        expect(screen.getByText('local')).toBeInTheDocument();
+        expect(screen.getByText('Status')).toBeInTheDocument();
         expect(screen.getByText('Workspace snapshot')).toBeInTheDocument();
         expect(
             screen.getByText(
@@ -163,8 +163,8 @@ describe('SettingsDialog', () => {
         expect(workspaceCard).not.toBeNull();
         const workspaceScope = within(workspaceCard as HTMLElement);
         expect(workspaceScope.getByText('Collections')).toBeInTheDocument();
-        expect(workspaceScope.getByText('Active projects')).toBeInTheDocument();
-        expect(workspaceScope.getByText('Saved diagrams')).toBeInTheDocument();
+        expect(workspaceScope.getByText('Projects')).toBeInTheDocument();
+        expect(workspaceScope.getByText('Diagrams')).toBeInTheDocument();
         expect(workspaceScope.getByText('1')).toBeInTheDocument();
         expect(workspaceScope.getAllByText('2').length).toBe(2);
 
