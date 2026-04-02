@@ -169,13 +169,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             languages.some((language) => language.code === code)
         ) ?? languages[0]?.code;
 
-    const activeTitle = useMemo(() => {
+    const activeSection = useMemo(() => {
         return (
             sections
                 .flatMap((section) => section.items)
-                .find((item) => item.id === selectedSection)?.label ?? 'Profile'
+                .find((item) => item.id === selectedSection) ??
+            sections[0].items[0]
         );
     }, [selectedSection]);
+
+    const ActiveIcon = activeSection.icon;
 
     const renderProfile = () => (
         <div className="space-y-4">
@@ -477,7 +480,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 <div className="sr-only">
                     <DialogTitle>Workspace settings</DialogTitle>
                     <DialogDescription>
-                        Settings dialog for profile, appearance, and
+                        Settings dialog for profile, canvas, appearance, and
                         subscription preferences.
                     </DialogDescription>
                 </div>
@@ -533,7 +536,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                             <header className="flex items-center gap-4 p-5">
                                 <div className="flex items-center gap-3">
                                     <div className="flex size-6 items-center justify-center rounded-md border border-stone-200 bg-white text-stone-900">
-                                        <UserRound className="size-3.5" />
+                                        <ActiveIcon className="size-3.5" />
                                     </div>
                                     <Separator
                                         orientation="vertical"
@@ -541,7 +544,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                     />
                                 </div>
                                 <h2 className="text-[32px] font-medium tracking-[-0.03em] text-stone-900">
-                                    {activeTitle}
+                                    {activeSection.label}
                                 </h2>
                             </header>
 
