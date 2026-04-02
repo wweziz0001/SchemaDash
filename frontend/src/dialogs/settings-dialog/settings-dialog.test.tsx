@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/tooltip/tooltip';
@@ -11,6 +11,9 @@ const setShowDBViewsMock = vi.fn();
 const setShowFieldAttributesMock = vi.fn();
 const setShowMiniMapOnCanvasMock = vi.fn();
 const setThemeMock = vi.fn();
+const listCollectionsMock = vi.fn();
+const listProjectsMock = vi.fn();
+const listProjectDiagramsMock = vi.fn();
 
 vi.mock('@/hooks/use-auth', () => ({
     useAuth: () => ({
@@ -49,6 +52,14 @@ vi.mock('@/hooks/use-local-config', () => ({
     }),
 }));
 
+vi.mock('@/hooks/use-storage', () => ({
+    useStorage: () => ({
+        listCollections: listCollectionsMock,
+        listProjects: listProjectsMock,
+        listProjectDiagrams: listProjectDiagramsMock,
+    }),
+}));
+
 vi.mock('@/i18n/i18n', () => ({
     languages: [
         {
@@ -76,6 +87,20 @@ describe('SettingsDialog', () => {
         setShowFieldAttributesMock.mockReset();
         setShowMiniMapOnCanvasMock.mockReset();
         setThemeMock.mockReset();
+        listCollectionsMock.mockReset();
+        listProjectsMock.mockReset();
+        listProjectDiagramsMock.mockReset();
+        listCollectionsMock.mockResolvedValue([{ id: 'collection-1' }]);
+        listProjectsMock.mockResolvedValue([
+            { id: 'project-1', status: 'active' },
+            { id: 'project-2', status: 'active' },
+            { id: 'project-3', status: 'deleted' },
+        ]);
+        listProjectDiagramsMock.mockImplementation(async (projectId: string) =>
+            projectId === 'project-1'
+                ? [{ id: 'diagram-1' }]
+                : [{ id: 'diagram-2' }]
+        );
     });
 
     it('renders the profile-styled settings modal and switches sections', async () => {
@@ -116,6 +141,32 @@ describe('SettingsDialog', () => {
 
         await user.click(screen.getByRole('button', { name: 'Canva' }));
         expect(screen.getByText('Show minimap')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: 'Account' }));
+        expect(screen.getByText('Identity')).toBeInTheDocument();
+        expect(
+            screen.getByText(
+                'The current user context attached to this SchemaDash session.'
+            )
+        ).toBeInTheDocument();
+        expect(screen.getByText('Display name')).toBeInTheDocument();
+        expect(screen.getByText('wweziz37@gmail.com')).toBeInTheDocument();
+        expect(screen.getByText('Workspace snapshot')).toBeInTheDocument();
+        expect(
+            screen.getByText(
+                'Current saved workspace counts available in this session.'
+            )
+        ).toBeInTheDocument();
+        const workspaceCard = screen
+            .getByText('Workspace snapshot')
+            .closest('[class*="rounded-"]');
+        expect(workspaceCard).not.toBeNull();
+        const workspaceScope = within(workspaceCard as HTMLElement);
+        expect(workspaceScope.getByText('Collections')).toBeInTheDocument();
+        expect(workspaceScope.getByText('Active projects')).toBeInTheDocument();
+        expect(workspaceScope.getByText('Saved diagrams')).toBeInTheDocument();
+        expect(workspaceScope.getByText('1')).toBeInTheDocument();
+        expect(workspaceScope.getAllByText('2').length).toBe(2);
 
         await user.click(screen.getByRole('button', { name: 'Subscription' }));
         expect(screen.getAllByText('Subscription').length).toBeGreaterThan(0);
