@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Database, GitBranch, GitCompareArrows } from 'lucide-react';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { WorkflowActionsMenu } from './workflow-actions-menu';
+import { getCompareDifferenceCount } from '@/lib/diagram-workflow/compare-summary';
 
 export const WorkflowModeSwitcher: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();
@@ -13,6 +14,9 @@ export const WorkflowModeSwitcher: React.FC = () => {
     }
 
     const showCompareButton = workflow.activeMode !== 'compare';
+    const compareDifferenceCount = getCompareDifferenceCount(
+        workflow.compareRenderModel?.compareResult
+    );
 
     return (
         <div className="flex min-w-0 items-center">
@@ -86,10 +90,11 @@ export const WorkflowModeSwitcher: React.FC = () => {
                 {showCompareButton ? (
                     <Button
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                         className={cn(
-                            'h-6 gap-1.5 rounded-lg px-2.5 text-xs font-medium shadow-none',
-                            'text-muted-foreground hover:text-foreground'
+                            'relative h-6 gap-1.5 rounded-lg px-2.5 text-xs font-semibold shadow-none',
+                            'border-border bg-background text-foreground hover:bg-accent',
+                            compareDifferenceCount > 0 && 'pr-5'
                         )}
                         onClick={() => workflow.setActiveMode('compare')}
                         disabled={!workflow.compareModeEnabled}
@@ -99,8 +104,16 @@ export const WorkflowModeSwitcher: React.FC = () => {
                                 : 'Sync a live database and load a development diagram to enable compare'
                         }
                     >
-                        <GitCompareArrows className="size-3.5 text-muted-foreground" />
+                        <GitCompareArrows className="size-3.5 text-sky-600 dark:text-sky-400" />
                         <span>Compare</span>
+                        {compareDifferenceCount > 0 ? (
+                            <span
+                                aria-hidden="true"
+                                className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-semibold leading-none text-white"
+                            >
+                                {compareDifferenceCount}
+                            </span>
+                        ) : null}
                     </Button>
                 ) : (
                     <WorkflowActionsMenu />

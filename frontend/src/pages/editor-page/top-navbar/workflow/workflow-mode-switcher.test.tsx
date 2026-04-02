@@ -22,6 +22,15 @@ describe('workflow mode switcher', () => {
             activeMode: 'development',
             liveModeEnabled: false,
             compareModeEnabled: false,
+            compareRenderModel: {
+                compareResult: {
+                    summary: {
+                        tables: { total: 1 },
+                        fields: { total: 2 },
+                        relationships: { total: 1 },
+                    },
+                },
+            },
             setActiveMode: vi.fn(),
         } as never);
 
@@ -48,6 +57,9 @@ describe('workflow mode switcher', () => {
                 }) as HTMLButtonElement
             ).disabled
         ).toBe(true);
+        expect(
+            screen.getByRole('button', { name: 'Compare' })
+        ).toHaveTextContent('4');
     });
 
     it('switches into Live Database mode when a synced snapshot is available', async () => {
@@ -58,6 +70,15 @@ describe('workflow mode switcher', () => {
             activeMode: 'development',
             liveModeEnabled: true,
             compareModeEnabled: true,
+            compareRenderModel: {
+                compareResult: {
+                    summary: {
+                        tables: { total: 1 },
+                        fields: { total: 1 },
+                        relationships: { total: 0 },
+                    },
+                },
+            },
             setActiveMode,
         } as never);
 
@@ -77,6 +98,15 @@ describe('workflow mode switcher', () => {
             liveModeEnabled: true,
             compareModeEnabled: true,
             compareSourceKind: 'live',
+            compareRenderModel: {
+                compareResult: {
+                    summary: {
+                        tables: { total: 1 },
+                        fields: { total: 2 },
+                        relationships: { total: 1 },
+                    },
+                },
+            },
             setActiveMode: vi.fn(),
         } as never);
 
@@ -86,7 +116,9 @@ describe('workflow mode switcher', () => {
         expect(
             screen.getByRole('button', { name: 'Development' })
         ).toBeTruthy();
-        expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Review' })
+        ).toHaveTextContent('4');
         expect(screen.getByRole('button', { name: 'Finish' })).toBeTruthy();
     });
 });
