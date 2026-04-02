@@ -34,9 +34,10 @@ import {
     SelectValue,
 } from '@/components/select/select';
 import { Separator } from '@/components/separator/separator';
+import { SummaryList } from '@/components/summary-list/summary-list';
 import { useAuth } from '@/hooks/use-auth';
-import { useConfig } from '@/hooks/use-config';
 import { useLocalConfig } from '@/hooks/use-local-config';
+import { useStorage } from '@/hooks/use-storage';
 import { languages } from '@/i18n/i18n';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -140,8 +141,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     onOpenChange,
 }) => {
     const auth = useAuth();
-    const { config } = useConfig();
     const localConfig = useLocalConfig();
+    const { listCollections, listProjects, listProjectDiagrams } = useStorage();
     const translation = useTranslation();
     const i18n = translation.i18n ?? {
         changeLanguage: async () => undefined,
@@ -150,6 +151,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     const [selectedSection, setSelectedSection] =
         useState<SettingsSectionId>('profile');
     const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+    const [workspaceSnapshot, setWorkspaceSnapshot] = useState({
+        collectionCount: 0,
+        projectCount: 0,
+        diagramCount: 0,
+    });
 
     useEffect(() => {
         if (!open) {
@@ -158,6 +164,58 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
         setSelectedSection('profile');
     }, [open]);
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const loadWorkspaceSnapshot = async () => {
+            try {
+                const [collections, projects] = await Promise.all([
+                    listCollections(),
+                    listProjects(),
+                ]);
+                const activeProjects = projects.filter(
+                    (project) => project.status !== 'deleted'
+                );
+                const diagramsByProject = await Promise.all(
+                    activeProjects.map((project) =>
+                        listProjectDiagrams(project.id).catch(() => [])
+                    )
+                );
+
+                if (cancelled) {
+                    return;
+                }
+
+                setWorkspaceSnapshot({
+                    collectionCount: collections.length,
+                    projectCount: activeProjects.length,
+                    diagramCount: diagramsByProject.reduce(
+                        (count, diagrams) => count + diagrams.length,
+                        0
+                    ),
+                });
+            } catch {
+                if (!cancelled) {
+                    setWorkspaceSnapshot({
+                        collectionCount: 0,
+                        projectCount: 0,
+                        diagramCount: 0,
+                    });
+                }
+            }
+        };
+
+        void loadWorkspaceSnapshot();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [listCollections, listProjectDiagrams, listProjects, open]);
 
     const displayName =
         auth.user?.displayName?.trim() ||
@@ -282,34 +340,83 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     );
 
     const renderAccount = () => (
-        <Card className="rounded-[18px] border-stone-200 shadow-none">
-            <CardHeader className="pb-3">
-                <CardTitle className="text-[16px] font-semibold text-stone-900">
-                    Account
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-0 text-[15px]">
-                <DetailRow
-                    icon={UserRound}
-                    title="Display name"
-                    value={
-                        <span className="font-semibold text-stone-900">
-                            {displayName}
-                        </span>
-                    }
-                />
-                <DetailRow
-                    icon={Mail}
-                    title="Authentication"
-                    value={`${auth.enabled ? (auth.mode ?? 'enabled') : 'disabled'} / ${auth.user?.status ?? 'local'}`}
-                />
-                <DetailRow
-                    icon={CreditCard}
-                    title="Default diagram"
-                    value={config?.defaultDiagramId ?? 'Not set'}
-                />
-            </CardContent>
-        </Card>
+        <div className="space-y-4">
+            <Card className="rounded-[18px] border-stone-200 shadow-none">
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-[16px] font-semibold text-stone-900">
+                        Identity
+                    </CardTitle>
+                    <p className="text-[15px] text-stone-500">
+                        The current user context attached to this SchemaDash
+                        session.
+                    </p>
+                </CardHeader>
+                <CardContent className="pt-0">
+                    <SummaryList
+                        items={[
+                            {
+                                label: 'Display name',
+                                value: displayName,
+                            },
+                            {
+                                label: 'Email',
+                                value:
+                                    auth.user?.email?.trim() ??
+                                    'Not applicable',
+                            },
+                            {
+                                label: 'Role',
+                                value: auth.user?.role ?? 'local',
+                            },
+                            {
+                                label: 'Auth provider',
+                                value:
+                                    auth.user?.authProvider ??
+                                    (auth.enabled
+                                        ? (auth.mode ?? 'enabled')
+                                        : 'disabled'),
+                            },
+                            {
+                                label: 'Status',
+                                value:
+                                    auth.user?.status ??
+                                    (auth.authenticated ? 'active' : 'local'),
+                            },
+                        ]}
+                    />
+                </CardContent>
+            </Card>
+
+            <Card className="rounded-[18px] border-stone-200 shadow-none">
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-[16px] font-semibold text-stone-900">
+                        Workspace snapshot
+                    </CardTitle>
+                    <p className="text-[15px] text-stone-500">
+                        Current saved workspace counts available in this
+                        session.
+                    </p>
+                </CardHeader>
+                <CardContent className="pt-0">
+                    <SummaryList
+                        items={[
+                            {
+                                label: 'Collections',
+                                value: workspaceSnapshot.collectionCount,
+                            },
+                            {
+                                label: 'Active projects',
+                                value: workspaceSnapshot.projectCount,
+                            },
+                            {
+                                label: 'Saved diagrams',
+                                value: workspaceSnapshot.diagramCount,
+                            },
+                        ]}
+                    />
+                </CardContent>
+            </Card>
+        </div>
     );
 
     const renderApiKeys = () => (
@@ -367,23 +474,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
     const renderCanvas = () => (
         <div className="space-y-4">
-            <div className="space-y-1">
-                <h3 className="text-[18px] font-semibold text-stone-900">
-                    Canvas
-                </h3>
-                <p className="text-[15px] text-stone-500">
-                    Diagram display and canvas toggles.
-                </p>
-            </div>
-
             <Card className="rounded-[18px] border-stone-200 shadow-none">
-                <CardHeader className="pb-4">
+                <CardHeader className="pb-3">
                     <CardTitle className="text-[16px] font-semibold text-stone-900">
                         Canvas preferences
                     </CardTitle>
                     <p className="text-[15px] text-stone-500">
-                        Toggle the default diagram presentation options for the
-                        current browser session.
+                        Diagram display and canvas toggles.
                     </p>
                 </CardHeader>
                 <CardContent className="grid gap-4 pt-0 sm:grid-cols-2">
