@@ -271,13 +271,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 </CardHeader>
                 <CardContent className="flex items-center justify-between gap-4 pt-0">
                     <DetailRow
-                        icon={Mail}
-                        title="Email address"
-                        value={
-                            <span className="font-semibold text-stone-900">
-                                {email}
-                            </span>
-                        }
+                        icon={UserRound}
+                        title="Display name"
+                        value={displayName}
                     />
                     <div className="shrink-0 space-y-2 text-right">
                         <Badge className="rounded-xl bg-stone-100 px-3 py-1 text-[13px] font-medium text-stone-700 hover:bg-stone-100">
@@ -287,6 +283,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                             Check Plans
                         </div>
                     </div>
+                </CardContent>
+                <CardContent className="flex items-center justify-between gap-4 pt-0">
+                    <DetailRow
+                        icon={Mail}
+                        title="Email address"
+                        value={auth.user?.email?.trim() ?? 'Not applicable'}
+                    />
+                  <DetailRow
+                        icon={Shield}
+                        title="Role"
+                        value={auth.user?.role ?? 'local'}
+                    />
+                  <DetailRow
+                        icon={Shield}
+                        title=""
+                        value=""
+                    />
                 </CardContent>
             </Card>
 
@@ -367,7 +380,35 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <Card className="rounded-[18px] border-stone-200 shadow-none">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-[16px] font-semibold text-stone-900">
-                        Identity
+                        Workspace snapshot
+                    </CardTitle>
+                    <p className="text-[15px] text-stone-500">
+                        Current saved workspace counts available in this
+                        session.
+                    </p>
+                </CardHeader>
+                <CardContent className="flex items-center justify-between gap-4 pt-0">
+                    <DetailRow
+                        icon={Mail}
+                        title="Collections"
+                        value={workspaceSnapshot.collectionCount}
+                    />
+                  <DetailRow
+                        icon={Shield}
+                        title="Projects"
+                        value={workspaceSnapshot.projectCount}
+                    />
+                  <DetailRow
+                        icon={Shield}
+                        title="Diagrams"
+                        value={workspaceSnapshot.diagramCount}
+                    />    
+                </CardContent>
+            </Card>
+            <Card className="rounded-[18px] border-stone-200 shadow-none">
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-[16px] font-semibold text-stone-900">
+                        Account Details
                     </CardTitle>
                     <p className="text-[15px] text-stone-500">
                         The current user context attached to this SchemaDash
@@ -375,21 +416,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     </p>
                 </CardHeader>
                 <CardContent className="space-y-3 pt-0">
-                    <AccountInfoField
-                        icon={UserRound}
-                        label="Display name"
-                        value={displayName}
-                    />
-                    <AccountInfoField
-                        icon={Mail}
-                        label="Email"
-                        value={auth.user?.email?.trim() ?? 'Not applicable'}
-                    />
-                    <AccountInfoField
-                        icon={Shield}
-                        label="Role"
-                        value={auth.user?.role ?? 'local'}
-                    />
                     <AccountInfoField
                         icon={KeyRound}
                         label="Auth provider"
@@ -407,36 +433,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                             auth.user?.status ??
                             (auth.authenticated ? 'active' : 'local')
                         }
-                    />
-                </CardContent>
-            </Card>
-
-            <Card className="rounded-[18px] border-stone-200 shadow-none">
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-[16px] font-semibold text-stone-900">
-                        Workspace snapshot
-                    </CardTitle>
-                    <p className="text-[15px] text-stone-500">
-                        Current saved workspace counts available in this
-                        session.
-                    </p>
-                </CardHeader>
-                <CardContent className="pt-0">
-                    <SummaryList
-                        items={[
-                            {
-                                label: 'Collections',
-                                value: workspaceSnapshot.collectionCount,
-                            },
-                            {
-                                label: 'Active projects',
-                                value: workspaceSnapshot.projectCount,
-                            },
-                            {
-                                label: 'Saved diagrams',
-                                value: workspaceSnapshot.diagramCount,
-                            },
-                        ]}
                     />
                 </CardContent>
             </Card>
@@ -501,44 +497,59 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <Card className="rounded-[18px] border-stone-200 shadow-none">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-[16px] font-semibold text-stone-900">
-                        Canvas preferences
+                        Canvas Preferences
                     </CardTitle>
-                    <p className="text-[15px] text-stone-500">
-                        Diagram display and canvas toggles.
-                    </p>
                 </CardHeader>
-                <CardContent className="grid gap-4 pt-0 sm:grid-cols-2">
-                    <DashboardSettingOptionCard
-                        checked={localConfig.showCardinality}
-                        description="Keep relationship cardinality markers visible in diagrams."
-                        onCheckedChange={(checked) =>
-                            localConfig.setShowCardinality(checked)
-                        }
+                <CardContent className="flex items-center justify-between gap-4 pt-0">
+                    <DetailRow
+                        icon={CreditCard}
                         title="Show cardinality"
+                        value="Keep relationship cardinality markers visible in diagrams"
                     />
-                    <DashboardSettingOptionCard
-                        checked={localConfig.showFieldAttributes}
-                        description="Display PK, nullability, and field metadata on the canvas."
-                        onCheckedChange={(checked) =>
-                            localConfig.setShowFieldAttributes(checked)
+                    <SettingSwitch
+                        checked={localConfig.showCardinality}
+                        onClick={() =>
+                            localConfig.setShowCardinality(!localConfig.showCardinality)
                         }
+                    />
+                </CardContent>
+                <CardContent className="flex items-center justify-between gap-4 pt-0">
+                    <DetailRow
+                        icon={CreditCard}
                         title="Show field attributes"
+                        value="Display PK, nullability, and field metadata on the canvas"
                     />
-                    <DashboardSettingOptionCard
-                        checked={localConfig.showMiniMapOnCanvas}
-                        description="Keep the minimap visible by default."
-                        onCheckedChange={(checked) =>
-                            localConfig.setShowMiniMapOnCanvas(checked)
+                    <SettingSwitch
+                        checked={localConfig.showFieldAttributes}
+                        onClick={() =>
+                            localConfig.setShowFieldAttributes(!localConfig.showFieldAttributes)
                         }
+                    />
+                </CardContent>
+                <CardContent className="flex items-center justify-between gap-4 pt-0">
+                    <DetailRow
+                        icon={CreditCard}
                         title="Show minimap"
+                        value="Keep the minimap visible by default"
                     />
-                    <DashboardSettingOptionCard
-                        checked={localConfig.showDBViews}
-                        description="Include database views when the source supports them."
-                        onCheckedChange={(checked) =>
-                            localConfig.setShowDBViews(checked)
+                    <SettingSwitch
+                        checked={localConfig.showMiniMapOnCanvas}
+                        onClick={() =>
+                            localConfig.setShowMiniMapOnCanvas(!localConfig.showMiniMapOnCanvas)
                         }
+                    />
+                </CardContent>
+                <CardContent className="flex items-center justify-between gap-4 pt-0">
+                    <DetailRow
+                        icon={CreditCard}
                         title="Show database views"
+                        value="Include database views when the source supports them"
+                    />
+                    <SettingSwitch
+                        checked={localConfig.showDBViews}
+                        onClick={() =>
+                            localConfig.setShowDBViews(!localConfig.showDBViews)
+                        }
                     />
                 </CardContent>
             </Card>

@@ -60,7 +60,7 @@ export default defineConfig({
                 target:
                     process.env.SCHEMADASH_API_PROXY ??
                     process.env.CHARTDB_API_PROXY ??
-                    'http://localhost:4010',
+                    'http://localhost:4030',
                 changeOrigin: true,
             },
         },
