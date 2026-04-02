@@ -91,10 +91,10 @@ export const DiagramName: React.FC<DiagramNameProps> = () => {
     );
 
     return (
-        <div className="group absolute right-[calc(46.666667%+100px)] z-10 flex translate-x-[-170%] items-center">
+        <div className="group flex min-w-0 max-w-full items-center">
             <div
                 className={cn(
-                    'flex flex-1 flex-row items-center justify-center px-2 py-1 whitespace-nowrap',
+                    'flex min-w-0 flex-row items-center justify-center px-2 py-1 whitespace-nowrap',
                     {
                         'text-editable': !editMode,
                     }

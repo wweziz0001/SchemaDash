@@ -85,21 +85,19 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                 <Menu />
             </div>
 
-            <div className="flex flex-1 justify-center pb-2 pt-1">
-                <DiagramName />
-            </div>
-            {showWorkflowChrome ? (
-                <div className="pb-3">
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 pb-3 pt-1">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                    <DiagramName />
+                    {showWorkflowChrome ? <WorkflowModeSwitcher /> : null}
+                </div>
+                {showWorkflowChrome ? (
                     <div className="rounded-xl border bg-muted/15 p-2 shadow-sm">
-                        <div className="flex flex-wrap items-center justify-center gap-2 pb-2">
-                            <WorkflowModeSwitcher />
-                        </div>
                         <div className="flex flex-wrap justify-center gap-2">
                             <VersionViewBadge />
                         </div>
                     </div>
-                </div>
-            ) : null}
+                ) : null}
+            </div>
         </nav>
     );
 };
