@@ -49,24 +49,44 @@ type SettingsSectionId =
     | 'appearance'
     | 'subscription';
 
-const sections = [
+const getSections = (t: (key: string) => string) => [
     {
-        group: 'General',
+        group: t('settings_dialog.groups.general'),
         items: [
-            { id: 'profile' as const, icon: UserRound, label: 'Profile' },
-            { id: 'account' as const, icon: UserRound, label: 'Account' },
-            { id: 'api-keys' as const, icon: KeyRound, label: 'API Keys' },
-            { id: 'canvas' as const, icon: LayoutGrid, label: 'Canva' },
-            { id: 'appearance' as const, icon: Palette, label: 'Appearance' },
+            {
+                id: 'profile' as const,
+                icon: UserRound,
+                label: t('settings_dialog.sections.profile'),
+            },
+            {
+                id: 'account' as const,
+                icon: UserRound,
+                label: t('settings_dialog.sections.account'),
+            },
+            {
+                id: 'api-keys' as const,
+                icon: KeyRound,
+                label: t('settings_dialog.sections.api_keys'),
+            },
+            {
+                id: 'canvas' as const,
+                icon: LayoutGrid,
+                label: t('settings_dialog.sections.canvas'),
+            },
+            {
+                id: 'appearance' as const,
+                icon: Palette,
+                label: t('settings_dialog.sections.appearance'),
+            },
         ],
     },
     {
-        group: 'Billing',
+        group: t('settings_dialog.groups.billing'),
         items: [
             {
                 id: 'subscription' as const,
                 icon: CreditCard,
-                label: 'Subscription',
+                label: t('settings_dialog.sections.subscription'),
             },
         ],
     },
@@ -80,9 +100,11 @@ const subtleTextClasses = 'text-[15px] text-muted-foreground';
 const SettingSwitch = ({
     checked,
     onClick,
+    label,
 }: {
     checked: boolean;
     onClick: () => void;
+    label: string;
 }) => (
     <button
         type="button"
@@ -99,7 +121,7 @@ const SettingSwitch = ({
                 checked ? 'translate-x-6' : 'translate-x-1'
             )}
         />
-        <span className="sr-only">Toggle setting</span>
+        <span className="sr-only">{label}</span>
     </button>
 );
 
@@ -166,6 +188,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     const auth = useAuth();
     const localConfig = useLocalConfig();
     const { listCollections, listProjects, listProjectDiagrams } = useStorage();
+    const { t } = useTranslation();
     const translation = useTranslation();
     const i18n = translation.i18n ?? {
         changeLanguage: async () => undefined,
@@ -243,12 +266,35 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     const displayName =
         auth.user?.displayName?.trim() ||
         auth.user?.email?.trim() ||
-        'Local SchemaDash user';
-    const email = auth.user?.email?.trim() || 'Not available';
+        t('settings_dialog.values.local_user');
+    const email =
+        auth.user?.email?.trim() || t('settings_dialog.values.not_available');
     const currentLanguage =
         i18n.languages.find((code) =>
             languages.some((language) => language.code === code)
         ) ?? languages[0]?.code;
+    const sections = useMemo(() => getSections(t), [t]);
+    const localizeValue = useMemo(
+        () => (value?: string | null) => {
+            if (!value) {
+                return t('settings_dialog.values.not_available');
+            }
+
+            switch (value) {
+                case 'local':
+                    return t('settings_dialog.values.local');
+                case 'active':
+                    return t('settings_dialog.values.active');
+                case 'disabled':
+                    return t('settings_dialog.values.disabled');
+                case 'enabled':
+                    return t('settings_dialog.values.enabled');
+                default:
+                    return value;
+            }
+        },
+        [t]
+    );
 
     const activeSection = useMemo(() => {
         return (
@@ -257,7 +303,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 .find((item) => item.id === selectedSection) ??
             sections[0].items[0]
         );
-    }, [selectedSection]);
+    }, [sections, selectedSection]);
 
     const ActiveIcon = activeSection.icon;
 
@@ -266,34 +312,34 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-[16px] font-semibold text-foreground">
-                        Account Details
+                        {t('settings_dialog.profile.account_details')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between gap-4 pt-0">
                     <DetailRow
                         icon={UserRound}
-                        title="Display name"
+                        title={t('settings_dialog.profile.display_name')}
                         value={displayName}
                     />
-                    <div className="shrink-0 space-y-2 text-right">
+                    <div className="shrink-0 space-y-2 text-start">
                         <Badge className="rounded-xl bg-muted px-3 py-1 text-[13px] font-medium text-muted-foreground hover:bg-muted">
-                            Team Plan (Basic) (Trial)
+                            {t('settings_dialog.profile.team_plan')}
                         </Badge>
                         <div className="text-[14px] font-medium text-rose-500">
-                            Check Plans
+                            {t('settings_dialog.profile.check_plans')}
                         </div>
                     </div>
                 </CardContent>
                 <CardContent className="flex items-center justify-between gap-4 pt-0">
                     <DetailRow
                         icon={Mail}
-                        title="Email address"
+                        title={t('settings_dialog.profile.email_address')}
                         value={email}
                     />
                     <DetailRow
                         icon={Shield}
-                        title="Role"
-                        value={auth.user?.role ?? 'local'}
+                        title={t('settings_dialog.profile.role')}
+                        value={localizeValue(auth.user?.role ?? 'local')}
                     />
                     <DetailRow icon={Shield} title="" value="" />
                 </CardContent>
@@ -302,20 +348,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-[16px] font-semibold text-foreground">
-                        Auto-Save Settings
+                        {t('settings_dialog.profile.auto_save_settings')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between gap-4 pt-0">
                     <DetailRow
                         icon={CreditCard}
-                        title="Auto-Save"
-                        value="Automatically save your changes"
+                        title={t('settings_dialog.profile.auto_save')}
+                        value={t(
+                            'settings_dialog.profile.auto_save_description'
+                        )}
                     />
                     <SettingSwitch
                         checked={autoSaveEnabled}
                         onClick={() =>
                             setAutoSaveEnabled((current) => !current)
                         }
+                        label={t('settings_dialog.toggle_setting')}
                     />
                 </CardContent>
             </Card>
@@ -323,7 +372,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-[16px] font-semibold text-foreground">
-                        Language
+                        {t('settings_dialog.profile.language')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -338,7 +387,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                             value={currentLanguage}
                         >
                             <SelectTrigger className="h-11 rounded-xl border-border/70 bg-background text-[15px] text-foreground shadow-none">
-                                <SelectValue placeholder="Choose language" />
+                                <SelectValue
+                                    placeholder={t(
+                                        'settings_dialog.profile.choose_language'
+                                    )}
+                                />
                             </SelectTrigger>
                             <SelectContent>
                                 {languages.map((language) => (
@@ -364,7 +417,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                         onClick={() => void auth.logout()}
                     >
                         <LogOut className="mr-2 size-4" />
-                        Log out
+                        {t('settings_dialog.profile.log_out')}
                     </Button>
                 </div>
             ) : null}
@@ -376,27 +429,26 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-[16px] font-semibold text-foreground">
-                        Workspace snapshot
+                        {t('settings_dialog.account.workspace_snapshot')}
                     </CardTitle>
                     <p className={subtleTextClasses}>
-                        Current saved workspace counts available in this
-                        session.
+                        {t('settings_dialog.account.workspace_description')}
                     </p>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between gap-4 pt-0">
                     <DetailRow
                         icon={Mail}
-                        title="Collections"
+                        title={t('settings_dialog.account.collections')}
                         value={workspaceSnapshot.collectionCount}
                     />
                     <DetailRow
                         icon={Shield}
-                        title="Projects"
+                        title={t('settings_dialog.account.projects')}
                         value={workspaceSnapshot.projectCount}
                     />
                     <DetailRow
                         icon={Shield}
-                        title="Diagrams"
+                        title={t('settings_dialog.account.diagrams')}
                         value={workspaceSnapshot.diagramCount}
                     />
                 </CardContent>
@@ -404,31 +456,30 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-[16px] font-semibold text-foreground">
-                        Account Details
+                        {t('settings_dialog.account.account_details')}
                     </CardTitle>
                     <p className={subtleTextClasses}>
-                        The current user context attached to this SchemaDash
-                        session.
+                        {t('settings_dialog.account.account_description')}
                     </p>
                 </CardHeader>
                 <CardContent className="space-y-3 pt-0">
                     <AccountInfoField
                         icon={KeyRound}
-                        label="Auth provider"
-                        value={
+                        label={t('settings_dialog.account.auth_provider')}
+                        value={localizeValue(
                             auth.user?.authProvider ??
-                            (auth.enabled
-                                ? (auth.mode ?? 'enabled')
-                                : 'disabled')
-                        }
+                                (auth.enabled
+                                    ? (auth.mode ?? 'enabled')
+                                    : 'disabled')
+                        )}
                     />
                     <AccountInfoField
                         icon={LayoutGrid}
-                        label="Status"
-                        value={
+                        label={t('settings_dialog.account.status')}
+                        value={localizeValue(
                             auth.user?.status ??
-                            (auth.authenticated ? 'active' : 'local')
-                        }
+                                (auth.authenticated ? 'active' : 'local')
+                        )}
                     />
                 </CardContent>
             </Card>
@@ -439,20 +490,18 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         <Card className={panelCardClasses}>
             <CardHeader className="pb-3">
                 <CardTitle className="text-[16px] font-semibold text-foreground">
-                    API Keys
+                    {t('settings_dialog.api_keys.title')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-0 text-[15px] text-muted-foreground">
-                <p>
-                    API key management is not configured in this workspace yet.
-                </p>
+                <p>{t('settings_dialog.api_keys.description')}</p>
                 <Button
                     type="button"
                     variant="outline"
                     className="rounded-xl border-border/70"
                     disabled
                 >
-                    Generate key
+                    {t('settings_dialog.api_keys.generate')}
                 </Button>
             </CardContent>
         </Card>
@@ -462,11 +511,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         <Card className={panelCardClasses}>
             <CardHeader className="pb-3">
                 <CardTitle className="text-[16px] font-semibold text-foreground">
-                    Appearance
+                    {t('settings_dialog.appearance.title')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
-                <div className={subtleTextClasses}>Theme</div>
+                <div className={subtleTextClasses}>
+                    {t('settings_dialog.appearance.theme')}
+                </div>
                 <Select
                     onValueChange={(value) =>
                         localConfig.setTheme(
@@ -476,12 +527,22 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     value={localConfig.theme}
                 >
                     <SelectTrigger className="h-11 rounded-xl border-border/70 bg-background text-[15px] text-foreground shadow-none">
-                        <SelectValue placeholder="Choose theme" />
+                        <SelectValue
+                            placeholder={t(
+                                'settings_dialog.appearance.choose_theme'
+                            )}
+                        />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="system">System</SelectItem>
-                        <SelectItem value="light">Light</SelectItem>
-                        <SelectItem value="dark">Dark</SelectItem>
+                        <SelectItem value="system">
+                            {t('settings_dialog.appearance.system')}
+                        </SelectItem>
+                        <SelectItem value="light">
+                            {t('settings_dialog.appearance.light')}
+                        </SelectItem>
+                        <SelectItem value="dark">
+                            {t('settings_dialog.appearance.dark')}
+                        </SelectItem>
                     </SelectContent>
                 </Select>
             </CardContent>
@@ -493,14 +554,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <Card className={panelCardClasses}>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-[16px] font-semibold text-foreground">
-                        Canvas Preferences
+                        {t('settings_dialog.canvas.title')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between gap-4 pt-0">
                     <DetailRow
                         icon={CreditCard}
-                        title="Show cardinality"
-                        value="Keep relationship cardinality markers visible in diagrams"
+                        title={t('settings_dialog.canvas.show_cardinality')}
+                        value={t(
+                            'settings_dialog.canvas.show_cardinality_description'
+                        )}
                     />
                     <SettingSwitch
                         checked={localConfig.showCardinality}
@@ -509,13 +572,18 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                 !localConfig.showCardinality
                             )
                         }
+                        label={t('settings_dialog.toggle_setting')}
                     />
                 </CardContent>
                 <CardContent className="flex items-center justify-between gap-4 pt-0">
                     <DetailRow
                         icon={CreditCard}
-                        title="Show field attributes"
-                        value="Display PK, nullability, and field metadata on the canvas"
+                        title={t(
+                            'settings_dialog.canvas.show_field_attributes'
+                        )}
+                        value={t(
+                            'settings_dialog.canvas.show_field_attributes_description'
+                        )}
                     />
                     <SettingSwitch
                         checked={localConfig.showFieldAttributes}
@@ -524,13 +592,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                 !localConfig.showFieldAttributes
                             )
                         }
+                        label={t('settings_dialog.toggle_setting')}
                     />
                 </CardContent>
                 <CardContent className="flex items-center justify-between gap-4 pt-0">
                     <DetailRow
                         icon={CreditCard}
-                        title="Show minimap"
-                        value="Keep the minimap visible by default"
+                        title={t('settings_dialog.canvas.show_minimap')}
+                        value={t(
+                            'settings_dialog.canvas.show_minimap_description'
+                        )}
                     />
                     <SettingSwitch
                         checked={localConfig.showMiniMapOnCanvas}
@@ -539,19 +610,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                 !localConfig.showMiniMapOnCanvas
                             )
                         }
+                        label={t('settings_dialog.toggle_setting')}
                     />
                 </CardContent>
                 <CardContent className="flex items-center justify-between gap-4 pt-0">
                     <DetailRow
                         icon={CreditCard}
-                        title="Show database views"
-                        value="Include database views when the source supports them"
+                        title={t('settings_dialog.canvas.show_views')}
+                        value={t(
+                            'settings_dialog.canvas.show_views_description'
+                        )}
                     />
                     <SettingSwitch
                         checked={localConfig.showDBViews}
                         onClick={() =>
                             localConfig.setShowDBViews(!localConfig.showDBViews)
                         }
+                        label={t('settings_dialog.toggle_setting')}
                     />
                 </CardContent>
             </Card>
@@ -562,21 +637,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         <Card className={panelCardClasses}>
             <CardHeader className="pb-3">
                 <CardTitle className="text-[16px] font-semibold text-foreground">
-                    Subscription
+                    {t('settings_dialog.subscription.title')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-0 text-[15px]">
                 <div className="flex items-center justify-between gap-4">
                     <div>
                         <div className="font-medium text-foreground">
-                            Team Plan
+                            {t('settings_dialog.subscription.plan_title')}
                         </div>
                         <div className="text-muted-foreground">
-                            Basic workspace access for the current session.
+                            {t('settings_dialog.subscription.plan_description')}
                         </div>
                     </div>
                     <Badge className="rounded-xl bg-muted px-3 py-1 text-[13px] font-medium text-muted-foreground hover:bg-muted">
-                        Basic (Trial)
+                        {t('settings_dialog.subscription.badge')}
                     </Badge>
                 </div>
                 <Button
@@ -584,7 +659,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     variant="outline"
                     className="rounded-xl border-border/70"
                 >
-                    Check Plans
+                    {t('settings_dialog.subscription.check_plans')}
                 </Button>
             </CardContent>
         </Card>
@@ -612,10 +687,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="overflow-hidden border-border/70 bg-background p-0 text-foreground shadow-2xl sm:max-w-[980px] sm:rounded-xl">
                 <div className="sr-only">
-                    <DialogTitle>Workspace settings</DialogTitle>
+                    <DialogTitle>
+                        {t('settings_dialog.dialog_title')}
+                    </DialogTitle>
                     <DialogDescription>
-                        Settings dialog for profile, canvas, appearance, and
-                        subscription preferences.
+                        {t('settings_dialog.dialog_description')}
                     </DialogDescription>
                 </div>
 
@@ -690,11 +766,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                         </div>
                     </section>
                 </div>
-
                 <DialogClose asChild>
                     <button className="absolute right-5 top-5 rounded-sm text-muted-foreground transition-colors hover:text-foreground">
                         <X className="size-4" />
-                        <span className="sr-only">Close</span>
+                        <span className="sr-only">
+                            {t('settings_dialog.close')}
+                        </span>
                     </button>
                 </DialogClose>
             </DialogContent>

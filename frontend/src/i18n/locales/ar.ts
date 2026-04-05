@@ -366,11 +366,127 @@ export const ar: LanguageTranslation = {
             import: 'استيراد',
         },
 
+        settings_dialog: {
+            dialog_title: 'إعدادات مساحة العمل',
+            dialog_description:
+                'نافذة إعدادات الملف الشخصي ولوحة الرسم والمظهر وخيارات الاشتراك.',
+            close: 'إغلاق',
+            toggle_setting: 'تبديل الإعداد',
+            groups: {
+                general: 'عام',
+                billing: 'الفوترة',
+            },
+            sections: {
+                profile: 'الملف الشخصي',
+                account: 'الحساب',
+                api_keys: 'مفاتيح API',
+                canvas: 'لوحة الرسم',
+                appearance: 'المظهر',
+                subscription: 'الاشتراك',
+            },
+            profile: {
+                account_details: 'تفاصيل الحساب',
+                display_name: 'الاسم الظاهر',
+                email_address: 'البريد الإلكتروني',
+                role: 'الدور',
+                team_plan: 'خطة الفريق (أساسية) (تجريبية)',
+                check_plans: 'عرض الخطط',
+                auto_save_settings: 'إعدادات الحفظ التلقائي',
+                auto_save: 'الحفظ التلقائي',
+                auto_save_description: 'احفظ تغييراتك تلقائيًا',
+                language: 'اللغة',
+                choose_language: 'اختر اللغة',
+                log_out: 'تسجيل الخروج',
+            },
+            account: {
+                workspace_snapshot: 'ملخص مساحة العمل',
+                workspace_description:
+                    'أعداد العناصر المحفوظة المتاحة في هذه الجلسة الحالية.',
+                collections: 'المجموعات',
+                projects: 'المشاريع',
+                diagrams: 'المخططات',
+                account_details: 'تفاصيل الحساب',
+                account_description:
+                    'سياق المستخدم الحالي المرتبط بهذه الجلسة في SchemaDash.',
+                auth_provider: 'موفر المصادقة',
+                status: 'الحالة',
+            },
+            api_keys: {
+                title: 'مفاتيح API',
+                description:
+                    'إدارة مفاتيح API غير مهيأة في مساحة العمل هذه حتى الآن.',
+                generate: 'إنشاء مفتاح',
+            },
+            appearance: {
+                title: 'المظهر',
+                theme: 'السمة',
+                choose_theme: 'اختر السمة',
+                system: 'النظام',
+                light: 'فاتح',
+                dark: 'داكن',
+            },
+            canvas: {
+                title: 'تفضيلات لوحة الرسم',
+                show_cardinality: 'إظهار الكاردينالية',
+                show_cardinality_description:
+                    'أبقِ علامات الكاردينالية للعلاقات ظاهرة في المخططات',
+                show_field_attributes: 'إظهار خصائص الحقول',
+                show_field_attributes_description:
+                    'اعرض المفتاح الأساسي وقابلية القيمة الفارغة وبيانات الحقول على اللوحة',
+                show_minimap: 'إظهار الخريطة المصغرة',
+                show_minimap_description:
+                    'أبقِ الخريطة المصغرة ظاهرة افتراضيًا',
+                show_views: 'إظهار العروض',
+                show_views_description:
+                    'ضمّن عروض قواعد البيانات عندما يدعمها المصدر',
+            },
+            subscription: {
+                title: 'الاشتراك',
+                plan_title: 'خطة الفريق',
+                plan_description: 'وصول أساسي لمساحة العمل في الجلسة الحالية.',
+                badge: 'أساسي (تجريبي)',
+                check_plans: 'عرض الخطط',
+            },
+            values: {
+                local_user: 'مستخدم SchemaDash محلي',
+                not_available: 'غير متوفر',
+                local: 'محلي',
+                active: 'نشط',
+                disabled: 'معطل',
+                enabled: 'مفعل',
+            },
+        },
+
         open_diagram_dialog: {
-            title: 'فتح قاعدة بيانات',
-            description: 'اختر مخططًا لفتحه من القائمة ادناه',
+            title: 'فتح قاعدة بيانات محفوظة',
+            description:
+                'استعرض المشاريع المحفوظة وافتح مخططًا من التخزين الدائم.',
+            collections: 'المجموعات',
+            projects: 'المشاريع',
+            all_projects: 'كل المشاريع',
+            all_projects_description:
+                'استعرض جميع المشاريع المحفوظة في مساحة عملك.',
+            search_label: 'البحث في المكتبة',
+            search_placeholder:
+                'ابحث في المشاريع والمخططات والأوصاف والمجموعات والجداول والمخططات الهيكلية',
+            search_help:
+                'البحث غير حساس لحالة الأحرف ويطابق بيانات المشروع وأسماء المجموعات وتفاصيل المخططات وأسماء الجداول أو المخططات المحفوظة.',
+            unassigned_collection: 'غير منظم',
+            unassigned_collection_description:
+                'المشاريع التي لم تُسند إلى مجموعة بعد.',
+            empty_collections:
+                'لا توجد مجموعات بعد. أنشئ مجموعة عندما تريد تنظيم المشاريع.',
+            empty_search_collections: 'لا توجد مجموعات تطابق "{{search}}".',
+            empty_projects: 'لا توجد مشاريع محفوظة بعد.',
+            empty_search_projects: 'لا توجد مشاريع تطابق "{{search}}".',
+            empty_diagrams: 'لا توجد مخططات محفوظة في هذا المشروع بعد.',
+            empty_search_diagrams:
+                'لا توجد مخططات في هذا المشروع تطابق "{{search}}".',
+            no_project_selected: 'اختر مشروعًا',
+            collection_count: '{{count}} مشاريع',
+            project_count: '{{count}} مخططات',
             table_columns: {
-                name: 'الإسم',
+                name: 'الاسم',
                 created_at: 'تاريخ الإنشاء',
                 last_modified: 'آخر تعديل',
                 tables_count: 'الجداول',
@@ -378,11 +494,79 @@ export const ar: LanguageTranslation = {
             cancel: 'إلغاء',
             open: 'فتح',
             new_database: 'قاعدة بيانات جديدة',
+            collection_actions: {
+                create: 'جديد',
+                create_prompt: 'أدخل اسم المجموعة',
+                description_prompt: 'أدخل وصفًا اختياريًا للمجموعة',
+                rename: 'إعادة تسمية',
+                rename_prompt: 'أعد تسمية هذه المجموعة',
+                delete: 'حذف',
+                delete_description:
+                    'سيؤدي هذا إلى حذف "{{name}}" وترك مشاريعه بدون تنظيم.',
+            },
+            project_actions: {
+                create: 'مشروع جديد',
+                create_prompt: 'أدخل اسم المشروع',
+                description_prompt: 'أدخل وصفًا اختياريًا للمشروع',
+                rename: 'إعادة تسمية المشروع',
+                rename_prompt: 'أعد تسمية هذا المشروع',
+                delete: 'حذف المشروع',
+                delete_description:
+                    'سيؤدي هذا إلى حذف "{{name}}" نهائيًا وجميع المخططات المحفوظة بداخله.',
+            },
+            project_fields: {
+                collection: 'المجموعة',
+                collection_placeholder: 'اختر مجموعة',
+            },
 
             diagram_actions: {
                 open: 'فتح',
+                rename: 'إعادة تسمية',
+                rename_prompt: 'أعد تسمية هذا المخطط',
                 duplicate: 'تكرار',
                 delete: 'حذف',
+            },
+            sharing: {
+                title: 'مشاركة {{type}} "{{name}}"',
+                fallback_title: 'مشاركة عنصر محفوظ',
+                description:
+                    'اختر ما إذا كان هذا العنصر سيبقى خاصًا أو مرئيًا للمستخدمين المسجلين أو متاحًا عبر رابط مشاركة للقراءة فقط.',
+                loading: 'جارٍ تحميل إعدادات المشاركة...',
+                project: 'المشروع',
+                diagram: 'المخطط',
+                current_status: 'المشاركة',
+                share_project: 'مشاركة المشروع',
+                share_diagram: 'مشاركة',
+                mode_label: 'وضع المشاركة',
+                mode_private: 'خاص',
+                mode_authenticated: 'المستخدمون المسجلون',
+                mode_link: 'أي شخص لديه الرابط',
+                mode_private_help: 'يمكن فقط للمالك والمسؤولين فتح هذا العنصر.',
+                mode_authenticated_help:
+                    'يمكن للمستخدمين المسجلين فتح هذا العنصر بمستوى الصلاحية أدناه.',
+                mode_link_help:
+                    'روابط المشاركة غير قابلة للتخمين وهي للقراءة فقط في هذا الإصدار.',
+                access_label: 'الصلاحية',
+                access_view: 'عرض فقط',
+                access_edit: 'قابل للتعديل',
+                access_help:
+                    'صلاحية العرض فقط تحمي من التعديلات غير المقصودة. وصلاحية التعديل مخصصة للزملاء الموثوقين المسجلين.',
+                authenticated_view: 'يمكن للمستخدمين المسجلين العرض',
+                authenticated_edit: 'يمكن للمستخدمين المسجلين التعديل',
+                link_view: 'يمكن لأي شخص لديه الرابط العرض',
+                link_read_only:
+                    'مشاركات الرابط مخصصة للقراءة فقط عمدًا في الإصدار الأول.',
+                link_label: 'رابط المشاركة',
+                copy_link: 'نسخ الرابط',
+                rotate_link: 'تدوير الرابط',
+                save: 'حفظ المشاركة',
+                link_ready:
+                    'هذا الرابط نشط الآن. سيؤدي تدويره إلى إلغاء الرابط القديم.',
+                link_inactive:
+                    'فعّل مشاركة الرابط لإنشاء عنوان URL قابل للمشاركة.',
+                error_load: 'تعذر تحميل إعدادات المشاركة الآن.',
+                error_save: 'تعذر حفظ إعدادات المشاركة الآن.',
+                error_copy: 'تعذر نسخ رابط المشاركة.',
             },
         },
 

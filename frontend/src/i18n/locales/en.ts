@@ -367,6 +367,97 @@ export const en = {
             import: 'Import',
         },
 
+        settings_dialog: {
+            dialog_title: 'Workspace settings',
+            dialog_description:
+                'Settings dialog for profile, canvas, appearance, and subscription preferences.',
+            close: 'Close',
+            toggle_setting: 'Toggle setting',
+            groups: {
+                general: 'General',
+                billing: 'Billing',
+            },
+            sections: {
+                profile: 'Profile',
+                account: 'Account',
+                api_keys: 'API Keys',
+                canvas: 'Canvas',
+                appearance: 'Appearance',
+                subscription: 'Subscription',
+            },
+            profile: {
+                account_details: 'Account Details',
+                display_name: 'Display name',
+                email_address: 'Email address',
+                role: 'Role',
+                team_plan: 'Team Plan (Basic) (Trial)',
+                check_plans: 'Check Plans',
+                auto_save_settings: 'Auto-Save Settings',
+                auto_save: 'Auto-Save',
+                auto_save_description: 'Automatically save your changes',
+                language: 'Language',
+                choose_language: 'Choose language',
+                log_out: 'Log out',
+            },
+            account: {
+                workspace_snapshot: 'Workspace snapshot',
+                workspace_description:
+                    'Current saved workspace counts available in this session.',
+                collections: 'Collections',
+                projects: 'Projects',
+                diagrams: 'Diagrams',
+                account_details: 'Account Details',
+                account_description:
+                    'The current user context attached to this SchemaDash session.',
+                auth_provider: 'Auth provider',
+                status: 'Status',
+            },
+            api_keys: {
+                title: 'API Keys',
+                description:
+                    'API key management is not configured in this workspace yet.',
+                generate: 'Generate key',
+            },
+            appearance: {
+                title: 'Appearance',
+                theme: 'Theme',
+                choose_theme: 'Choose theme',
+                system: 'System',
+                light: 'Light',
+                dark: 'Dark',
+            },
+            canvas: {
+                title: 'Canvas Preferences',
+                show_cardinality: 'Show cardinality',
+                show_cardinality_description:
+                    'Keep relationship cardinality markers visible in diagrams',
+                show_field_attributes: 'Show field attributes',
+                show_field_attributes_description:
+                    'Display PK, nullability, and field metadata on the canvas',
+                show_minimap: 'Show minimap',
+                show_minimap_description: 'Keep the minimap visible by default',
+                show_views: 'Show database views',
+                show_views_description:
+                    'Include database views when the source supports them',
+            },
+            subscription: {
+                title: 'Subscription',
+                plan_title: 'Team Plan',
+                plan_description:
+                    'Basic workspace access for the current session.',
+                badge: 'Basic (Trial)',
+                check_plans: 'Check Plans',
+            },
+            values: {
+                local_user: 'Local SchemaDash user',
+                not_available: 'Not available',
+                local: 'local',
+                active: 'active',
+                disabled: 'disabled',
+                enabled: 'enabled',
+            },
+        },
+
         open_diagram_dialog: {
             title: 'Open Saved Project',
             description:
