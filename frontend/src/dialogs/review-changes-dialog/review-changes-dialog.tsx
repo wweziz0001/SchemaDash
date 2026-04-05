@@ -40,6 +40,7 @@ type ReviewFormat = 'sql' | 'dbml';
 type ReviewItemKind = 'table' | 'relationship';
 type ReviewItemStatus = 'added' | 'removed' | 'changed';
 type ReviewSurface = 'baseline' | 'target';
+type ReviewRowTone = 'default' | 'added' | 'removed' | 'placeholder';
 
 interface ReviewBrowserItem {
     id: string;
@@ -49,6 +50,20 @@ interface ReviewBrowserItem {
     status: ReviewItemStatus;
     tableResult?: CompareTableResult;
     relationshipResult?: CompareRelationshipResult;
+}
+
+interface ReviewAlignedCodeLine {
+    id: string;
+    baseline: {
+        text: string;
+        tone: ReviewRowTone;
+        marker: string;
+    };
+    target: {
+        text: string;
+        tone: ReviewRowTone;
+        marker: string;
+    };
 }
 
 export interface ReviewChangesDialogProps {
@@ -297,18 +312,27 @@ const getRowToneClassName = ({
     status,
     surface,
     selected,
+    missing,
 }: {
     status: ReviewItemStatus;
     surface: ReviewSurface;
     selected: boolean;
+    missing?: boolean;
 }) => {
     const baseClassName =
         'flex w-full items-center gap-2 rounded-lg border px-3 py-1.5 text-left text-sm transition-colors';
 
+    if (missing) {
+        return cn(
+            baseClassName,
+            'border-slate-300 bg-slate-50/70 text-slate-400 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-500'
+        );
+    }
+
     if (status === 'added' && surface === 'target') {
         return cn(
             baseClassName,
-            'border-emerald-100 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100',
+            'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100',
             selected &&
                 'border-emerald-500 ring-1 ring-emerald-500 dark:border-emerald-500'
         );
@@ -317,7 +341,7 @@ const getRowToneClassName = ({
     if (status === 'removed' && surface === 'baseline') {
         return cn(
             baseClassName,
-            'border-rose-100 bg-rose-50 text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100',
+            'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-100',
             selected &&
                 'border-rose-500 ring-1 ring-rose-500 dark:border-rose-500'
         );
@@ -330,12 +354,179 @@ const getRowToneClassName = ({
     );
 };
 
+const splitCodeLines = (code: string) =>
+    code.length > 0 ? code.replace(/\r\n/g, '\n').split('\n') : [];
+
+const buildAlignedCodeLines = ({
+    baselineCode,
+    targetCode,
+}: {
+    baselineCode: string;
+    targetCode: string;
+}): ReviewAlignedCodeLine[] => {
+    const baselineLines = splitCodeLines(baselineCode);
+    const targetLines = splitCodeLines(targetCode);
+
+    if (baselineLines.length === 0 && targetLines.length === 0) {
+        return [];
+    }
+
+    const lcsMatrix = Array.from({ length: baselineLines.length + 1 }, () =>
+        Array.from<number>({ length: targetLines.length + 1 }).fill(0)
+    );
+
+    for (
+        let baselineIndex = baselineLines.length - 1;
+        baselineIndex >= 0;
+        baselineIndex -= 1
+    ) {
+        for (
+            let targetIndex = targetLines.length - 1;
+            targetIndex >= 0;
+            targetIndex -= 1
+        ) {
+            lcsMatrix[baselineIndex][targetIndex] =
+                baselineLines[baselineIndex] === targetLines[targetIndex]
+                    ? lcsMatrix[baselineIndex + 1][targetIndex + 1] + 1
+                    : Math.max(
+                          lcsMatrix[baselineIndex + 1][targetIndex],
+                          lcsMatrix[baselineIndex][targetIndex + 1]
+                      );
+        }
+    }
+
+    const rows: ReviewAlignedCodeLine[] = [];
+    let baselineIndex = 0;
+    let targetIndex = 0;
+    let rowIndex = 0;
+
+    while (
+        baselineIndex < baselineLines.length &&
+        targetIndex < targetLines.length
+    ) {
+        if (baselineLines[baselineIndex] === targetLines[targetIndex]) {
+            rows.push({
+                id: `context:${rowIndex}`,
+                baseline: {
+                    text: baselineLines[baselineIndex],
+                    tone: 'default',
+                    marker: ' ',
+                },
+                target: {
+                    text: targetLines[targetIndex],
+                    tone: 'default',
+                    marker: ' ',
+                },
+            });
+            baselineIndex += 1;
+            targetIndex += 1;
+        } else if (
+            lcsMatrix[baselineIndex + 1][targetIndex] >=
+            lcsMatrix[baselineIndex][targetIndex + 1]
+        ) {
+            rows.push({
+                id: `removed:${rowIndex}`,
+                baseline: {
+                    text: baselineLines[baselineIndex],
+                    tone: 'removed',
+                    marker: '-',
+                },
+                target: {
+                    text: '',
+                    tone: 'placeholder',
+                    marker: '',
+                },
+            });
+            baselineIndex += 1;
+        } else {
+            rows.push({
+                id: `added:${rowIndex}`,
+                baseline: {
+                    text: '',
+                    tone: 'placeholder',
+                    marker: '',
+                },
+                target: {
+                    text: targetLines[targetIndex],
+                    tone: 'added',
+                    marker: '+',
+                },
+            });
+            targetIndex += 1;
+        }
+
+        rowIndex += 1;
+    }
+
+    while (baselineIndex < baselineLines.length) {
+        rows.push({
+            id: `removed:${rowIndex}`,
+            baseline: {
+                text: baselineLines[baselineIndex],
+                tone: 'removed',
+                marker: '-',
+            },
+            target: {
+                text: '',
+                tone: 'placeholder',
+                marker: '',
+            },
+        });
+        baselineIndex += 1;
+        rowIndex += 1;
+    }
+
+    while (targetIndex < targetLines.length) {
+        rows.push({
+            id: `added:${rowIndex}`,
+            baseline: {
+                text: '',
+                tone: 'placeholder',
+                marker: '',
+            },
+            target: {
+                text: targetLines[targetIndex],
+                tone: 'added',
+                marker: '+',
+            },
+        });
+        targetIndex += 1;
+        rowIndex += 1;
+    }
+
+    return rows;
+};
+
+const getCodeLineToneClassName = ({
+    tone,
+    surface,
+}: {
+    tone: ReviewRowTone;
+    surface: ReviewSurface;
+}) => {
+    if (tone === 'added') {
+        return 'bg-emerald-100/80 text-emerald-950 dark:bg-emerald-950/35 dark:text-emerald-100';
+    }
+
+    if (tone === 'removed') {
+        return 'bg-rose-100/85 text-rose-950 dark:bg-rose-950/35 dark:text-rose-100';
+    }
+
+    if (tone === 'placeholder') {
+        return surface === 'baseline'
+            ? 'bg-[repeating-linear-gradient(135deg,rgba(16,185,129,0.12)_0px,rgba(16,185,129,0.12)_2px,transparent_2px,transparent_8px)] text-transparent'
+            : 'bg-[repeating-linear-gradient(135deg,rgba(244,63,94,0.14)_0px,rgba(244,63,94,0.14)_2px,transparent_2px,transparent_8px)] text-transparent';
+    }
+
+    return 'bg-background text-foreground';
+};
+
 const ReviewCodePane: React.FC<{
-    code: string;
+    lines: ReviewAlignedCodeLine[];
     emptyLabel: string;
     surface: ReviewSurface;
-}> = ({ code, emptyLabel, surface }) => {
-    if (!code.trim()) {
+}> = ({ lines, emptyLabel, surface }) => {
+    if (lines.length === 0) {
         return (
             <div className="h-full overflow-hidden rounded-lg border bg-background">
                 <div
@@ -357,16 +548,35 @@ const ReviewCodePane: React.FC<{
     return (
         <div className="h-full overflow-hidden rounded-lg border bg-background">
             <ScrollArea className="h-full">
-                <pre
-                    className={cn(
-                        'min-h-[220px] whitespace-pre-wrap p-6 font-mono text-[13px] leading-6',
-                        surface === 'baseline'
-                            ? 'bg-rose-50/80 dark:bg-rose-950/20'
-                            : 'bg-emerald-50/80 dark:bg-emerald-950/20'
-                    )}
-                >
-                    {code}
-                </pre>
+                <div className="min-h-[220px] min-w-max font-mono text-[13px] leading-6">
+                    {lines.map((line) => {
+                        const cell =
+                            surface === 'baseline'
+                                ? line.baseline
+                                : line.target;
+
+                        return (
+                            <div
+                                key={`${surface}:${line.id}`}
+                                data-testid={`review-code-line-${surface}-${cell.tone}`}
+                                className={cn(
+                                    'grid min-h-6 grid-cols-[24px_minmax(0,1fr)] border-b border-border/40',
+                                    getCodeLineToneClassName({
+                                        tone: cell.tone,
+                                        surface,
+                                    })
+                                )}
+                            >
+                                <div className="select-none px-2 text-center text-[12px] text-muted-foreground">
+                                    {cell.marker}
+                                </div>
+                                <pre className="overflow-hidden whitespace-pre px-2">
+                                    {cell.text || ' '}
+                                </pre>
+                            </div>
+                        );
+                    })}
+                </div>
             </ScrollArea>
         </div>
     );
@@ -394,12 +604,10 @@ const ReviewColumnList: React.FC<{
         (item) => item.kind === 'relationship'
     );
 
-    const visibleItems = (groupItems: ReviewBrowserItem[]) =>
-        groupItems.filter((item) =>
-            surface === 'baseline'
-                ? item.status !== 'added'
-                : item.status !== 'removed'
-        );
+    const isMissingForSurface = (item: ReviewBrowserItem) =>
+        surface === 'baseline'
+            ? item.status === 'added'
+            : item.status === 'removed';
 
     const renderGroup = ({
         title,
@@ -410,7 +618,7 @@ const ReviewColumnList: React.FC<{
         icon: React.ComponentType<{ className?: string }>;
         groupItems: ReviewBrowserItem[];
     }) => {
-        const scopedItems = visibleItems(groupItems);
+        const scopedItems = groupItems;
 
         return (
             <div className="space-y-2">
@@ -420,25 +628,55 @@ const ReviewColumnList: React.FC<{
                     <span>{title}</span>
                 </div>
                 <div className="space-y-1">
-                    {scopedItems.map((item) => (
-                        <button
-                            key={`${surface}:${item.id}`}
-                            type="button"
-                            className={getRowToneClassName({
-                                status: item.status,
-                                surface,
-                                selected: item.id === selectedItemId,
-                            })}
-                            onClick={() => onSelect(item.id)}
-                        >
-                            {item.kind === 'table' ? (
-                                <Table2 className="size-4 text-muted-foreground" />
-                            ) : (
-                                <GitFork className="size-4 text-muted-foreground" />
-                            )}
-                            <span className="truncate">{item.label}</span>
-                        </button>
-                    ))}
+                    {scopedItems.map((item) => {
+                        const missing = isMissingForSurface(item);
+
+                        return (
+                            <button
+                                key={`${surface}:${item.id}`}
+                                type="button"
+                                data-testid={
+                                    missing
+                                        ? `review-row-placeholder-${surface}-${item.id}`
+                                        : `review-row-${surface}-${item.id}`
+                                }
+                                aria-label={
+                                    missing
+                                        ? `No ${surface} ${item.kind} for ${item.label}`
+                                        : item.label
+                                }
+                                className={getRowToneClassName({
+                                    status: item.status,
+                                    surface,
+                                    selected: item.id === selectedItemId,
+                                    missing,
+                                })}
+                                onClick={() => onSelect(item.id)}
+                            >
+                                {missing ? (
+                                    <span className="h-4 w-full rounded bg-transparent" />
+                                ) : (
+                                    <>
+                                        <span className="w-3 shrink-0 text-center font-semibold">
+                                            {item.status === 'added'
+                                                ? '+'
+                                                : item.status === 'removed'
+                                                  ? '-'
+                                                  : ''}
+                                        </span>
+                                        {item.kind === 'table' ? (
+                                            <Table2 className="size-4 text-muted-foreground" />
+                                        ) : (
+                                            <GitFork className="size-4 text-muted-foreground" />
+                                        )}
+                                        <span className="truncate">
+                                            {item.label}
+                                        </span>
+                                    </>
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
         );
@@ -475,7 +713,7 @@ const ReviewColumnList: React.FC<{
                         icon: GitFork,
                         groupItems: relationshipItems,
                     })}
-                    {visibleItems(items).length === 0 ? (
+                    {items.length === 0 ? (
                         <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                             {emptyState}
                         </div>
@@ -722,6 +960,15 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
         selectedItem,
     ]);
 
+    const previewLines = React.useMemo(
+        () =>
+            buildAlignedCodeLines({
+                baselineCode: preview.baselineCode,
+                targetCode: preview.targetCode,
+            }),
+        [preview.baselineCode, preview.targetCode]
+    );
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
@@ -844,9 +1091,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                         defaultSize={50}
                                                     >
                                                         <ReviewCodePane
-                                                            code={
-                                                                preview.baselineCode
-                                                            }
+                                                            lines={previewLines}
                                                             emptyLabel="No baseline SQL for this selected change."
                                                             surface="baseline"
                                                         />
@@ -858,9 +1103,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                         defaultSize={50}
                                                     >
                                                         <ReviewCodePane
-                                                            code={
-                                                                preview.targetCode
-                                                            }
+                                                            lines={previewLines}
                                                             emptyLabel="No development SQL for this selected change."
                                                             surface="target"
                                                         />
@@ -880,9 +1123,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                         defaultSize={50}
                                                     >
                                                         <ReviewCodePane
-                                                            code={
-                                                                preview.baselineCode
-                                                            }
+                                                            lines={previewLines}
                                                             emptyLabel="No baseline DBML for this selected change."
                                                             surface="baseline"
                                                         />
@@ -894,9 +1135,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                         defaultSize={50}
                                                     >
                                                         <ReviewCodePane
-                                                            code={
-                                                                preview.targetCode
-                                                            }
+                                                            lines={previewLines}
                                                             emptyLabel="No development DBML for this selected change."
                                                             surface="target"
                                                         />

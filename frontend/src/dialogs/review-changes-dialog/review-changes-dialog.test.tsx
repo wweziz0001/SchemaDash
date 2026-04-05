@@ -67,6 +67,38 @@ const baselineSchema: CanonicalSchema = {
             foreignKeys: [],
             checkConstraints: [],
         },
+        {
+            id: 'legacy_profiles',
+            schemaName: 'public',
+            name: 'legacy_profiles',
+            kind: 'table',
+            sync: { sourceId: 'legacy_profiles' },
+            columns: [
+                {
+                    id: 'legacy_profiles.id',
+                    name: 'id',
+                    dataType: 'uuid',
+                    nullable: false,
+                    sync: { sourceId: 'legacy_profiles.id' },
+                },
+                {
+                    id: 'legacy_profiles.bio',
+                    name: 'bio',
+                    dataType: 'text',
+                    nullable: true,
+                    sync: { sourceId: 'legacy_profiles.bio' },
+                },
+            ],
+            primaryKey: {
+                id: 'legacy_profiles_pkey',
+                name: 'legacy_profiles_pkey',
+                columnIds: ['legacy_profiles.id'],
+            },
+            uniqueConstraints: [],
+            indexes: [],
+            foreignKeys: [],
+            checkConstraints: [],
+        },
     ],
 };
 
@@ -129,6 +161,37 @@ const developmentDiagram: Diagram = {
             createdAt: 1,
             syncMetadata: { sourceId: 'users', sourceName: 'users' },
         },
+        {
+            id: 'dev-teams',
+            name: 'teams',
+            schema: 'public',
+            x: 420,
+            y: 80,
+            fields: [
+                {
+                    id: 'dev-teams-id',
+                    name: 'id',
+                    type: { id: 'uuid', name: 'uuid' },
+                    primaryKey: true,
+                    unique: false,
+                    nullable: false,
+                    createdAt: 1,
+                },
+                {
+                    id: 'dev-teams-name',
+                    name: 'name',
+                    type: { id: 'varchar_255', name: 'varchar(255)' },
+                    primaryKey: false,
+                    unique: false,
+                    nullable: false,
+                    createdAt: 2,
+                },
+            ],
+            indexes: [],
+            color: '#14b8a6',
+            isView: false,
+            createdAt: 2,
+        },
     ],
     relationships: [],
     dependencies: [],
@@ -170,12 +233,51 @@ describe('review changes dialog', () => {
         expect(screen.getAllByText('Tables').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Relationships').length).toBeGreaterThan(0);
         expect(screen.getAllByText('users').length).toBeGreaterThan(0);
+        expect(screen.getByText('legacy_profiles')).toBeTruthy();
+        expect(screen.getByText('teams')).toBeTruthy();
+        expect(
+            screen.getByRole('button', {
+                name: 'No target table for legacy_profiles',
+            })
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('button', {
+                name: 'No baseline table for teams',
+            })
+        ).toBeTruthy();
         expect(screen.getByText(/display_name/i)).toBeTruthy();
+        expect(
+            screen.getAllByTestId('review-code-line-target-added').length
+        ).toBeGreaterThan(0);
 
+        await user.click(
+            screen.getByRole('button', { name: 'legacy_profiles' })
+        );
+        expect(
+            screen.getAllByTestId('review-code-line-baseline-removed').length
+        ).toBeGreaterThan(0);
+        expect(
+            screen.getAllByTestId('review-code-line-target-placeholder').length
+        ).toBeGreaterThan(0);
+
+        await user.click(screen.getByRole('button', { name: 'teams' }));
+        expect(
+            screen.getAllByTestId('review-code-line-target-added').length
+        ).toBeGreaterThan(0);
+        expect(
+            screen.getAllByTestId('review-code-line-baseline-placeholder')
+                .length
+        ).toBeGreaterThan(0);
+
+        await user.click(screen.getAllByRole('button', { name: 'users' })[0]);
         await user.click(screen.getByRole('tab', { name: 'DBML' }));
 
         expect(
-            screen.getAllByText(/Table\s+"public"\."users"/i).length
+            screen.getAllByText(
+                (_, element) =>
+                    element?.textContent?.includes('Table "public"."users"') ??
+                    false
+            ).length
         ).toBeGreaterThan(0);
     });
 });
