@@ -364,10 +364,10 @@ export const WorkflowModeSwitcher: React.FC = () => {
                 )}
             </div>
 
-            {workflow.selectedVersion ? (
+            {versionSource ? (
                 <RestoreVersionDialog
                     open={restoreOpen}
-                    version={workflow.selectedVersion}
+                    version={versionSource}
                     onOpenChange={setRestoreOpen}
                 />
             ) : null}

@@ -24,7 +24,16 @@ vi.mock('./workflow-actions-menu', () => ({
 }));
 
 vi.mock('@/dialogs/restore-version-dialog/restore-version-dialog', () => ({
-    RestoreVersionDialog: () => null,
+    RestoreVersionDialog: ({
+        open,
+        version,
+    }: {
+        open: boolean;
+        version?: { versionLabel?: string };
+    }) =>
+        open ? (
+            <div>Restore Dialog {version?.versionLabel ?? 'Unknown'}</div>
+        ) : null,
 }));
 
 vi.mock('@/dialogs/review-changes-dialog/review-changes-dialog', () => ({
@@ -397,5 +406,59 @@ describe('workflow mode switcher', () => {
         await user.click(screen.getByRole('button', { name: 'Finish' }));
 
         expect(openVersion).toHaveBeenCalledWith('version-2');
+    });
+
+    it('opens revert dialog from compare mode when using a historical version', async () => {
+        const user = userEvent.setup();
+
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            diagramId: 'diagram-1',
+            activeMode: 'compare',
+            compareModeEnabled: true,
+            compareSourceKind: 'version',
+            compareVersion: {
+                id: 'version-2',
+                versionLabel: 'Version 2',
+            },
+            compareRenderModel: {
+                compareResult: {
+                    summary: {
+                        tables: {
+                            added: 1,
+                            changed: 0,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 0,
+                        },
+                    },
+                },
+            },
+            workflow: {
+                diagramAccess: 'owner',
+            },
+            openVersion: vi.fn(),
+            setActiveMode: vi.fn(),
+        } as never);
+
+        render(<WorkflowModeSwitcher />);
+
+        await user.click(screen.getByRole('button', { name: /Review/ }));
+        await user.click(screen.getByRole('menuitem', { name: 'Revert' }));
+
+        expect(screen.getByText('Restore Dialog Version 2')).toBeTruthy();
     });
 });
