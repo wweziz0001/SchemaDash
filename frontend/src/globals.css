@@ -184,3 +184,17 @@
     position: relative;
     z-index: 10;
 }
+
+@keyframes map-loading-strip {
+    0% {
+        transform: translateX(-140%);
+    }
+    100% {
+        transform: translateX(360%);
+    }
+}
+
+.map-loading-strip {
+    animation: map-loading-strip 1.15s ease-in-out infinite;
+    will-change: transform;
+}

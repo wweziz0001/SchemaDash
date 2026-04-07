@@ -55,7 +55,6 @@ import {
 import { Button } from '@/components/button/button';
 import { useLayout } from '@/hooks/use-layout';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { Badge } from '@/components/badge/badge';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from 'react-i18next';
 import type { DBTable } from '@/lib/domain/db-table';
@@ -125,6 +124,7 @@ import { CompareSummaryChip } from './workflow/compare-summary-chip';
 import { LiveStatusChip } from './workflow/live-status-chip';
 import { LivePresenceCursors } from './live-presence-cursors';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { MapLoadingStrip } from './workflow/map-loading-strip';
 
 const HIGHLIGHTED_EDGE_Z_INDEX = 1;
 const DEFAULT_EDGE_Z_INDEX = 0;
@@ -1666,6 +1666,7 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                 onMouseLeave={handleMouseLeave}
             >
                 <LivePresenceCursors containerRef={containerRef} />
+                {isLoadingDOM ? <MapLoadingStrip inset /> : null}
                 <ReactFlow
                     onlyRenderVisibleElements
                     colorMode={effectiveTheme}
@@ -1809,24 +1810,6 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                             </div>
                         </div>
                     </Controls>
-                    {isLoadingDOM ? (
-                        <Controls
-                            position="top-center"
-                            orientation="horizontal"
-                            showZoom={false}
-                            showFitView={false}
-                            showInteractive={false}
-                            className="!shadow-none"
-                        >
-                            <Badge
-                                variant="default"
-                                className="bg-teal-600 text-white"
-                            >
-                                {t('loading_diagram')}
-                            </Badge>
-                        </Controls>
-                    ) : null}
-
                     {!isDesktop && !readonly ? (
                         <Controls
                             position="bottom-left"

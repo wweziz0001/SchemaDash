@@ -51,15 +51,17 @@ Important files for this task:
   - Canvas-level diff summary chip.
 - `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.tsx`
   - Canvas-level workflow/live/status chip, now more explicit about what surface is being viewed.
+- `frontend/src/pages/editor-page/canvas/workflow/map-loading-strip.tsx`
+  - Shared loading-strip UI used in workflow transitions and editor shell fallback states.
 
 High-risk files and boundaries:
 
 - `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
   - Avoid casual changes here. It controls URL-driven workflow mode resolution.
 - `frontend/src/pages/editor-page/canvas/canvas.tsx`
-  - Intentionally not changed. The canvas itself is high-risk and broad.
+  - High-risk canvas composition surface. This session now adds only a thin loading strip near the top edge while loading; no node/edge logic was changed.
 - `frontend/src/pages/editor-page/editor-page.tsx`
-  - Intentionally not changed. Read-only/editor shell behavior already existed and was preserved.
+  - High-risk editor shell. This session now replaces the Suspense spinner fallback with the same lightweight map loading strip used in workflow transitions.
 - `frontend/src/lib/api/diagram-workflow-client.ts`
   - Intentionally not changed. No API contract changes were required.
 - `backend/`
@@ -111,6 +113,7 @@ What was implemented:
   - a real workflow timeline
   - clearer relationship between Development and immutable versions
   - better diff/viewing communication on canvas
+- Replaced the disruptive full-screen/spinner loading states shown while switching between workflow surfaces with a thin animated strip at the top of the map area, including the return path from Versions back to Development.
 
 Key decisions:
 
@@ -132,6 +135,8 @@ Files created:
 
 - `frontend/src/pages/editor-page/canvas/workflow/compare-summary-chip.test.tsx`
   - Focused test coverage for the refined diff summary chip.
+- `frontend/src/pages/editor-page/canvas/workflow/map-loading-strip.tsx`
+  - Shared thin animated loading strip plus a lightweight map placeholder shell for workflow/editor loading states.
 - `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.test.tsx`
   - Focused coverage for the new changelog/timeline presentation.
 
@@ -171,6 +176,14 @@ Files modified:
   - Clearer diff-view messaging on canvas.
 - `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.tsx`
   - Clearer surface/view-state communication on canvas.
+- `frontend/src/pages/editor-page/canvas/canvas.tsx`
+  - Replaced the old in-canvas loading badge with the thin map-top loading strip.
+- `frontend/src/pages/editor-page/editor-page.tsx`
+  - Suspense fallback now uses the lightweight map loading shell instead of the centered spinner.
+- `frontend/src/pages/editor-page/workflow-editor-page.tsx`
+  - Workflow read-only loading fallback now uses the shared map loading shell.
+- `frontend/src/globals.css`
+  - Added animation for the thin map loading strip.
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.test.tsx`
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.test.tsx`
 - `frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.test.tsx`
@@ -182,10 +195,6 @@ Important files intentionally not changed:
 
 - `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
   - Read for context only; behavior preserved.
-- `frontend/src/pages/editor-page/canvas/canvas.tsx`
-  - High-risk canvas composition surface intentionally avoided.
-- `frontend/src/pages/editor-page/editor-page.tsx`
-  - Editor shell behavior intentionally preserved.
 - `frontend/src/lib/api/diagram-workflow-client.ts`
   - Existing API contracts reused unchanged.
 - `backend/`
@@ -214,6 +223,7 @@ Workflow/UI changes:
   - development
   - immutable version
   - historical version diff
+- Workflow/editor loading now uses a thin animated strip anchored to the top of the map surface instead of the previous centered spinner/loading badge during version/development transitions.
 
 No data/API changes:
 
@@ -234,6 +244,8 @@ Validation completed:
 - Targeted frontend tests:
   - `npx vitest run --config frontend/vitest.config.ts frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.test.tsx frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.test.tsx frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.test.tsx frontend/src/dialogs/review-changes-dialog/review-changes-dialog.test.tsx frontend/src/dialogs/restore-version-dialog/restore-version-dialog.test.tsx frontend/src/pages/editor-page/canvas/workflow/live-status-chip.test.tsx frontend/src/pages/editor-page/canvas/workflow/compare-summary-chip.test.tsx frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.test.tsx`
 - Targeted linting on modified workflow files via `npx eslint ...`
+- Additional targeted linting for the loading-strip change:
+  - `npx eslint frontend/src/pages/editor-page/canvas/workflow/map-loading-strip.tsx frontend/src/pages/editor-page/workflow-editor-page.tsx frontend/src/pages/editor-page/editor-page.tsx --report-unused-disable-directives --max-warnings 0`
 
 What was verified:
 
@@ -248,11 +260,13 @@ What remains unverified manually:
 - Browser-level visual QA against the screenshot benchmark
 - Real interaction polish on narrow/mobile widths in a running app
 - Canvas highlight feel beyond the chip/status layer
+- Exact loading-strip timing/feel in a real browser when rapidly switching between historical versions and Development
 
 Known limitations / risks:
 
 - Pre-commit hooks in this branch currently hit an unrelated formatting issue in `frontend/src/router.tsx`; scoped commits were created with `HUSKY=0` to avoid folding unrelated router work into this task.
 - Canvas diff highlight visuals themselves were not re-engineered; the refinement here focused on surrounding communication and workflow clarity.
+- The new loading strip changes only presentation. It does not reduce the underlying fetch/remount latency when changing workflow modes.
 
 ## 7. Outstanding Work
 
@@ -262,6 +276,7 @@ Not done yet:
 - Any deeper visual treatment of actual node/edge diff rendering on canvas beyond the surrounding UX/status communication
 - A final browser pass specifically for Arabic/localized timestamp wrapping in the snapshot ribbon
 - A final browser pass to fine-tune exact button spacing/colors against the latest versions-page screenshot reference
+- A browser pass to tune the loading-strip thickness, speed, and inset against the attached loading reference
 
 Recommended next step:
 
@@ -330,3 +345,5 @@ Commit list created for this task:
   - Rebuilt the changelog as a timeline and improved canvas-level diff/view messaging.
 - `test: validate improved versions workflow behavior and visual clarity`
   - Added/updated focused tests for the refined workflow surfaces and documented the work in this handoff.
+- `fix: replace workflow spinner with map loading strip`
+  - Replaced the centered workflow/editor loading spinner and the old canvas loading badge with a thin animated strip anchored to the top of the map surface.

@@ -17,7 +17,6 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { ExportImageProvider } from '@/context/export-image-context/export-image-provider';
 import { DialogProvider } from '@/context/dialog-context/dialog-provider';
 import { KeyboardShortcutsProvider } from '@/context/keyboard-shortcuts-context/keyboard-shortcuts-provider';
-import { Spinner } from '@/components/spinner/spinner';
 import { Helmet } from 'react-helmet-async';
 import { AlertProvider } from '@/context/alert-context/alert-provider';
 import { CanvasProvider } from '@/context/canvas-context/canvas-provider';
@@ -28,6 +27,7 @@ import { TopNavbarMock } from './top-navbar/top-navbar-mock';
 import { DiagramFilterProvider } from '@/context/diagram-filter-context/diagram-filter-provider';
 import type { Diagram } from '@/lib/domain/diagram';
 import { WorkflowDevelopmentDiagramSync } from './workflow/workflow-development-diagram-sync';
+import { MapLoadingCanvasPlaceholder } from './canvas/workflow/map-loading-strip';
 
 const OPEN_STAR_US_AFTER_SECONDS = 30;
 const SHOW_STAR_US_AGAIN_AFTER_DAYS = 1;
@@ -95,11 +95,7 @@ const EditorPageComponent: React.FC<{
                     fallback={
                         <>
                             <TopNavbarMock />
-                            <div className="flex flex-1 items-center justify-center">
-                                <Spinner
-                                    size={isDesktop ? 'large' : 'medium'}
-                                />
-                            </div>
+                            <MapLoadingCanvasPlaceholder />
                         </>
                     }
                 >
