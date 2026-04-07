@@ -5,8 +5,8 @@ import type { TemplatePageLoaderData } from './pages/template-page/template-page
 import type { TemplatesPageLoaderData } from './pages/templates-page/templates-page';
 import { getTemplatesAndAllTags } from './templates-data/template-utils';
 
-export const routes: RouteObject[] = [
-    {
+const routes: RouteObject[] = [
+/*     {
         path: '',
         async lazy() {
             const { DashboardShellLayout } =
@@ -123,8 +123,8 @@ export const routes: RouteObject[] = [
                 },
             },
         ],
-    },
-    ...['workspace', 'diagrams/:diagramId'].map((path) => ({
+    }, */
+    ...['', 'diagrams/:diagramId'].map((path) => ({
         path,
         async lazy() {
             const { WorkflowEditorPage } =

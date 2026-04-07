@@ -5,7 +5,8 @@ import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/d
 
 const formatTimestamp = (value: string) =>
     new Intl.DateTimeFormat(undefined, {
-        month: 'short',
+        year: 'numeric',
+        month: 'numeric',
         day: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
@@ -66,7 +67,7 @@ export const LiveStatusChip: React.FC = () => {
                   : workflow.workflow?.lastSyncedAt
                     ? {
                           variant: 'outline' as const,
-                          label: `Synced ${formatTimestamp(
+                          label: `Last synced ${formatTimestamp(
                               workflow.workflow.lastSyncedAt
                           )}`,
                           title: workflow.workflow.lastSyncedAt,
