@@ -126,6 +126,12 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
     const setDevelopmentDiagramRecord = useCallback((nextDiagram?: Diagram) => {
         setDevelopmentDiagram(nextDiagram);
     }, []);
+    const setVersionSummaries = useCallback(
+        (nextVersions: DiagramWorkflowVersionSummary[]) => {
+            setVersions(nextVersions);
+        },
+        []
+    );
     const setVersionRecord = useCallback(
         (nextVersion?: DiagramWorkflowVersionRecord) => {
             if (!nextVersion) {
@@ -315,6 +321,7 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
             diagramId,
             workflow,
             versions,
+            setVersions: setVersionSummaries,
             developmentDiagram,
             setDevelopmentDiagram: setDevelopmentDiagramRecord,
             loading,
@@ -351,6 +358,7 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
             requestedMode,
             setActiveMode,
             setDevelopmentDiagramRecord,
+            setVersionSummaries,
             setWorkflowRecord,
             selectedVersion,
             versionDiagram,

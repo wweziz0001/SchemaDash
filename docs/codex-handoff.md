@@ -111,6 +111,7 @@ What was implemented:
   - clearer source-to-target mapping
   - stronger safety snapshot messaging
   - unchanged underlying restore/revert API behavior
+  - a follow-up safety fix that keeps the versions list populated locally after a successful restore by immediately preserving existing versions and inserting the automatic `before_restore` snapshot before the background workflow refresh completes
 - Refined the Changelog tab and canvas chips with:
   - a real workflow timeline
   - clearer relationship between Development and immutable versions
@@ -173,7 +174,11 @@ Files modified:
 - `frontend/src/dialogs/restore-version-dialog/restore-warning-panel.tsx`
   - Reworked warning panel hierarchy.
 - `frontend/src/dialogs/restore-version-dialog/restore-version-dialog.tsx`
-  - Reworked revert modal hierarchy/copy.
+  - Reworked revert modal hierarchy/copy and now preserves local versions state immediately after a successful restore so historical versions do not disappear from the sidebar while workflow data refreshes.
+- `frontend/src/context/diagram-workflow-context/diagram-workflow-context.tsx`
+  - Workflow context now exposes a versions setter so restore flows can preserve version history locally before the authoritative refresh returns.
+- `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
+  - Provides the new versions setter used by restore flows.
 - `frontend/src/pages/editor-page/canvas/workflow/compare-summary-chip.tsx`
   - Clearer diff-view messaging on canvas.
 - `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.tsx`
@@ -221,6 +226,7 @@ Workflow/UI changes:
   - live baseline to development
   - version baseline to development
 - The revert modal now uses "Revert to This Version" language, but still calls the existing restore-to-development API.
+- After a successful revert, the frontend now immediately merges the restored snapshot and the newly created safety snapshot into the local versions list before issuing the background workflow refresh.
 - The Changelog tab now behaves like a workflow timeline instead of a set of static info cards.
 - Canvas chips now more clearly identify whether the user is looking at:
   - live snapshot
@@ -257,6 +263,7 @@ What was verified:
 - Versions toolbar states for live/development/compare/version flows
 - Review dialog behavior and version-baseline support
 - Revert modal confirmation behavior and unchanged API flow
+- Revert flow now preserves the versions list locally after success instead of relying entirely on the follow-up refresh
 - Canvas live/version/diff chips
 - Changelog timeline rendering
 
@@ -354,3 +361,5 @@ Commit list created for this task:
   - Replaced the centered workflow/editor loading spinner and the old canvas loading badge with a thin animated strip anchored to the top of the map surface.
 - `fix: align full-screen editor loading with map strip`
   - Replaced the remaining square full-screen loader overlay with the same map-top loading strip used elsewhere in the editor.
+- `fix: preserve versions after restoring a snapshot`
+  - Revert now updates the local versions list immediately with the safety snapshot and existing historical entries so restoring a version replaces Development without making saved versions disappear from the sidebar.

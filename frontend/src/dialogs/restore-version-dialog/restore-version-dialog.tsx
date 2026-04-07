@@ -29,6 +29,29 @@ import {
 import { ArrowRight, RotateCcw, ShieldCheck } from 'lucide-react';
 import { RestoreWarningPanel } from './restore-warning-panel';
 
+const mergeWorkflowVersions = ({
+    currentVersions,
+    incomingVersions,
+}: {
+    currentVersions: DiagramWorkflowVersionSummary[];
+    incomingVersions: DiagramWorkflowVersionSummary[];
+}) => {
+    const versionMap = new Map<string, DiagramWorkflowVersionSummary>();
+
+    currentVersions.forEach((item) => {
+        versionMap.set(item.id, item);
+    });
+    incomingVersions.forEach((item) => {
+        versionMap.set(item.id, item);
+    });
+
+    return [...versionMap.values()].sort(
+        (left, right) =>
+            new Date(right.createdAt).getTime() -
+            new Date(left.createdAt).getTime()
+    );
+};
+
 export interface RestoreVersionDialogProps {
     open: boolean;
     version?: DiagramWorkflowVersionSummary;
@@ -121,12 +144,27 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
                 workflow.setDevelopmentDiagram(refreshedDiagram);
             }
 
+            workflow.setVersions(
+                mergeWorkflowVersions({
+                    currentVersions: workflow.versions ?? [],
+                    incomingVersions: [
+                        response.result.restoredVersion,
+                        response.result.safetySnapshotVersion,
+                    ],
+                })
+            );
             workflow.setActiveMode('development');
-            await workflow.refreshWorkflow();
             onOpenChange(false);
             toast({
                 title: 'Development restored',
                 description: getRestoreSuccessDescription(response.result),
+            });
+            void workflow.refreshWorkflow().catch((refreshError) => {
+                toast({
+                    title: 'Versions updated with limited refresh',
+                    description: getRestoreFailureMessage(refreshError),
+                    variant: 'destructive',
+                });
             });
         } catch (error) {
             const message = getRestoreFailureMessage(error);

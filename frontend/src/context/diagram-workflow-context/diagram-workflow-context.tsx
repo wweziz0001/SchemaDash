@@ -17,6 +17,7 @@ export interface DiagramWorkflowContextValue {
     diagramId?: string;
     workflow?: DiagramWorkflowRecord;
     versions: DiagramWorkflowVersionSummary[];
+    setVersions: (versions: DiagramWorkflowVersionSummary[]) => void;
     developmentDiagram?: Diagram;
     setDevelopmentDiagram: (diagram?: Diagram) => void;
     loading: boolean;

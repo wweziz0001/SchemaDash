@@ -120,6 +120,7 @@ describe('restore version dialog', () => {
         const onOpenChange = vi.fn();
         const setDevelopmentDiagram = vi.fn();
         const setActiveMode = vi.fn();
+        const setVersions = vi.fn();
         const refreshWorkflow = vi.fn().mockResolvedValue(undefined);
         const updateDiagramData = vi.fn().mockResolvedValue(undefined);
         const getDiagramSessionState = vi.fn().mockResolvedValue({
@@ -133,9 +134,11 @@ describe('restore version dialog', () => {
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
             developmentDiagram,
+            versions: [version],
             refreshWorkflow,
             setActiveMode,
             setDevelopmentDiagram,
+            setVersions,
         } as never);
         mockedUseStorage.mockReturnValue({
             getDiagramSessionState,
@@ -210,8 +213,16 @@ describe('restore version dialog', () => {
             forceUpdateStorage: true,
         });
         expect(setDevelopmentDiagram).toHaveBeenCalledWith(developmentDiagram);
+        expect(setVersions).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({ id: 'version-2' }),
+                expect.objectContaining({ id: 'version-1' }),
+            ])
+        );
         expect(setActiveMode).toHaveBeenCalledWith('development');
-        expect(refreshWorkflow).toHaveBeenCalled();
+        await waitFor(() => {
+            expect(refreshWorkflow).toHaveBeenCalled();
+        });
         expect(onOpenChange).toHaveBeenCalledWith(false);
         expect(toast).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -228,9 +239,11 @@ describe('restore version dialog', () => {
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
             developmentDiagram,
+            versions: [version],
             refreshWorkflow: vi.fn(),
             setActiveMode: vi.fn(),
             setDevelopmentDiagram: vi.fn(),
+            setVersions: vi.fn(),
         } as never);
         mockedUseStorage.mockReturnValue({
             getDiagramSessionState: vi.fn().mockResolvedValue({
