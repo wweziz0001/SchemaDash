@@ -52,7 +52,7 @@ describe('version view badge', () => {
         expect(screen.getByText('Viewing')).toBeTruthy();
         expect(screen.getByText('Immutable')).toBeTruthy();
         expect(screen.getByText('Milestone: Q2 schema')).toBeTruthy();
-        expect(screen.getByText('Test Owner')).toBeTruthy();
+        expect(screen.getByText(/Saved /)).toBeTruthy();
     });
 
     it('shows diff baseline state when compare mode is sourced from a version', () => {

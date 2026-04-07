@@ -91,6 +91,7 @@ What was implemented:
   - clearer Development / View Diffs / Hide Diffs controls
   - compare-mode Review action
   - snapshot Options dropdown with revert entry point
+  - a follow-up layout split that keeps workflow buttons on their own row and renders the snapshot ribbon beneath them so version-to-version compare mode does not collapse into a crowded single line
 - Polished the Review dialog with:
   - better layout hierarchy
   - source-aware labels for Live Database or version baselines
@@ -146,10 +147,14 @@ Files modified:
   - Rebuilt as a workflow timeline surface.
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
   - Refined top-level version/diff/revert controls.
+- `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
+  - Desktop navbar center area now separates workflow actions from the snapshot ribbon to prevent compare-mode header crowding.
+- `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
+  - Mobile navbar now renders the refined snapshot ribbon directly without the extra wrapper panel.
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.tsx`
   - Review actions now work for compare mode more cleanly.
 - `frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.tsx`
-  - Snapshot badge now supports both direct viewing and historical diff baselines.
+  - Snapshot badge now supports both direct viewing and historical diff baselines with a more compact two-row ribbon treatment.
 - `frontend/src/dialogs/review-changes-dialog/review-changes-dialog.tsx`
   - Large UX and baseline-awareness refinement.
 - `frontend/src/dialogs/restore-version-dialog/restore-warning-panel.tsx`
@@ -249,6 +254,7 @@ Not done yet:
 
 - Manual browser QA against the provided screenshot references
 - Any deeper visual treatment of actual node/edge diff rendering on canvas beyond the surrounding UX/status communication
+- A final browser pass specifically for Arabic/localized timestamp wrapping in the snapshot ribbon
 
 Recommended next step:
 

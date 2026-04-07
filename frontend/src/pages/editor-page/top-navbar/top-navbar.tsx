@@ -57,14 +57,12 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                 </div>
                 <Menu />
             </div>
-            <div className="hidden min-w-0 flex-1 items-center justify-center gap-3 py-2 sm:flex md:py-0">
-                <DiagramName />
-                {showWorkflowChrome ? (
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <WorkflowModeSwitcher />
-                        <VersionViewBadge />
-                    </div>
-                ) : null}
+            <div className="hidden min-w-0 flex-1 flex-col items-center justify-center gap-2 py-2 sm:flex md:py-1">
+                <div className="flex min-w-0 flex-wrap items-center justify-center gap-3">
+                    <DiagramName />
+                    {showWorkflowChrome ? <WorkflowModeSwitcher /> : null}
+                </div>
+                {showWorkflowChrome ? <VersionViewBadge /> : null}
             </div>
             <div className="hidden flex-1 items-center justify-end gap-3 py-2 sm:flex md:py-0">
                 <div className="flex items-center gap-2">
