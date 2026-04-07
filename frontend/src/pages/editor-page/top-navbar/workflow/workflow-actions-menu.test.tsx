@@ -35,9 +35,27 @@ describe('workflow actions menu', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
-                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
-                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
+                        tables: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 1,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 2,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 1,
+                        },
                     },
                 },
             },
@@ -58,9 +76,27 @@ describe('workflow actions menu', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
-                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
-                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
+                        tables: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 1,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 2,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 1,
+                        },
                     },
                 },
             },
@@ -94,9 +130,27 @@ describe('workflow actions menu', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
-                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
-                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
+                        tables: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 1,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 2,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 1,
+                        },
                     },
                 },
             },
@@ -116,9 +170,27 @@ describe('workflow actions menu', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
-                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
-                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
+                        tables: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 1,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 2,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 1,
+                        },
                     },
                 },
             },

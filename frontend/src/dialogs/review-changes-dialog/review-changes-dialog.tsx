@@ -526,13 +526,7 @@ const ReviewCodePane: React.FC<{
     surface: ReviewSurface;
     viewportRef?: React.RefObject<HTMLDivElement | null>;
     onViewportScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
-}> = ({
-    lines,
-    emptyLabel,
-    surface,
-    viewportRef,
-    onViewportScroll,
-}) => {
+}> = ({ lines, emptyLabel, surface, viewportRef, onViewportScroll }) => {
     if (lines.length === 0) {
         return (
             <div className="h-full overflow-hidden rounded-lg border bg-background">
@@ -1074,7 +1068,13 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
             rightCode.scrollTop = leftCode.scrollTop;
             rightCode.scrollLeft = leftCode.scrollLeft;
         }
-    }, [selectedItemId, format, preview.baselineCode, preview.targetCode, open]);
+    }, [
+        selectedItemId,
+        format,
+        preview.baselineCode,
+        preview.targetCode,
+        open,
+    ]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

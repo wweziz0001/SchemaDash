@@ -8,12 +8,9 @@ import { CreateVersionDialog } from '@/dialogs/create-version-dialog/create-vers
 import { RestoreVersionDialog } from '@/dialogs/restore-version-dialog/restore-version-dialog';
 import type { DiagramWorkflowVersionSummary } from '@/lib/api/diagram-workflow-client';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
-import {
-    formatVersionRelativeTime,
-    formatVersionTimestamp,
-} from '@/lib/diagram-workflow/version-labels';
+import { formatVersionRelativeTime } from '@/lib/diagram-workflow/version-labels';
 import { cn } from '@/lib/utils';
-import { Clock3, GitBranch, Plus, Search, Sparkles, X } from 'lucide-react';
+import { Clock3, GitBranch, Plus, Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { VersionListItem } from './version-list-item';
 
@@ -131,47 +128,6 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
         <>
             <div className="flex flex-1 flex-col overflow-hidden px-2 pb-2">
                 <div className="space-y-3 pb-3">
-{/*                     <div className="rounded-2xl border bg-gradient-to-br from-slate-50 via-white to-sky-50/70 p-4 shadow-sm dark:from-slate-950 dark:via-slate-950 dark:to-sky-950/30">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-200">
-                                    <Sparkles className="size-3.5" />
-                                    Versions workflow
-                                </div>
-                                <div>
-                                    <h2 className="text-sm font-semibold text-foreground">
-                                        Development stays editable while saved
-                                        versions remain immutable.
-                                    </h2>
-                                    <p className="pt-1 text-xs leading-5 text-muted-foreground">
-                                        Browse historical snapshots, inspect
-                                        differences against Development, and
-                                        restore safely without mutating stored
-                                        versions.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="grid min-w-[160px] gap-2 rounded-2xl border bg-background/90 p-3 shadow-sm">
-                                <div>
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                        Saved versions
-                                    </div>
-                                    <div className="pt-1 text-lg font-semibold text-foreground">
-                                        {versions.length}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                        Latest capture
-                                    </div>
-                                    <div className="pt-1 text-sm font-medium text-foreground">
-                                        {latestCaptureLabel}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> */}
-
                     <div className="flex flex-col gap-2 sm:flex-row">
                         <div className="relative flex-1">
                             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -275,7 +231,7 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
                                                 </span>
                                             </div>
                                         </div>
-{/*                                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                        {/*                                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                                             <span>
                                                 The only editable surface
                                             </span>
@@ -297,25 +253,6 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
                                     </div>
                                 </button>
                             </article>
-
-{/*                             <div className="flex items-center justify-between px-1">
-                                <div>
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                        Saved Versions
-                                    </div>
-                                    <p className="pt-1 text-xs text-muted-foreground">
-                                        Historical snapshots stay immutable and
-                                        can be opened, diffed, or restored into
-                                        Development.
-                                    </p>
-                                </div>
-                                <Badge variant="outline">
-                                    {filteredVersions.length}{' '}
-                                    {filteredVersions.length === 1
-                                        ? 'result'
-                                        : 'results'}
-                                </Badge>
-                            </div> */}
 
                             {versions.length === 0 ? (
                                 <EmptyState
@@ -374,17 +311,6 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
                                         }
                                         onOpen={() =>
                                             workflow?.openVersion(version.id)
-                                        }
-                                        onCompare={() =>
-                                            workflow?.compareVersionToDevelopment(
-                                                version.id
-                                            )
-                                        }
-                                        onRestore={
-                                            canCreateVersion
-                                                ? () =>
-                                                      setRestoreVersion(version)
-                                                : undefined
                                         }
                                     />
                                 ))

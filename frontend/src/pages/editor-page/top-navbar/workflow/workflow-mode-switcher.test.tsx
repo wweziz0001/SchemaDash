@@ -45,9 +45,27 @@ describe('workflow mode switcher', () => {
         mockedBuildCompareRenderModel.mockReturnValue({
             compareResult: {
                 summary: {
-                    tables: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
-                    fields: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
-                    relationships: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
+                    tables: {
+                        added: 0,
+                        changed: 0,
+                        removed: 0,
+                        unchanged: 0,
+                        total: 0,
+                    },
+                    fields: {
+                        added: 0,
+                        changed: 0,
+                        removed: 0,
+                        unchanged: 0,
+                        total: 0,
+                    },
+                    relationships: {
+                        added: 0,
+                        changed: 0,
+                        removed: 0,
+                        unchanged: 0,
+                        total: 0,
+                    },
                 },
             },
         } as never);
@@ -65,9 +83,27 @@ describe('workflow mode switcher', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
-                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
-                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
+                        tables: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 1,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 2,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 1,
+                        },
                     },
                 },
             },
@@ -113,9 +149,27 @@ describe('workflow mode switcher', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { added: 1, changed: 0, removed: 0, unchanged: 0, total: 1 },
-                        fields: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
-                        relationships: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
+                        tables: {
+                            added: 1,
+                            changed: 0,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 0,
+                        },
                     },
                 },
             },
@@ -141,9 +195,27 @@ describe('workflow mode switcher', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
-                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
-                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
+                        tables: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 1,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 2,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 1,
+                        },
                     },
                 },
             },
@@ -196,9 +268,27 @@ describe('workflow mode switcher', () => {
         mockedBuildCompareRenderModel.mockReturnValue({
             compareResult: {
                 summary: {
-                    tables: { added: 1, changed: 0, removed: 0, unchanged: 0, total: 1 },
-                    fields: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
-                    relationships: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
+                    tables: {
+                        added: 1,
+                        changed: 0,
+                        removed: 0,
+                        unchanged: 0,
+                        total: 1,
+                    },
+                    fields: {
+                        added: 0,
+                        changed: 1,
+                        removed: 0,
+                        unchanged: 0,
+                        total: 1,
+                    },
+                    relationships: {
+                        added: 0,
+                        changed: 0,
+                        removed: 0,
+                        unchanged: 0,
+                        total: 0,
+                    },
                 },
             },
         } as never);
@@ -214,9 +304,27 @@ describe('workflow mode switcher', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { added: 1, changed: 1, removed: 2, unchanged: 0, total: 4 },
-                        fields: { added: 1, changed: 1, removed: 1, unchanged: 0, total: 3 },
-                        relationships: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
+                        tables: {
+                            added: 1,
+                            changed: 1,
+                            removed: 2,
+                            unchanged: 0,
+                            total: 4,
+                        },
+                        fields: {
+                            added: 1,
+                            changed: 1,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 3,
+                        },
+                        relationships: {
+                            added: 1,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 2,
+                        },
                     },
                 },
             },
@@ -234,9 +342,9 @@ describe('workflow mode switcher', () => {
 
         render(<WorkflowModeSwitcher />);
 
-        expect(screen.getByRole('button', { name: /Compare/ })).toHaveTextContent(
-            '2'
-        );
+        expect(
+            screen.getByRole('button', { name: /Compare/ })
+        ).toHaveTextContent('2');
         expect(mockedBuildCompareRenderModel).toHaveBeenCalledTimes(1);
     });
 
@@ -256,9 +364,27 @@ describe('workflow mode switcher', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { added: 1, changed: 0, removed: 0, unchanged: 0, total: 1 },
-                        fields: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
-                        relationships: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
+                        tables: {
+                            added: 1,
+                            changed: 0,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 0,
+                        },
                     },
                 },
             },

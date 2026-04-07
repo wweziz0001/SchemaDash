@@ -38,7 +38,7 @@ export const VersionViewBadge: React.FC = () => {
                 <Badge variant="secondary">Immutable</Badge>
                 <Badge
                     variant="outline"
-                    className="max-w-[16rem] bg-background/80"
+                    className="max-w-64 bg-background/80"
                     title={versionLabel}
                 >
                     <span className="truncate">{versionLabel}</span>
@@ -47,7 +47,11 @@ export const VersionViewBadge: React.FC = () => {
                     {relativeTime}
                 </Badge>
             </div>
-            <Badge variant="outline" className="bg-background/80" title={timestamp}>
+            <Badge
+                variant="outline"
+                className="bg-background/80"
+                title={timestamp}
+            >
                 Saved {timestamp}
             </Badge>
         </div>

@@ -11,7 +11,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { Link } from 'react-router-dom';
 import { ActiveDiagramParticipants } from './active-diagram-participants';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
-import { VersionViewBadge } from './workflow/version-view-badge';
 import { SchemaSyncToolbarButton } from './workflow/schema-sync-toolbar-button';
 import { WorkflowModeSwitcher } from './workflow/workflow-mode-switcher';
 
@@ -62,7 +61,6 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
                     <DiagramName />
                     {showWorkflowChrome ? <WorkflowModeSwitcher /> : null}
                 </div>
-{/*                 {showWorkflowChrome ? <VersionViewBadge /> : null} */}
             </div>
             <div className="hidden flex-1 items-center justify-end gap-3 py-2 sm:flex md:py-0">
                 <div className="flex items-center gap-2">

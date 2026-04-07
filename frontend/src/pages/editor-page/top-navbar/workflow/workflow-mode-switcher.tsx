@@ -4,8 +4,6 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/dropdown-menu/dropdown-menu';
 import { RestoreVersionDialog } from '@/dialogs/restore-version-dialog/restore-version-dialog';
@@ -30,27 +28,24 @@ export const WorkflowModeSwitcher: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();
     const [reviewOpen, setReviewOpen] = useState(false);
     const [restoreOpen, setRestoreOpen] = useState(false);
-
-    if (!workflow?.diagramId) {
-        return null;
-    }
+    const hasWorkflowChrome = !!workflow?.diagramId;
 
     const versionSource =
-        workflow.selectedVersion ??
-        (workflow.compareSourceKind === 'version'
-            ? workflow.compareVersion
+        workflow?.selectedVersion ??
+        (workflow?.compareSourceKind === 'version'
+            ? workflow?.compareVersion
             : undefined);
     const canRestoreVersion =
-        workflow.compareVersion &&
-        (workflow.workflow?.diagramAccess === 'edit' ||
-            workflow.workflow?.diagramAccess === 'owner');
+        !!workflow?.compareVersion &&
+        (workflow?.workflow?.diagramAccess === 'edit' ||
+            workflow?.workflow?.diagramAccess === 'owner');
     const showSnapshotWorkflow = !!versionSource;
     const selectedVersionLabel = versionSource
         ? getVersionDisplayLabel(versionSource)
         : '';
-    const showCompareButton = workflow.activeMode !== 'compare';
+    const showCompareButton = workflow?.activeMode !== 'compare';
     const versionPreviewCompareResult = useMemo(() => {
-        if (!workflow.selectedVersion || !workflow.developmentDiagram) {
+        if (!workflow?.selectedVersion || !workflow.developmentDiagram) {
             return undefined;
         }
 
@@ -66,21 +61,19 @@ export const WorkflowModeSwitcher: React.FC = () => {
             baselineSchema,
             developmentDiagram: workflow.developmentDiagram,
         }).compareResult;
-    }, [workflow.developmentDiagram, workflow.selectedVersion]);
+    }, [workflow?.developmentDiagram, workflow?.selectedVersion]);
     const compareResultForCounts =
-        workflow.activeMode === 'version' && workflow.selectedVersion
+        workflow?.activeMode === 'version' && workflow.selectedVersion
             ? versionPreviewCompareResult
-            : workflow.compareRenderModel?.compareResult;
+            : workflow?.compareRenderModel?.compareResult;
     const compareDifferenceCount = getCompareDifferenceCount(
         compareResultForCounts
     );
-    const compareButtonLabel =
-        workflow.activeMode === 'compare' &&
-        workflow.compareSourceKind === 'version' &&
-        workflow.compareVersion
-            ? 'Compare'
-            : 'Compare';
+    const compareButtonLabel = 'Compare';
 
+    if (!hasWorkflowChrome || !workflow) {
+        return null;
+    }
 
     return (
         <>
@@ -146,7 +139,7 @@ export const WorkflowModeSwitcher: React.FC = () => {
                             className="mx-2 h-6 w-px shrink-0 bg-border"
                         />
                         <div className="flex items-center gap-0">
-                            {workflow.compareSourceKind !== 'version'  ? (
+                            {workflow.compareSourceKind !== 'version' ? (
                                 <Button
                                     size="sm"
                                     variant="outline"
@@ -158,7 +151,8 @@ export const WorkflowModeSwitcher: React.FC = () => {
                                     onClick={() => {
                                         if (
                                             workflow.activeMode === 'compare' &&
-                                            workflow.compareSourceKind === 'version' &&
+                                            workflow.compareSourceKind ===
+                                                'version' &&
                                             workflow.compareVersion
                                         ) {
                                             workflow.openVersion(
@@ -193,61 +187,72 @@ export const WorkflowModeSwitcher: React.FC = () => {
                             ) : (
                                 <>
                                     <WorkflowActionsMenu />
-
                                 </>
                             )}
-
 
                             {workflow.activeMode === 'compare' &&
                             workflow.compareVersion &&
                             workflow.compareModeEnabled ? (
-                            <div className="flex items-center gap-2">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="relative h-6 gap-1.5 border-sky-200 bg-sky-50 px-2.5 text-xs font-semibold text-sky-700 shadow-none hover:bg-sky-100 hover:text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-200 dark:hover:bg-sky-950/60 dark:hover:text-sky-100"
+                                <div className="flex items-center gap-2">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="relative h-6 gap-1.5 border-sky-200 bg-sky-50 px-2.5 text-xs font-semibold text-sky-700 shadow-none hover:bg-sky-100 hover:text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-200 dark:hover:bg-sky-950/60 dark:hover:text-sky-100"
+                                            >
+                                                Review
+                                                <ChevronDown className="size-4" />
+                                                {compareDifferenceCount > 0 ? (
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-semibold leading-none text-white"
+                                                    >
+                                                        {compareDifferenceCount}
+                                                    </span>
+                                                ) : null}
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent
+                                            align="center"
+                                            className="w-40"
                                         >
-                                            Review
-                                            <ChevronDown className="size-4" />
-                                            {compareDifferenceCount > 0 ? (
-                                                <span
-                                                    aria-hidden="true"
-                                                    className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-semibold leading-none text-white"
-                                                >
-                                                    {compareDifferenceCount}
-                                                </span>
-                                            ) : null}
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="center" className="w-40">
-                                        <DropdownMenuItem onSelect={() => setReviewOpen(true)}>
-                                            Review Changes
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            disabled={!canRestoreVersion}
-                                            onSelect={() => setRestoreOpen(true)}
-                                            className="text-rose-600 focus:text-rose-700 dark:text-rose-300 dark:focus:text-rose-200"
-                                        >
-                                            <RotateCcw className="mr-2 size-4" />
-                                            Revert
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-6 border-rose-200 bg-rose-50 px-2.5 text-xs font-semibold text-rose-700 shadow-none hover:bg-rose-100 hover:text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-950/60 dark:hover:text-rose-100"
-                                    onClick={() => workflow.openVersion(workflow.compareVersion.id)}
-                                >
-                                    Finish
-                                </Button>
-                                <ReviewChangesDialog
-                                    open={reviewOpen}
-                                    onOpenChange={setReviewOpen}
-                                />
-                            </div>
+                                            <DropdownMenuItem
+                                                onSelect={() =>
+                                                    setReviewOpen(true)
+                                                }
+                                            >
+                                                Review Changes
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                disabled={!canRestoreVersion}
+                                                onSelect={() =>
+                                                    setRestoreOpen(true)
+                                                }
+                                                className="text-rose-600 focus:text-rose-700 dark:text-rose-300 dark:focus:text-rose-200"
+                                            >
+                                                <RotateCcw className="mr-2 size-4" />
+                                                Revert
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-6 border-rose-200 bg-rose-50 px-2.5 text-xs font-semibold text-rose-700 shadow-none hover:bg-rose-100 hover:text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-950/60 dark:hover:text-rose-100"
+                                        onClick={() =>
+                                            workflow.openVersion(
+                                                workflow.compareVersion.id
+                                            )
+                                        }
+                                    >
+                                        Finish
+                                    </Button>
+                                    <ReviewChangesDialog
+                                        open={reviewOpen}
+                                        onOpenChange={setReviewOpen}
+                                    />
+                                </div>
                             ) : null}
                         </div>
                     </>
@@ -352,7 +357,6 @@ export const WorkflowModeSwitcher: React.FC = () => {
                             ) : (
                                 <>
                                     <WorkflowActionsMenu />
-
                                 </>
                             )}
                         </div>

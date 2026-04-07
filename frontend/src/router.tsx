@@ -6,7 +6,7 @@ import type { TemplatesPageLoaderData } from './pages/templates-page/templates-p
 import { getTemplatesAndAllTags } from './templates-data/template-utils';
 
 const routes: RouteObject[] = [
-/*     {
+    /*     {
         path: '',
         async lazy() {
             const { DashboardShellLayout } =

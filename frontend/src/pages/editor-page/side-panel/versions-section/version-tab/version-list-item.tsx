@@ -1,6 +1,5 @@
 import React from 'react';
 import { Badge } from '@/components/badge/badge';
-import { Button } from '@/components/button/button';
 import { cn } from '@/lib/utils';
 import type { DiagramWorkflowVersionSummary } from '@/lib/api/diagram-workflow-client';
 import {
@@ -9,21 +8,13 @@ import {
     getVersionDisplayLabel,
     getVersionOriginLabel,
 } from '@/lib/diagram-workflow/version-labels';
-import {
-    ArrowRight,
-    Clock3,
-    GitCompareArrows,
-    History,
-    RotateCcw,
-} from 'lucide-react';
+import { ArrowRight, History } from 'lucide-react';
 
 export interface VersionListItemProps {
     version: DiagramWorkflowVersionSummary;
     active?: boolean;
     compareBaseline?: boolean;
     onOpen: () => void;
-    onCompare?: () => void;
-    onRestore?: () => void;
 }
 
 export const VersionListItem: React.FC<VersionListItemProps> = ({
@@ -31,8 +22,6 @@ export const VersionListItem: React.FC<VersionListItemProps> = ({
     active = false,
     compareBaseline = false,
     onOpen,
-    onCompare,
-    onRestore,
 }) => {
     const relativeTime = formatVersionRelativeTime(version.createdAt);
     const absoluteTime = formatVersionTimestamp(version.createdAt);
@@ -94,11 +83,6 @@ export const VersionListItem: React.FC<VersionListItemProps> = ({
                                     'No description was saved for this snapshot.'}
                             </p>
                         </div>
-
-{/*                         <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-                            <Clock3 className="size-3.5" />
-                            <span>{relativeTime}</span>
-                        </div> */}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -112,41 +96,6 @@ export const VersionListItem: React.FC<VersionListItemProps> = ({
 
                 <ArrowRight className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
             </button>
-{/* 
-            <div className="border-t border-border/60 px-4 py-3">
-                <div className="flex flex-wrap gap-2">
-                    <Button
-                        variant={active ? 'secondary' : 'outline'}
-                        size="sm"
-                        className="rounded-xl"
-                        onClick={onOpen}
-                    >
-                        {active ? 'Open Snapshot' : 'View Snapshot'}
-                    </Button>
-                    {onCompare ? (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5 rounded-xl"
-                            onClick={onCompare}
-                        >
-                            <GitCompareArrows className="size-3.5" />
-                            {compareBaseline ? 'Viewing Diffs' : 'View Diffs'}
-                        </Button>
-                    ) : null}
-                    {onRestore ? (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-1.5 rounded-xl text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-300 dark:hover:bg-rose-950/30 dark:hover:text-rose-200"
-                            onClick={onRestore}
-                        >
-                            <RotateCcw className="size-3.5" />
-                            Revert to This Version
-                        </Button>
-                    ) : null}
-                </div>
-            </div> */}
         </article>
     );
 };
