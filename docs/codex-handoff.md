@@ -94,6 +94,7 @@ What was implemented:
   - a follow-up layout split that keeps workflow buttons on their own row and renders the snapshot ribbon beneath them so version-to-version compare mode does not collapse into a crowded single line
   - a follow-up versions-page control update that places the selected historical version directly beside `Development` so users can see both baselines before toggling `View Diffs`
   - a small style follow-up that restores the older button treatment for the versions header while keeping the selected-version control in place
+  - a follow-up compare-count fix so the versions header badges use the selected version as the baseline while browsing versions instead of leaking the live-database compare summary
 - Polished the Review dialog with:
   - better layout hierarchy
   - source-aware labels for Live Database or version baselines
@@ -148,7 +149,7 @@ Files modified:
 - `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.tsx`
   - Rebuilt as a workflow timeline surface.
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
-  - Refined top-level version/diff/revert controls, shows the selected version beside Development in the versions workflow, and preserves the older button styling after the follow-up tweak.
+  - Refined top-level version/diff/revert controls, shows the selected version beside Development in the versions workflow, preserves the older button styling after the follow-up tweak, and now derives version-mode compare counts from the selected historical snapshot.
 - `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
   - Desktop navbar center area now separates workflow actions from the snapshot ribbon to prevent compare-mode header crowding.
 - `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`

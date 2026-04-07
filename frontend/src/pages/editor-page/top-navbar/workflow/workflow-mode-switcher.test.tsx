@@ -4,9 +4,19 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkflowModeSwitcher } from './workflow-mode-switcher';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { buildCompareRenderModel } from '@/lib/diagram-workflow/compare-render-model';
+import { getAuthoritativeVersionCanonicalSchema } from '@/lib/diagram-workflow/version-canonical';
 
 vi.mock('@/context/diagram-workflow-context/diagram-workflow-context', () => ({
     useOptionalDiagramWorkflow: vi.fn(),
+}));
+
+vi.mock('@/lib/diagram-workflow/compare-render-model', () => ({
+    buildCompareRenderModel: vi.fn(),
+}));
+
+vi.mock('@/lib/diagram-workflow/version-canonical', () => ({
+    getAuthoritativeVersionCanonicalSchema: vi.fn(),
 }));
 
 vi.mock('./workflow-actions-menu', () => ({
@@ -17,11 +27,33 @@ vi.mock('@/dialogs/restore-version-dialog/restore-version-dialog', () => ({
     RestoreVersionDialog: () => null,
 }));
 
+vi.mock('@/dialogs/review-changes-dialog/review-changes-dialog', () => ({
+    ReviewChangesDialog: () => null,
+}));
+
 const mockedUseOptionalDiagramWorkflow = vi.mocked(useOptionalDiagramWorkflow);
+const mockedBuildCompareRenderModel = vi.mocked(buildCompareRenderModel);
+const mockedGetAuthoritativeVersionCanonicalSchema = vi.mocked(
+    getAuthoritativeVersionCanonicalSchema
+);
 
 describe('workflow mode switcher', () => {
     beforeEach(() => {
         mockedUseOptionalDiagramWorkflow.mockReset();
+        mockedBuildCompareRenderModel.mockReset();
+        mockedGetAuthoritativeVersionCanonicalSchema.mockReset();
+        mockedBuildCompareRenderModel.mockReturnValue({
+            compareResult: {
+                summary: {
+                    tables: { total: 0 },
+                    fields: { total: 0 },
+                    relationships: { total: 0 },
+                },
+            },
+        } as never);
+        mockedGetAuthoritativeVersionCanonicalSchema.mockReturnValue(
+            {} as never
+        );
     });
 
     it('shows compare as disabled until both a live snapshot and development diagram exist', () => {
@@ -125,7 +157,7 @@ describe('workflow mode switcher', () => {
             screen.getByRole('button', { name: 'Development' })
         ).toBeTruthy();
         expect(screen.getByText('Workflow Actions')).toBeTruthy();
-        expect(screen.getByRole('button', { name: 'Finish' })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
     });
 
     it('shows version workflow controls for a selected historical snapshot', () => {
@@ -134,6 +166,9 @@ describe('workflow mode switcher', () => {
             activeMode: 'version',
             compareModeEnabled: true,
             compareSourceKind: null,
+            developmentDiagram: {
+                id: 'development-diagram',
+            },
             selectedVersion: {
                 id: 'version-1',
                 versionLabel: 'Version 3',
@@ -151,14 +186,61 @@ describe('workflow mode switcher', () => {
         expect(
             screen.getByRole('button', { name: 'Development' })
         ).toBeTruthy();
-        expect(screen.getByRole('button', { name: 'View Diffs' })).toBeTruthy();
-        expect(screen.getByRole('button', { name: 'Options' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: /Compare/ })).toBeTruthy();
         expect(
             screen.queryByRole('button', { name: 'Live Database' })
         ).toBeNull();
     });
 
-    it('hides diffs back to the selected snapshot when comparing against a version', async () => {
+    it('uses the selected version summary for counts while browsing versions', () => {
+        mockedBuildCompareRenderModel.mockReturnValue({
+            compareResult: {
+                summary: {
+                    tables: { total: 1 },
+                    fields: { total: 1 },
+                    relationships: { total: 0 },
+                },
+            },
+        } as never);
+
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            diagramId: 'diagram-1',
+            activeMode: 'version',
+            compareModeEnabled: true,
+            compareSourceKind: null,
+            developmentDiagram: {
+                id: 'development-diagram',
+            },
+            compareRenderModel: {
+                compareResult: {
+                    summary: {
+                        tables: { total: 4 },
+                        fields: { total: 3 },
+                        relationships: { total: 2 },
+                    },
+                },
+            },
+            selectedVersion: {
+                id: 'version-1',
+                versionLabel: 'Version 3',
+            },
+            workflow: {
+                diagramAccess: 'owner',
+            },
+            compareVersionToDevelopment: vi.fn(),
+            setActiveMode: vi.fn(),
+            openVersion: vi.fn(),
+        } as never);
+
+        render(<WorkflowModeSwitcher />);
+
+        expect(screen.getByRole('button', { name: /Compare/ })).toHaveTextContent(
+            '2'
+        );
+        expect(mockedBuildCompareRenderModel).toHaveBeenCalledTimes(1);
+    });
+
+    it('finishes back to the selected snapshot when comparing against a version', async () => {
         const user = userEvent.setup();
         const openVersion = vi.fn();
 
@@ -186,7 +268,7 @@ describe('workflow mode switcher', () => {
 
         render(<WorkflowModeSwitcher />);
 
-        await user.click(screen.getByRole('button', { name: 'Hide Diffs' }));
+        await user.click(screen.getByRole('button', { name: 'Finish' }));
 
         expect(openVersion).toHaveBeenCalledWith('version-2');
     });
