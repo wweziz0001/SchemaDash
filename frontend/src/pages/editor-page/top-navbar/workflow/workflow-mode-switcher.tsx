@@ -18,6 +18,7 @@ import {
     GitBranch,
     GitCompareArrows,
     RotateCcw,
+    Tag,
 } from 'lucide-react';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { WorkflowActionsMenu } from './workflow-actions-menu';
@@ -90,7 +91,7 @@ export const WorkflowModeSwitcher: React.FC = () => {
                             className={cn(
                                 'h-8 max-w-[13rem] gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-none',
                                 workflow.activeMode === 'version'
-                                    ? 'border-slate-200 bg-slate-100 text-slate-800 hover:bg-slate-200 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
+                                    ? 'bg-background text-foreground ring-1 ring-border'
                                     : 'border-border bg-background text-foreground hover:bg-accent'
                             )}
                             onClick={() => {
@@ -99,7 +100,7 @@ export const WorkflowModeSwitcher: React.FC = () => {
                                 }
                             }}
                         >
-                            <GitCompareArrows className="size-3.5 rotate-90 text-pink-500 dark:text-pink-300" />
+                            <Tag className="size-3.5 text-muted-foreground" />
                             <span className="truncate">
                                 {selectedVersionLabel}
                             </span>
@@ -108,16 +109,14 @@ export const WorkflowModeSwitcher: React.FC = () => {
                         <Button
                             size="sm"
                             variant={
-                                workflow.activeMode === 'development' ||
-                                workflow.activeMode === 'compare'
+                                workflow.activeMode === 'development'
                                     ? 'secondary'
                                     : 'outline'
                             }
                             className={cn(
                                 'h-8 gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-none',
-                                workflow.activeMode === 'development' ||
-                                    workflow.activeMode === 'compare'
-                                    ? 'border-pink-200 bg-pink-50 text-pink-700 hover:bg-pink-100 hover:text-pink-800 dark:border-pink-900 dark:bg-pink-950/40 dark:text-pink-200 dark:hover:bg-pink-950/60'
+                                workflow.activeMode === 'development'
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-950/60'
                                     : 'border-border bg-background text-foreground hover:bg-accent'
                             )}
                             onClick={() =>
