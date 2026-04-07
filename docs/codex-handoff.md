@@ -62,6 +62,8 @@ High-risk files and boundaries:
   - High-risk canvas composition surface. This session now adds only a thin loading strip near the top edge while loading; no node/edge logic was changed.
 - `frontend/src/pages/editor-page/editor-page.tsx`
   - High-risk editor shell. This session now replaces the Suspense spinner fallback with the same lightweight map loading strip used in workflow transitions.
+- `frontend/src/context/full-screen-spinner-context/full-screen-spinner-provider.tsx`
+  - Global editor loading overlay. This session replaces the centered square spinner with the same map-top loading strip so loader UX stays consistent across editor transitions.
 - `frontend/src/lib/api/diagram-workflow-client.ts`
   - Intentionally not changed. No API contract changes were required.
 - `backend/`
@@ -184,6 +186,8 @@ Files modified:
   - Workflow read-only loading fallback now uses the shared map loading shell.
 - `frontend/src/globals.css`
   - Added animation for the thin map loading strip.
+- `frontend/src/context/full-screen-spinner-context/full-screen-spinner-provider.tsx`
+  - The global editor loading overlay now renders the map-top loading strip instead of the old square spinner dialog.
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.test.tsx`
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.test.tsx`
 - `frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.test.tsx`
@@ -224,6 +228,7 @@ Workflow/UI changes:
   - immutable version
   - historical version diff
 - Workflow/editor loading now uses a thin animated strip anchored to the top of the map surface instead of the previous centered spinner/loading badge during version/development transitions.
+- The shared full-screen loader used by the editor shell now matches the same loading-strip treatment, so loading UX stays consistent when loading diagrams or other editor-wide async work.
 
 No data/API changes:
 
@@ -347,3 +352,5 @@ Commit list created for this task:
   - Added/updated focused tests for the refined workflow surfaces and documented the work in this handoff.
 - `fix: replace workflow spinner with map loading strip`
   - Replaced the centered workflow/editor loading spinner and the old canvas loading badge with a thin animated strip anchored to the top of the map surface.
+- `fix: align full-screen editor loading with map strip`
+  - Replaced the remaining square full-screen loader overlay with the same map-top loading strip used elsewhere in the editor.
