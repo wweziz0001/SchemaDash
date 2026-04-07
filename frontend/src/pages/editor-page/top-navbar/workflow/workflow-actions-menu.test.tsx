@@ -35,9 +35,9 @@ describe('workflow actions menu', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 2 },
-                        relationships: { total: 1 },
+                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
+                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
+                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
                     },
                 },
             },
@@ -58,9 +58,9 @@ describe('workflow actions menu', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 2 },
-                        relationships: { total: 1 },
+                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
+                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
+                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
                     },
                 },
             },
@@ -72,9 +72,12 @@ describe('workflow actions menu', () => {
             screen.getByRole('button', { name: 'Review' })
         ).toHaveTextContent('4');
         await user.click(screen.getByRole('button', { name: 'Review' }));
+        await user.click(
+            screen.getByRole('menuitem', { name: 'Review Changes' })
+        );
         expect(screen.getByText('Review Dialog')).toBeTruthy();
 
-        await user.click(screen.getByRole('button', { name: 'Options' }));
+        await user.click(screen.getByRole('button', { name: 'Review' }));
         expect(
             screen.getByRole('menuitem', { name: 'Migration' })
         ).toBeTruthy();
@@ -82,7 +85,7 @@ describe('workflow actions menu', () => {
         expect(screen.getByText('Migration Dialog')).toBeTruthy();
     });
 
-    it('stays available when compare is based on a historical version', () => {
+    it('stays hidden when compare is based on a historical version', () => {
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
             compareModeEnabled: true,
@@ -91,9 +94,9 @@ describe('workflow actions menu', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 2 },
-                        relationships: { total: 1 },
+                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
+                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
+                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
                     },
                 },
             },
@@ -101,8 +104,7 @@ describe('workflow actions menu', () => {
 
         render(<WorkflowActionsMenu />);
 
-        expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy();
-        expect(screen.queryByRole('button', { name: 'Options' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
     });
 
     it('stays hidden until compare mode is active', () => {
@@ -114,9 +116,9 @@ describe('workflow actions menu', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 2 },
-                        relationships: { total: 1 },
+                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
+                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
+                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
                     },
                 },
             },

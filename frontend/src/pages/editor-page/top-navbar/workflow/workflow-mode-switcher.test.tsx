@@ -45,9 +45,9 @@ describe('workflow mode switcher', () => {
         mockedBuildCompareRenderModel.mockReturnValue({
             compareResult: {
                 summary: {
-                    tables: { total: 0 },
-                    fields: { total: 0 },
-                    relationships: { total: 0 },
+                    tables: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
+                    fields: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
+                    relationships: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
                 },
             },
         } as never);
@@ -65,9 +65,9 @@ describe('workflow mode switcher', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 2 },
-                        relationships: { total: 1 },
+                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
+                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
+                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
                     },
                 },
             },
@@ -113,9 +113,9 @@ describe('workflow mode switcher', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 1 },
-                        relationships: { total: 0 },
+                        tables: { added: 1, changed: 0, removed: 0, unchanged: 0, total: 1 },
+                        fields: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
+                        relationships: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
                     },
                 },
             },
@@ -141,9 +141,9 @@ describe('workflow mode switcher', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 2 },
-                        relationships: { total: 1 },
+                        tables: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
+                        fields: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
+                        relationships: { added: 0, changed: 0, removed: 1, unchanged: 0, total: 1 },
                     },
                 },
             },
@@ -196,9 +196,9 @@ describe('workflow mode switcher', () => {
         mockedBuildCompareRenderModel.mockReturnValue({
             compareResult: {
                 summary: {
-                    tables: { total: 1 },
-                    fields: { total: 1 },
-                    relationships: { total: 0 },
+                    tables: { added: 1, changed: 0, removed: 0, unchanged: 0, total: 1 },
+                    fields: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
+                    relationships: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
                 },
             },
         } as never);
@@ -214,9 +214,9 @@ describe('workflow mode switcher', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 4 },
-                        fields: { total: 3 },
-                        relationships: { total: 2 },
+                        tables: { added: 1, changed: 1, removed: 2, unchanged: 0, total: 4 },
+                        fields: { added: 1, changed: 1, removed: 1, unchanged: 0, total: 3 },
+                        relationships: { added: 1, changed: 0, removed: 1, unchanged: 0, total: 2 },
                     },
                 },
             },
@@ -256,9 +256,9 @@ describe('workflow mode switcher', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 1 },
-                        relationships: { total: 0 },
+                        tables: { added: 1, changed: 0, removed: 0, unchanged: 0, total: 1 },
+                        fields: { added: 0, changed: 1, removed: 0, unchanged: 0, total: 1 },
+                        relationships: { added: 0, changed: 0, removed: 0, unchanged: 0, total: 0 },
                     },
                 },
             },

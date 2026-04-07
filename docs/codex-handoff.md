@@ -95,6 +95,7 @@ What was implemented:
   - a follow-up versions-page control update that places the selected historical version directly beside `Development` so users can see both baselines before toggling `View Diffs`
   - a small style follow-up that restores the older button treatment for the versions header while keeping the selected-version control in place
   - a follow-up compare-count fix so the versions header badges use the selected version as the baseline while browsing versions instead of leaking the live-database compare summary
+  - a follow-up diff-count fix so compare/review badges now show only actual changes (`added + changed + removed`) instead of summing all entities via `total`
 - Polished the Review dialog with:
   - better layout hierarchy
   - source-aware labels for Live Database or version baselines
@@ -150,6 +151,8 @@ Files modified:
   - Rebuilt as a workflow timeline surface.
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
   - Refined top-level version/diff/revert controls, shows the selected version beside Development in the versions workflow, preserves the older button styling after the follow-up tweak, and now derives version-mode compare counts from the selected historical snapshot.
+- `frontend/src/lib/diagram-workflow/compare-summary.ts`
+  - Shared diff-count helper now returns only changed entities, which keeps Compare and Review badges aligned with the visible diff summary chips.
 - `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
   - Desktop navbar center area now separates workflow actions from the snapshot ribbon to prevent compare-mode header crowding.
 - `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
