@@ -7,11 +7,24 @@ import type {
 } from './layout-context';
 import { layoutContext } from './layout-context';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useSearchParams } from 'react-router-dom';
+
+const getWorkflowSidebarSection = (
+    searchParams: URLSearchParams
+): SidebarSection => {
+    const workflow = searchParams.get('workflow');
+    const hasVersionWorkflow =
+        (workflow === 'version' && !!searchParams.get('versionId')) ||
+        (workflow === 'compare' && !!searchParams.get('compareVersionId'));
+
+    return hasVersionWorkflow ? 'versions' : 'tables';
+};
 
 export const LayoutProvider: React.FC<React.PropsWithChildren> = ({
     children,
 }) => {
     const { isMd: isDesktop } = useBreakpoint('md');
+    const [searchParams] = useSearchParams();
     const [openedTableInSidebar, setOpenedTableInSidebar] = React.useState<
         string | undefined
     >();
@@ -27,7 +40,9 @@ export const LayoutProvider: React.FC<React.PropsWithChildren> = ({
     const [openedCustomTypeInSidebar, setOpenedCustomTypeInSidebar] =
         React.useState<string | undefined>();
     const [selectedSidebarSection, setSelectedSidebarSection] =
-        React.useState<SidebarSection>('tables');
+        React.useState<SidebarSection>(() =>
+            getWorkflowSidebarSection(searchParams)
+        );
     const [selectedVisualsTab, setSelectedVisualsTab] =
         React.useState<VisualsTab>('areas');
     const [selectedVersionsTab, setSelectedVersionsTab] =
@@ -65,6 +80,15 @@ export const LayoutProvider: React.FC<React.PropsWithChildren> = ({
     const toggleSidePanel: LayoutContext['toggleSidePanel'] = () => {
         setIsSidePanelShowed((prevIsSidePanelShowed) => !prevIsSidePanelShowed);
     };
+
+    React.useEffect(() => {
+        if (getWorkflowSidebarSection(searchParams) !== 'versions') {
+            return;
+        }
+
+        setSelectedSidebarSection('versions');
+        setSelectedVersionsTab('version');
+    }, [searchParams]);
 
     const openTableFromSidebar: LayoutContext['openTableFromSidebar'] = (
         tableId
