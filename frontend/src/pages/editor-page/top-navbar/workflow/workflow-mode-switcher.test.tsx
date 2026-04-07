@@ -147,6 +147,7 @@ describe('workflow mode switcher', () => {
 
         render(<WorkflowModeSwitcher />);
 
+        expect(screen.getByRole('button', { name: 'Version 3' })).toBeTruthy();
         expect(
             screen.getByRole('button', { name: 'Development' })
         ).toBeTruthy();

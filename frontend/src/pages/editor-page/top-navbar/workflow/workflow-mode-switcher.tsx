@@ -22,6 +22,7 @@ import {
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { WorkflowActionsMenu } from './workflow-actions-menu';
 import { getCompareDifferenceCount } from '@/lib/diagram-workflow/compare-summary';
+import { getVersionDisplayLabel } from '@/lib/diagram-workflow/version-labels';
 
 export const WorkflowModeSwitcher: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();
@@ -41,6 +42,9 @@ export const WorkflowModeSwitcher: React.FC = () => {
         (workflow.workflow?.diagramAccess === 'edit' ||
             workflow.workflow?.diagramAccess === 'owner');
     const showSnapshotWorkflow = !!versionSource;
+    const selectedVersionLabel = versionSource
+        ? getVersionDisplayLabel(versionSource)
+        : '';
     const showCompareButton = workflow.activeMode !== 'compare';
     const compareDifferenceCount = getCompareDifferenceCount(
         workflow.compareRenderModel?.compareResult
@@ -79,14 +83,42 @@ export const WorkflowModeSwitcher: React.FC = () => {
                         <Button
                             size="sm"
                             variant={
-                                workflow.activeMode === 'development'
+                                workflow.activeMode === 'version'
+                                    ? 'secondary'
+                                    : 'outline'
+                            }
+                            className={cn(
+                                'h-8 max-w-[13rem] gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-none',
+                                workflow.activeMode === 'version'
+                                    ? 'border-slate-200 bg-slate-100 text-slate-800 hover:bg-slate-200 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
+                                    : 'border-border bg-background text-foreground hover:bg-accent'
+                            )}
+                            onClick={() => {
+                                if (versionSource) {
+                                    workflow.openVersion(versionSource.id);
+                                }
+                            }}
+                        >
+                            <GitCompareArrows className="size-3.5 rotate-90 text-pink-500 dark:text-pink-300" />
+                            <span className="truncate">
+                                {selectedVersionLabel}
+                            </span>
+                        </Button>
+
+                        <Button
+                            size="sm"
+                            variant={
+                                workflow.activeMode === 'development' ||
+                                workflow.activeMode === 'compare'
                                     ? 'secondary'
                                     : 'outline'
                             }
                             className={cn(
                                 'h-8 gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-none',
-                                workflow.activeMode === 'development' &&
-                                    'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-950/60'
+                                workflow.activeMode === 'development' ||
+                                    workflow.activeMode === 'compare'
+                                    ? 'border-pink-200 bg-pink-50 text-pink-700 hover:bg-pink-100 hover:text-pink-800 dark:border-pink-900 dark:bg-pink-950/40 dark:text-pink-200 dark:hover:bg-pink-950/60'
+                                    : 'border-border bg-background text-foreground hover:bg-accent'
                             )}
                             onClick={() =>
                                 workflow.setActiveMode('development')

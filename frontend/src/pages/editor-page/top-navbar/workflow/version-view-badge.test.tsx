@@ -26,7 +26,7 @@ describe('version view badge', () => {
         expect(screen.queryByText('Immutable')).toBeNull();
     });
 
-    it('shows snapshot metadata when a stored version is open', () => {
+    it('stays hidden while simply viewing a stored version', () => {
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             activeMode: 'version',
             selectedVersion: {
@@ -49,10 +49,7 @@ describe('version view badge', () => {
 
         render(<VersionViewBadge />);
 
-        expect(screen.getByText('Viewing')).toBeTruthy();
-        expect(screen.getByText('Immutable')).toBeTruthy();
-        expect(screen.getByText('Milestone: Q2 schema')).toBeTruthy();
-        expect(screen.getByText(/Saved /)).toBeTruthy();
+        expect(screen.queryByText('Immutable')).toBeNull();
     });
 
     it('shows diff baseline state when compare mode is sourced from a version', () => {

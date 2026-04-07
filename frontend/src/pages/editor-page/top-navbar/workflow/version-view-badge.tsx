@@ -11,18 +11,16 @@ import {
 export const VersionViewBadge: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();
     const version =
-        workflow?.activeMode === 'version'
-            ? workflow.selectedVersion
-            : workflow?.compareSourceKind === 'version'
-              ? workflow.compareVersion
-              : undefined;
+        workflow?.activeMode === 'compare' &&
+        workflow.compareSourceKind === 'version'
+            ? workflow.compareVersion
+            : undefined;
 
     if (!version) {
         return null;
     }
 
-    const stateLabel =
-        workflow?.activeMode === 'compare' ? 'Diff Baseline' : 'Viewing';
+    const stateLabel = 'Diff Baseline';
     const versionLabel = getVersionDisplayLabel(version);
     const relativeTime = formatVersionRelativeTime(version.createdAt);
     const timestamp = formatVersionTimestamp(version.createdAt);

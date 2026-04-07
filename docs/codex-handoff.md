@@ -92,6 +92,7 @@ What was implemented:
   - compare-mode Review action
   - snapshot Options dropdown with revert entry point
   - a follow-up layout split that keeps workflow buttons on their own row and renders the snapshot ribbon beneath them so version-to-version compare mode does not collapse into a crowded single line
+  - a follow-up versions-page control update that places the selected historical version directly beside `Development` so users can see both baselines before toggling `View Diffs`
 - Polished the Review dialog with:
   - better layout hierarchy
   - source-aware labels for Live Database or version baselines
@@ -146,7 +147,7 @@ Files modified:
 - `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.tsx`
   - Rebuilt as a workflow timeline surface.
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
-  - Refined top-level version/diff/revert controls.
+  - Refined top-level version/diff/revert controls and now shows the selected version beside Development in the versions workflow.
 - `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
   - Desktop navbar center area now separates workflow actions from the snapshot ribbon to prevent compare-mode header crowding.
 - `frontend/src/pages/editor-page/top-navbar/top-navbar-mobile.tsx`
@@ -154,7 +155,7 @@ Files modified:
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.tsx`
   - Review actions now work for compare mode more cleanly.
 - `frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.tsx`
-  - Snapshot badge now supports both direct viewing and historical diff baselines with a more compact two-row ribbon treatment.
+  - Snapshot badge now supports historical diff baselines with a more compact two-row ribbon treatment and stays hidden during plain version browsing.
 - `frontend/src/dialogs/review-changes-dialog/review-changes-dialog.tsx`
   - Large UX and baseline-awareness refinement.
 - `frontend/src/dialogs/restore-version-dialog/restore-warning-panel.tsx`
@@ -255,6 +256,7 @@ Not done yet:
 - Manual browser QA against the provided screenshot references
 - Any deeper visual treatment of actual node/edge diff rendering on canvas beyond the surrounding UX/status communication
 - A final browser pass specifically for Arabic/localized timestamp wrapping in the snapshot ribbon
+- A final browser pass to fine-tune exact button spacing/colors against the latest versions-page screenshot reference
 
 Recommended next step:
 
