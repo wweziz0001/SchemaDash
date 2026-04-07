@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Badge } from '@/components/badge/badge';
 import { DatabaseZap } from 'lucide-react';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { getVersionDisplayLabel } from '@/lib/diagram-workflow/version-labels';
 
 const formatTimestamp = (value: string) =>
     new Intl.DateTimeFormat(undefined, {
@@ -107,10 +108,44 @@ export const LiveStatusChip: React.FC = () => {
                           title: 'Development mode remains editable.',
                       };
 
+        const surfaceBadge =
+            workflow.activeMode === 'version' && workflow.selectedVersion
+                ? {
+                      variant: 'outline' as const,
+                      label: `Viewing ${getVersionDisplayLabel(workflow.selectedVersion)}`,
+                      title: 'You are looking at an immutable historical snapshot.',
+                  }
+                : workflow.activeMode === 'compare' &&
+                    workflow.compareSourceKind === 'version' &&
+                    workflow.compareVersion
+                  ? {
+                        variant: 'outline' as const,
+                        label: `${getVersionDisplayLabel(workflow.compareVersion)} -> Development`,
+                        title: 'Diff view between the selected historical version and Development.',
+                    }
+                  : workflow.activeMode === 'compare'
+                    ? {
+                          variant: 'outline' as const,
+                          label: 'Live Database -> Development',
+                          title: 'Diff view between the live snapshot and Development.',
+                      }
+                    : workflow.activeMode === 'development'
+                      ? {
+                            variant: 'outline' as const,
+                            label: 'Development head',
+                            title: 'Current editable head of the workflow.',
+                        }
+                      : {
+                            variant: 'outline' as const,
+                            label: 'Live snapshot',
+                            title: 'Last synced live schema snapshot.',
+                        };
+
         return {
             connectionBadge,
             syncBadge,
             modeBadge,
+            surfaceBadge,
         };
     }, [workflow]);
 
@@ -141,6 +176,12 @@ export const LiveStatusChip: React.FC = () => {
                 title={status.modeBadge.title}
             >
                 {status.modeBadge.label}
+            </Badge>
+            <Badge
+                variant={status.surfaceBadge.variant}
+                title={status.surfaceBadge.title}
+            >
+                {status.surfaceBadge.label}
             </Badge>
         </div>
     );
