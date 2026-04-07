@@ -95,10 +95,10 @@ export const VersionListItem: React.FC<VersionListItemProps> = ({
                             </p>
                         </div>
 
-                        <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+{/*                         <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                             <Clock3 className="size-3.5" />
                             <span>{relativeTime}</span>
-                        </div>
+                        </div> */}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -106,13 +106,13 @@ export const VersionListItem: React.FC<VersionListItemProps> = ({
                         {version.createdBy ? (
                             <span>by {version.createdBy.displayName}</span>
                         ) : null}
-                        <span>{version.versionLabel}</span>
+                        <span>{relativeTime}</span>
                     </div>
                 </div>
 
                 <ArrowRight className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
             </button>
-
+{/* 
             <div className="border-t border-border/60 px-4 py-3">
                 <div className="flex flex-wrap gap-2">
                     <Button
@@ -146,7 +146,7 @@ export const VersionListItem: React.FC<VersionListItemProps> = ({
                         </Button>
                     ) : null}
                 </div>
-            </div>
+            </div> */}
         </article>
     );
 };

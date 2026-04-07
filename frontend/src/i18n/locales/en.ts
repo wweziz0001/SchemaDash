@@ -257,8 +257,8 @@ export const en = {
                 clear: 'Clear Filter',
                 no_results: 'No versions found matching your filter.',
                 tabs: {
-                    version: 'Snapshots',
-                    changelog: 'Workflow',
+                    version: 'Versions',
+                    changelog: 'Changelog',
                 },
                 empty_state: {
                     title: 'No versions',

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/alert/alert';
-import { Badge } from '@/components/badge/badge';
+import { Button } from '@/components/button/button';
 import {
     Dialog,
     DialogContent,
@@ -13,7 +13,6 @@ import {
     ResizablePanel,
     ResizablePanelGroup,
 } from '@/components/resizable/resizable';
-import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import {
     Tabs,
     TabsContent,
@@ -23,8 +22,6 @@ import {
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { exportBaseSQL } from '@/lib/data/sql-export/export-sql-script';
 import { buildReviewGrouping } from '@/lib/diagram-workflow/review-grouping';
-import { getAuthoritativeVersionCanonicalSchema } from '@/lib/diagram-workflow/version-canonical';
-import { getVersionDisplayLabel } from '@/lib/diagram-workflow/version-labels';
 import type { DBTable } from '@/lib/domain/db-table';
 import type { Diagram } from '@/lib/domain/diagram';
 import { canonicalSchemaToDiagram } from '@/lib/schema-sync/canonical-adapters';
@@ -33,7 +30,7 @@ import type {
     CompareRelationshipResult,
     CompareTableResult,
 } from '@schemadash/schema-sync-core/compare-types';
-import { ChevronDown, GitFork, Search, Table2 } from 'lucide-react';
+import { ChevronDown, GitFork, Search, Table2, Undo2 } from 'lucide-react';
 
 type ReviewCompareResult = ReturnType<
     typeof buildReviewGrouping
@@ -48,7 +45,6 @@ interface ReviewBrowserItem {
     id: string;
     kind: ReviewItemKind;
     label: string;
-    context?: string;
     searchText: string;
     status: ReviewItemStatus;
     tableResult?: CompareTableResult;
@@ -328,25 +324,25 @@ const getRowToneClassName = ({
     if (missing) {
         return cn(
             baseClassName,
-            'border-slate-300 bg-slate-50/70 text-slate-400 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-500'
+            'border-slate-200 bg-slate-50/70 text-slate-400 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-500'
         );
     }
 
     if (status === 'added' && surface === 'target') {
         return cn(
             baseClassName,
-            'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100',
+            'bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100',
             selected &&
-                'border-emerald-500 ring-1 ring-emerald-500 dark:border-emerald-500'
+                'border-emerald-100 ring-1 ring-emerald-500 dark:border-emerald-500'
         );
     }
 
     if (status === 'removed' && surface === 'baseline') {
         return cn(
             baseClassName,
-            'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-100',
+            'bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-100',
             selected &&
-                'border-rose-500 ring-1 ring-rose-500 dark:border-rose-500'
+                'border-rose-100 ring-1 ring-rose-500 dark:border-rose-500'
         );
     }
 
@@ -524,37 +520,25 @@ const getCodeLineToneClassName = ({
     return 'bg-background text-foreground';
 };
 
-const getReviewStatusLabel = (status: ReviewItemStatus) =>
-    status === 'added' ? 'Added' : status === 'removed' ? 'Removed' : 'Changed';
-
-const getReviewStatusBadgeClassName = (status: ReviewItemStatus) =>
-    status === 'added'
-        ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'
-        : status === 'removed'
-          ? 'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-200'
-          : 'border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-200';
-
 const ReviewCodePane: React.FC<{
-    title: string;
-    caption: string;
     lines: ReviewAlignedCodeLine[];
     emptyLabel: string;
     surface: ReviewSurface;
-}> = ({ title, caption, lines, emptyLabel, surface }) => {
+    viewportRef?: React.RefObject<HTMLDivElement | null>;
+    onViewportScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
+}> = ({
+    lines,
+    emptyLabel,
+    surface,
+    viewportRef,
+    onViewportScroll,
+}) => {
     if (lines.length === 0) {
         return (
-            <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-background">
-                <div className="border-b bg-muted/30 px-4 py-3">
-                    <div className="text-sm font-semibold text-foreground">
-                        {title}
-                    </div>
-                    <div className="pt-1 text-xs text-muted-foreground">
-                        {caption}
-                    </div>
-                </div>
+            <div className="h-full overflow-hidden rounded-lg border bg-background">
                 <div
                     className={cn(
-                        'min-h-[220px] flex-1',
+                        'h-full min-h-[220px] w-full',
                         surface === 'baseline'
                             ? 'bg-[repeating-linear-gradient(135deg,theme(colors.rose.100)_0px,theme(colors.rose.100)_2px,transparent_2px,transparent_8px)] dark:bg-[repeating-linear-gradient(135deg,rgba(244,63,94,0.2)_0px,rgba(244,63,94,0.2)_2px,transparent_2px,transparent_8px)]'
                             : 'bg-[repeating-linear-gradient(135deg,theme(colors.emerald.100)_0px,theme(colors.emerald.100)_2px,transparent_2px,transparent_8px)] dark:bg-[repeating-linear-gradient(135deg,rgba(16,185,129,0.2)_0px,rgba(16,185,129,0.2)_2px,transparent_2px,transparent_8px)]'
@@ -569,16 +553,12 @@ const ReviewCodePane: React.FC<{
     }
 
     return (
-        <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-background">
-            <div className="border-b bg-muted/30 px-4 py-3">
-                <div className="text-sm font-semibold text-foreground">
-                    {title}
-                </div>
-                <div className="pt-1 text-xs text-muted-foreground">
-                    {caption}
-                </div>
-            </div>
-            <ScrollArea className="h-full">
+        <div className="h-full overflow-hidden rounded-lg border bg-background">
+            <div
+                ref={viewportRef}
+                onScroll={onViewportScroll}
+                className="h-full overflow-auto"
+            >
                 <div className="min-h-[220px] min-w-max font-mono text-[13px] leading-6">
                     {lines.map((line) => {
                         const cell =
@@ -608,27 +588,31 @@ const ReviewCodePane: React.FC<{
                         );
                     })}
                 </div>
-            </ScrollArea>
+            </div>
         </div>
     );
 };
 
 const ReviewColumnList: React.FC<{
     heading: string;
-    subtitle: string;
     items: ReviewBrowserItem[];
     surface: ReviewSurface;
     selectedItemId: string | null;
     onSelect: (itemId: string) => void;
     emptyState: string;
+    showActions?: boolean;
+    viewportRef?: React.RefObject<HTMLDivElement | null>;
+    onViewportScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
 }> = ({
     heading,
-    subtitle,
     items,
     surface,
     selectedItemId,
     onSelect,
     emptyState,
+    showActions = false,
+    viewportRef,
+    onViewportScroll,
 }) => {
     const tableItems = items.filter((item) => item.kind === 'table');
     const relationshipItems = items.filter(
@@ -653,13 +637,10 @@ const ReviewColumnList: React.FC<{
 
         return (
             <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2 px-2 text-sm font-medium text-foreground">
-                    <div className="flex items-center gap-2">
-                        <ChevronDown className="size-4" />
-                        <Icon className="size-4 text-muted-foreground" />
-                        <span>{title}</span>
-                    </div>
-                    <Badge variant="outline">{groupItems.length}</Badge>
+                <div className="flex items-center gap-2 px-2 text-sm font-medium text-foreground">
+                    <ChevronDown className="size-4" />
+                    <Icon className="size-4 text-muted-foreground" />
+                    <span>{title}</span>
                 </div>
                 <div className="space-y-1">
                     {scopedItems.map((item) => {
@@ -688,7 +669,7 @@ const ReviewColumnList: React.FC<{
                                 onClick={() => onSelect(item.id)}
                             >
                                 {missing ? (
-                                    <span className="h-4 w-full rounded bg-transparent" />
+                                    <span className="h-5 w-full rounded bg-transparent" />
                                 ) : (
                                     <>
                                         <span className="w-3 shrink-0 text-center font-semibold">
@@ -696,32 +677,15 @@ const ReviewColumnList: React.FC<{
                                                 ? '+'
                                                 : item.status === 'removed'
                                                   ? '-'
-                                                  : '~'}
+                                                  : ''}
                                         </span>
                                         {item.kind === 'table' ? (
                                             <Table2 className="size-4 text-muted-foreground" />
                                         ) : (
                                             <GitFork className="size-4 text-muted-foreground" />
                                         )}
-                                        <div className="min-w-0 flex-1">
-                                            <div className="truncate font-medium text-foreground">
-                                                {item.label}
-                                            </div>
-                                            {item.context ? (
-                                                <div className="truncate text-xs text-muted-foreground">
-                                                    {item.context}
-                                                </div>
-                                            ) : null}
-                                        </div>
-                                        <span
-                                            className={cn(
-                                                'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]',
-                                                getReviewStatusBadgeClassName(
-                                                    item.status
-                                                )
-                                            )}
-                                        >
-                                            {getReviewStatusLabel(item.status)}
+                                        <span className="truncate">
+                                            {item.label}
                                         </span>
                                     </>
                                 )}
@@ -735,16 +699,28 @@ const ReviewColumnList: React.FC<{
 
     return (
         <div className="flex h-full min-h-0 flex-col">
-            <div className="border-b bg-muted/20 px-4 py-3">
-                <div className="text-sm font-semibold text-foreground">
-                    {heading}
-                </div>
-                <div className="pt-1 text-xs text-muted-foreground">
-                    {subtitle}
-                </div>
+            <div className="flex items-center justify-between border-b bg-muted/20 px-3 py-2 text-sm font-semibold text-muted-foreground">
+                <span>{heading}</span>
+                {showActions ? (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled
+                        className="h-5 gap-1.5 px-2 text-xs text-foreground"
+                        title="Revert actions are not wired into this review surface yet."
+                    >
+                        <Undo2 className="size-3.5" />
+                        Revert All
+                    </Button>
+                ) : null}
             </div>
 
-            <ScrollArea className="min-h-0 flex-1">
+            <div
+                ref={viewportRef}
+                onScroll={onViewportScroll}
+                className="min-h-0 flex-1 overflow-auto"
+            >
                 <div className="space-y-6 p-3">
                     {renderGroup({
                         title: 'Tables',
@@ -757,12 +733,12 @@ const ReviewColumnList: React.FC<{
                         groupItems: relationshipItems,
                     })}
                     {items.length === 0 ? (
-                        <div className="rounded-xl border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+                        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                             {emptyState}
                         </div>
                     ) : null}
                 </div>
-            </ScrollArea>
+            </div>
         </div>
     );
 };
@@ -778,19 +754,76 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
     );
     const [format, setFormat] = React.useState<ReviewFormat>('sql');
 
+    const baselineListViewportRef = React.useRef<HTMLDivElement | null>(null);
+    const targetListViewportRef = React.useRef<HTMLDivElement | null>(null);
+    const listSyncLockRef = React.useRef(false);
+
+    const baselineCodeViewportRef = React.useRef<HTMLDivElement | null>(null);
+    const targetCodeViewportRef = React.useRef<HTMLDivElement | null>(null);
+    const codeSyncLockRef = React.useRef(false);
+
+    const syncListScroll = React.useCallback(
+        (
+            source: 'baseline' | 'target',
+            event: React.UIEvent<HTMLDivElement>
+        ) => {
+            if (listSyncLockRef.current) {
+                return;
+            }
+
+            const sourceElement = event.currentTarget;
+            const targetElement =
+                source === 'baseline'
+                    ? targetListViewportRef.current
+                    : baselineListViewportRef.current;
+
+            if (!targetElement) {
+                return;
+            }
+
+            listSyncLockRef.current = true;
+            targetElement.scrollTop = sourceElement.scrollTop;
+            targetElement.scrollLeft = sourceElement.scrollLeft;
+
+            requestAnimationFrame(() => {
+                listSyncLockRef.current = false;
+            });
+        },
+        []
+    );
+
+    const syncCodeScroll = React.useCallback(
+        (
+            source: 'baseline' | 'target',
+            event: React.UIEvent<HTMLDivElement>
+        ) => {
+            if (codeSyncLockRef.current) {
+                return;
+            }
+
+            const sourceElement = event.currentTarget;
+            const targetElement =
+                source === 'baseline'
+                    ? targetCodeViewportRef.current
+                    : baselineCodeViewportRef.current;
+
+            if (!targetElement) {
+                return;
+            }
+
+            codeSyncLockRef.current = true;
+            targetElement.scrollTop = sourceElement.scrollTop;
+            targetElement.scrollLeft = sourceElement.scrollLeft;
+
+            requestAnimationFrame(() => {
+                codeSyncLockRef.current = false;
+            });
+        },
+        []
+    );
+
     const developmentDiagram = workflow?.developmentDiagram;
-    const baselineSchema =
-        workflow?.compareSourceKind === 'version'
-            ? getAuthoritativeVersionCanonicalSchema(workflow.compareVersion)
-            : workflow?.workflow?.liveSnapshot?.canonicalSchema;
-    const baselineTitle =
-        workflow?.compareSourceKind === 'version' && workflow.compareVersion
-            ? getVersionDisplayLabel(workflow.compareVersion)
-            : 'Live Database';
-    const baselineSubtitle =
-        workflow?.compareSourceKind === 'version'
-            ? 'Immutable historical snapshot selected as the review baseline.'
-            : 'Last synced live schema snapshot used as the review baseline.';
+    const baselineSchema = workflow?.workflow?.liveSnapshot?.canonicalSchema;
 
     const reviewGrouping = React.useMemo(
         () =>
@@ -813,11 +846,11 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                 ? canonicalSchemaToDiagram({
                       canonicalSchema: baselineSchema,
                       diagramId: `${developmentDiagram.id}-baseline`,
-                      diagramName: baselineTitle,
+                      diagramName: 'Database',
                       schemaSync: developmentDiagram.schemaSync,
                   })
                 : null,
-        [baselineSchema, baselineTitle, developmentDiagram]
+        [baselineSchema, developmentDiagram]
     );
 
     const browserItems = React.useMemo<ReviewBrowserItem[]>(() => {
@@ -837,11 +870,6 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                     table.target?.schemaName ?? table.baseline?.schemaName,
                     table.target?.name ?? table.baseline?.name
                 ).replace(/^public\./, ''),
-                context:
-                    table.target?.kind === 'view' ||
-                    table.baseline?.kind === 'view'
-                        ? 'View'
-                        : 'Table',
                 searchText: [
                     table.target?.name,
                     table.baseline?.name,
@@ -864,9 +892,6 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                     relationship.target?.name ??
                     relationship.baseline?.name ??
                     relationship.matchKey,
-                context:
-                    relationship.target?.referencedTableName ??
-                    relationship.baseline?.referencedTableName,
                 searchText: [
                     relationship.target?.name,
                     relationship.baseline?.name,
@@ -922,28 +947,6 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
             null,
         [filteredItems, selectedItemId]
     );
-    const selectedItemStatusLabel = selectedItem
-        ? getReviewStatusLabel(selectedItem.status)
-        : null;
-    const selectedItemStatusClassName = selectedItem
-        ? getReviewStatusBadgeClassName(selectedItem.status)
-        : null;
-    const summaryCards = compareResult
-        ? [
-              {
-                  label: 'Tables',
-                  total: compareResult.summary.tables.total,
-              },
-              {
-                  label: 'Fields',
-                  total: compareResult.summary.fields.total,
-              },
-              {
-                  label: 'Relationships',
-                  total: compareResult.summary.relationships.total,
-              },
-          ]
-        : [];
 
     const preview = React.useMemo(() => {
         if (
@@ -1053,20 +1056,39 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
         [preview.baselineCode, preview.targetCode]
     );
 
+    React.useEffect(() => {
+        const leftList = baselineListViewportRef.current;
+        const rightList = targetListViewportRef.current;
+
+        if (leftList && rightList) {
+            rightList.scrollTop = leftList.scrollTop;
+            rightList.scrollLeft = leftList.scrollLeft;
+        }
+    }, [selectedItemId, filteredItems.length, open]);
+
+    React.useEffect(() => {
+        const leftCode = baselineCodeViewportRef.current;
+        const rightCode = targetCodeViewportRef.current;
+
+        if (leftCode && rightCode) {
+            rightCode.scrollTop = leftCode.scrollTop;
+            rightCode.scrollLeft = leftCode.scrollLeft;
+        }
+    }, [selectedItemId, format, preview.baselineCode, preview.targetCode, open]);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 className="flex h-[88vh] w-[min(1730px,96vw)] max-w-none flex-col overflow-hidden p-0"
                 showClose
             >
-                <div className="border-b bg-gradient-to-r from-slate-50 via-white to-sky-50/70 px-6 py-5 dark:from-slate-950 dark:via-slate-950 dark:to-sky-950/20">
-                    <DialogTitle className="text-[28px] font-semibold tracking-tight">
+                <div className="border-b px-6 py-2">
+                    <DialogTitle className="text-[25px] font-semibold tracking-tight">
                         Review Proposed Changes
                     </DialogTitle>
-                    <DialogDescription className="pt-1 text-sm text-muted-foreground">
-                        Compare the selected baseline against Development in a
-                        structured browser with searchable entities and aligned
-                        SQL or DBML previews.
+                    <DialogDescription className="sr-only">
+                        Review the live Database baseline against the current
+                        Development schema in a dual-pane compare browser.
                     </DialogDescription>
                 </div>
 
@@ -1075,90 +1097,24 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                         <Alert>
                             <AlertTitle>Review is not available yet</AlertTitle>
                             <AlertDescription>
-                                {workflow?.compareSourceKind === 'version'
-                                    ? 'Open a historical version in diff mode to inspect a structured review against Development.'
-                                    : 'Sync a live snapshot and keep a development diagram loaded to inspect a structured review of the compare baseline.'}
+                                Sync a live snapshot and keep a development
+                                diagram loaded to inspect a structured review of
+                                the compare baseline.
                             </AlertDescription>
                         </Alert>
                     </div>
                 ) : (
-                    <div className="flex min-h-0 flex-1 flex-col gap-4 px-6 pb-6 pt-4">
-                        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
-                            <div className="rounded-2xl border bg-card p-4 shadow-sm">
-                                <div className="flex flex-wrap items-start justify-between gap-3">
-                                    <div className="space-y-2">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <Badge variant="outline">
-                                                Baseline {baselineTitle}
-                                            </Badge>
-                                            <Badge variant="secondary">
-                                                Development
-                                            </Badge>
-                                            <Badge variant="outline">
-                                                {filteredItems.length} visible
-                                                change
-                                                {filteredItems.length === 1
-                                                    ? ''
-                                                    : 's'}
-                                            </Badge>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">
-                                            {baselineSubtitle}
-                                        </p>
-                                    </div>
-                                    {selectedItem ? (
-                                        <div className="rounded-2xl border bg-muted/20 px-4 py-3">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="text-sm font-semibold text-foreground">
-                                                    {selectedItem.label}
-                                                </span>
-                                                <span
-                                                    className={cn(
-                                                        'rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]',
-                                                        selectedItemStatusClassName
-                                                    )}
-                                                >
-                                                    {selectedItemStatusLabel}
-                                                </span>
-                                            </div>
-                                            <div className="pt-1 text-xs text-muted-foreground">
-                                                {selectedItem.context ??
-                                                    'Selected change preview'}
-                                            </div>
-                                        </div>
-                                    ) : null}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-3">
-                                {summaryCards.map((card) => (
-                                    <div
-                                        key={card.label}
-                                        className="rounded-2xl border bg-card px-4 py-3 text-center shadow-sm"
-                                    >
-                                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                            {card.label}
-                                        </div>
-                                        <div className="pt-1 text-lg font-semibold text-foreground">
-                                            {card.total}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="rounded-2xl border bg-card p-3 shadow-sm">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    value={searchQuery}
-                                    onChange={(event) =>
-                                        setSearchQuery(event.target.value)
-                                    }
-                                    placeholder="Search changed tables, relationships, and related entities..."
-                                    className="h-11 pl-10"
-                                />
-                            </div>
+                    <div className="flex min-h-0 flex-1 flex-col gap-2 px-6 pb-6 pt-0">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                value={searchQuery}
+                                onChange={(event) =>
+                                    setSearchQuery(event.target.value)
+                                }
+                                placeholder="Search tables and relationships..."
+                                className="h-9 pl-10"
+                            />
                         </div>
 
                         <div className="min-h-0 flex-1">
@@ -1174,22 +1130,29 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                         >
                                             <ResizablePanel defaultSize={50}>
                                                 <ReviewColumnList
-                                                    heading={baselineTitle}
-                                                    subtitle={baselineSubtitle}
+                                                    heading="Database"
                                                     items={filteredItems}
                                                     surface="baseline"
                                                     selectedItemId={
                                                         selectedItem?.id ?? null
                                                     }
                                                     onSelect={setSelectedItemId}
-                                                    emptyState={`No matching changes on ${baselineTitle}.`}
+                                                    emptyState="No matching Database changes."
+                                                    viewportRef={
+                                                        baselineListViewportRef
+                                                    }
+                                                    onViewportScroll={(event) =>
+                                                        syncListScroll(
+                                                            'baseline',
+                                                            event
+                                                        )
+                                                    }
                                                 />
                                             </ResizablePanel>
                                             <ResizableHandle withHandle />
                                             <ResizablePanel defaultSize={50}>
                                                 <ReviewColumnList
                                                     heading="Development"
-                                                    subtitle="Current editable head that will receive the reviewed changes."
                                                     items={filteredItems}
                                                     surface="target"
                                                     selectedItemId={
@@ -1197,6 +1160,16 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                     }
                                                     onSelect={setSelectedItemId}
                                                     emptyState="No matching Development changes."
+                                                    showActions
+                                                    viewportRef={
+                                                        targetListViewportRef
+                                                    }
+                                                    onViewportScroll={(event) =>
+                                                        syncListScroll(
+                                                            'target',
+                                                            event
+                                                        )
+                                                    }
                                                 />
                                             </ResizablePanel>
                                         </ResizablePanelGroup>
@@ -1214,28 +1187,17 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                             }
                                             className="flex min-h-0 flex-1 flex-col"
                                         >
-                                            <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-                                                <div>
-                                                    <div className="text-sm font-semibold text-foreground">
-                                                        Code Preview
-                                                    </div>
-                                                    <div className="pt-1 text-xs text-muted-foreground">
-                                                        Review aligned{' '}
-                                                        {format.toUpperCase()}{' '}
-                                                        output for the selected
-                                                        change.
-                                                    </div>
-                                                </div>
-                                                <TabsList className="h-9 rounded-xl border bg-background p-1">
+                                            <div className="border-b px-4 pt-3">
+                                                <TabsList className="h-9 rounded-b-none rounded-t-lg border border-b-0 bg-background p-0">
                                                     <TabsTrigger
                                                         value="sql"
-                                                        className="rounded-lg px-4 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-none dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900"
+                                                        className="rounded-b-none rounded-t-md border-b-2 border-transparent px-4 data-[state=active]:border-border data-[state=active]:shadow-none"
                                                     >
                                                         SQL
                                                     </TabsTrigger>
                                                     <TabsTrigger
                                                         value="dbml"
-                                                        className="rounded-lg px-4 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-none dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900"
+                                                        className="rounded-b-none rounded-t-md border-b-2 border-transparent px-4 data-[state=active]:border-border data-[state=active]:shadow-none"
                                                     >
                                                         DBML
                                                     </TabsTrigger>
@@ -1254,13 +1216,20 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                         defaultSize={50}
                                                     >
                                                         <ReviewCodePane
-                                                            title={
-                                                                baselineTitle
-                                                            }
-                                                            caption="Baseline surface for the selected change."
                                                             lines={previewLines}
-                                                            emptyLabel={`No ${baselineTitle} SQL for this selected change.`}
+                                                            emptyLabel="No baseline SQL for this selected change."
                                                             surface="baseline"
+                                                            viewportRef={
+                                                                baselineCodeViewportRef
+                                                            }
+                                                            onViewportScroll={(
+                                                                event
+                                                            ) =>
+                                                                syncCodeScroll(
+                                                                    'baseline',
+                                                                    event
+                                                                )
+                                                            }
                                                         />
                                                     </ResizablePanel>
                                                     <ResizableHandle
@@ -1270,11 +1239,20 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                         defaultSize={50}
                                                     >
                                                         <ReviewCodePane
-                                                            title="Development"
-                                                            caption="Editable Development target for the selected change."
                                                             lines={previewLines}
                                                             emptyLabel="No development SQL for this selected change."
                                                             surface="target"
+                                                            viewportRef={
+                                                                targetCodeViewportRef
+                                                            }
+                                                            onViewportScroll={(
+                                                                event
+                                                            ) =>
+                                                                syncCodeScroll(
+                                                                    'target',
+                                                                    event
+                                                                )
+                                                            }
                                                         />
                                                     </ResizablePanel>
                                                 </ResizablePanelGroup>
@@ -1292,13 +1270,20 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                         defaultSize={50}
                                                     >
                                                         <ReviewCodePane
-                                                            title={
-                                                                baselineTitle
-                                                            }
-                                                            caption="Baseline surface for the selected change."
                                                             lines={previewLines}
-                                                            emptyLabel={`No ${baselineTitle} DBML for this selected change.`}
+                                                            emptyLabel="No baseline DBML for this selected change."
                                                             surface="baseline"
+                                                            viewportRef={
+                                                                baselineCodeViewportRef
+                                                            }
+                                                            onViewportScroll={(
+                                                                event
+                                                            ) =>
+                                                                syncCodeScroll(
+                                                                    'baseline',
+                                                                    event
+                                                                )
+                                                            }
                                                         />
                                                     </ResizablePanel>
                                                     <ResizableHandle
@@ -1308,11 +1293,20 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                         defaultSize={50}
                                                     >
                                                         <ReviewCodePane
-                                                            title="Development"
-                                                            caption="Editable Development target for the selected change."
                                                             lines={previewLines}
                                                             emptyLabel="No development DBML for this selected change."
                                                             surface="target"
+                                                            viewportRef={
+                                                                targetCodeViewportRef
+                                                            }
+                                                            onViewportScroll={(
+                                                                event
+                                                            ) =>
+                                                                syncCodeScroll(
+                                                                    'target',
+                                                                    event
+                                                                )
+                                                            }
                                                         />
                                                     </ResizablePanel>
                                                 </ResizablePanelGroup>

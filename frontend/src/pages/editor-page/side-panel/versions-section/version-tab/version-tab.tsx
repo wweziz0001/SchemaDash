@@ -131,7 +131,7 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
         <>
             <div className="flex flex-1 flex-col overflow-hidden px-2 pb-2">
                 <div className="space-y-3 pb-3">
-                    <div className="rounded-2xl border bg-gradient-to-br from-slate-50 via-white to-sky-50/70 p-4 shadow-sm dark:from-slate-950 dark:via-slate-950 dark:to-sky-950/30">
+{/*                     <div className="rounded-2xl border bg-gradient-to-br from-slate-50 via-white to-sky-50/70 p-4 shadow-sm dark:from-slate-950 dark:via-slate-950 dark:to-sky-950/30">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-200">
@@ -170,7 +170,7 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     <div className="flex flex-col gap-2 sm:flex-row">
                         <div className="relative flex-1">
@@ -275,7 +275,7 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+{/*                                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                                             <span>
                                                 The only editable surface
                                             </span>
@@ -293,12 +293,12 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
                                                     {latestVersion.versionLabel}
                                                 </span>
                                             ) : null}
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </button>
                             </article>
 
-                            <div className="flex items-center justify-between px-1">
+{/*                             <div className="flex items-center justify-between px-1">
                                 <div>
                                     <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                         Saved Versions
@@ -315,7 +315,7 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
                                         ? 'result'
                                         : 'results'}
                                 </Badge>
-                            </div>
+                            </div> */}
 
                             {versions.length === 0 ? (
                                 <EmptyState
