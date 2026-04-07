@@ -173,7 +173,7 @@ describe('restore version dialog', () => {
         );
 
         const restoreButton = screen.getByRole('button', {
-            name: 'Restore to Development',
+            name: 'Revert to This Version',
         });
         expect(restoreButton).toBeDisabled();
 
@@ -262,7 +262,7 @@ describe('restore version dialog', () => {
         );
         await user.click(
             screen.getByRole('button', {
-                name: 'Restore to Development',
+                name: 'Revert to This Version',
             })
         );
 

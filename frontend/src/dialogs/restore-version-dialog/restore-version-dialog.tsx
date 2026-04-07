@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Badge } from '@/components/badge/badge';
 import { Button } from '@/components/button/button';
 import {
     Dialog,
@@ -25,6 +26,7 @@ import {
     getRestoreVersionHeading,
     RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT,
 } from '@/lib/diagram-workflow/restore-messages';
+import { ArrowRight, RotateCcw, ShieldCheck } from 'lucide-react';
 import { RestoreWarningPanel } from './restore-warning-panel';
 
 export interface RestoreVersionDialogProps {
@@ -141,40 +143,72 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent showClose className="sm:max-w-xl">
+            <DialogContent showClose className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Restore to Development</DialogTitle>
-                    <DialogDescription>
-                        Review the impact carefully before replacing the current
-                        Development document with{' '}
-                        {version
-                            ? getRestoreVersionHeading(version)
-                            : 'the selected version'}
-                        .
+                    <DialogTitle>Revert to This Version</DialogTitle>
+                    <DialogDescription className="text-sm leading-6">
+                        Replace the current Development diagram with{' '}
+                        <span className="font-medium text-foreground">
+                            {version
+                                ? getRestoreVersionHeading(version)
+                                : 'the selected version'}
+                        </span>{' '}
+                        while preserving the snapshot itself and creating a
+                        safety copy of Development first.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
-                    <div className="rounded-xl border bg-muted/15 p-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                                Source{' '}
-                                {version
-                                    ? getRestoreVersionHeading(version)
-                                    : 'Selected version'}
-                            </span>
-                            <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                                Target Development
-                            </span>
-                            <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                                Copy, do not mutate snapshot
-                            </span>
+                    <div className="rounded-2xl border bg-gradient-to-br from-slate-50 via-white to-rose-50/70 p-4 shadow-sm dark:from-slate-950 dark:via-slate-950 dark:to-rose-950/20">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Badge variant="outline">
+                                        Source snapshot
+                                    </Badge>
+                                    <Badge variant="secondary">Immutable</Badge>
+                                    <Badge variant="outline">
+                                        Target Development
+                                    </Badge>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-3 text-sm">
+                                    <div className="rounded-2xl border bg-background px-4 py-3 shadow-sm">
+                                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                            From
+                                        </div>
+                                        <div className="pt-1 font-semibold text-foreground">
+                                            {version
+                                                ? getRestoreVersionHeading(
+                                                      version
+                                                  )
+                                                : 'Selected version'}
+                                        </div>
+                                    </div>
+                                    <div className="flex size-10 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
+                                        <ArrowRight className="size-4" />
+                                    </div>
+                                    <div className="rounded-2xl border bg-background px-4 py-3 shadow-sm">
+                                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                            To
+                                        </div>
+                                        <div className="pt-1 font-semibold text-foreground">
+                                            Development
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border bg-background px-4 py-3 shadow-sm">
+                                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                    <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+                                    Safety behavior preserved
+                                </div>
+                                <p className="pt-2 text-sm text-muted-foreground">
+                                    Development is snapshotted automatically
+                                    before the revert is applied.
+                                </p>
+                            </div>
                         </div>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            Restoring copies the selected immutable version back
-                            into the mutable Development head. The stored
-                            version itself is never edited.
-                        </p>
                     </div>
 
                     {version ? <RestoreWarningPanel version={version} /> : null}
@@ -185,10 +219,16 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
                         </div>
                     ) : null}
 
-                    <div className="space-y-2 rounded-xl border bg-card/60 p-4 shadow-sm">
-                        <Label htmlFor="restore-confirmation-text">
-                            Confirmation text
-                        </Label>
+                    <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
+                        <div>
+                            <Label htmlFor="restore-confirmation-text">
+                                Confirmation text
+                            </Label>
+                            <p className="pt-1 text-sm text-muted-foreground">
+                                This prevents accidental replacement of the
+                                current Development state.
+                            </p>
+                        </div>
                         <Input
                             id="restore-confirmation-text"
                             value={confirmationText}
@@ -219,8 +259,10 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
                         variant="destructive"
                         disabled={confirmDisabled}
                         onClick={() => void handleRestore()}
+                        className="gap-1.5"
                     >
-                        {submitting ? 'Restoring...' : 'Restore to Development'}
+                        <RotateCcw className="size-4" />
+                        {submitting ? 'Reverting...' : 'Revert to This Version'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
