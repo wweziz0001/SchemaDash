@@ -9,6 +9,14 @@ vi.mock('@/context/diagram-workflow-context/diagram-workflow-context', () => ({
     useOptionalDiagramWorkflow: vi.fn(),
 }));
 
+vi.mock('./workflow-actions-menu', () => ({
+    WorkflowActionsMenu: () => <div>Workflow Actions</div>,
+}));
+
+vi.mock('@/dialogs/restore-version-dialog/restore-version-dialog', () => ({
+    RestoreVersionDialog: () => null,
+}));
+
 const mockedUseOptionalDiagramWorkflow = vi.mocked(useOptionalDiagramWorkflow);
 
 describe('workflow mode switcher', () => {
@@ -91,7 +99,7 @@ describe('workflow mode switcher', () => {
         expect(setActiveMode).toHaveBeenCalledWith('compare');
     });
 
-    it('hides compare once the editor is already in compare mode', () => {
+    it('shows compare review controls once the editor is already in compare mode', () => {
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
             activeMode: 'compare',
@@ -116,9 +124,69 @@ describe('workflow mode switcher', () => {
         expect(
             screen.getByRole('button', { name: 'Development' })
         ).toBeTruthy();
-        expect(
-            screen.getByRole('button', { name: 'Review' })
-        ).toHaveTextContent('4');
+        expect(screen.getByText('Workflow Actions')).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Finish' })).toBeTruthy();
+    });
+
+    it('shows version workflow controls for a selected historical snapshot', () => {
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            diagramId: 'diagram-1',
+            activeMode: 'version',
+            compareModeEnabled: true,
+            compareSourceKind: null,
+            selectedVersion: {
+                id: 'version-1',
+                versionLabel: 'Version 3',
+            },
+            workflow: {
+                diagramAccess: 'owner',
+            },
+            compareVersionToDevelopment: vi.fn(),
+            setActiveMode: vi.fn(),
+        } as never);
+
+        render(<WorkflowModeSwitcher />);
+
+        expect(
+            screen.getByRole('button', { name: 'Development' })
+        ).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'View Diffs' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Options' })).toBeTruthy();
+        expect(
+            screen.queryByRole('button', { name: 'Live Database' })
+        ).toBeNull();
+    });
+
+    it('hides diffs back to the selected snapshot when comparing against a version', async () => {
+        const user = userEvent.setup();
+        const openVersion = vi.fn();
+
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            diagramId: 'diagram-1',
+            activeMode: 'compare',
+            compareModeEnabled: true,
+            compareSourceKind: 'version',
+            compareVersion: {
+                id: 'version-2',
+                versionLabel: 'Version 2',
+            },
+            compareRenderModel: {
+                compareResult: {
+                    summary: {
+                        tables: { total: 1 },
+                        fields: { total: 1 },
+                        relationships: { total: 0 },
+                    },
+                },
+            },
+            openVersion,
+            setActiveMode: vi.fn(),
+        } as never);
+
+        render(<WorkflowModeSwitcher />);
+
+        await user.click(screen.getByRole('button', { name: 'Hide Diffs' }));
+
+        expect(openVersion).toHaveBeenCalledWith('version-2');
     });
 });

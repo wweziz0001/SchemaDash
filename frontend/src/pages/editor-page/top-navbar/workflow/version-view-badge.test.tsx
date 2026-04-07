@@ -15,7 +15,7 @@ describe('version view badge', () => {
         mockedUseOptionalDiagramWorkflow.mockReset();
     });
 
-    it('only renders in read-only version mode', () => {
+    it('stays hidden when no historical snapshot is in context', () => {
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             activeMode: 'development',
             selectedVersion: undefined,
@@ -23,10 +23,10 @@ describe('version view badge', () => {
 
         render(<VersionViewBadge />);
 
-        expect(screen.queryByText('Immutable Snapshot')).toBeNull();
+        expect(screen.queryByText('Immutable')).toBeNull();
     });
 
-    it('shows immutable version metadata when a snapshot is open', () => {
+    it('shows snapshot metadata when a stored version is open', () => {
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             activeMode: 'version',
             selectedVersion: {
@@ -49,8 +49,37 @@ describe('version view badge', () => {
 
         render(<VersionViewBadge />);
 
-        expect(screen.getByText('Immutable Snapshot')).toBeTruthy();
+        expect(screen.getByText('Viewing')).toBeTruthy();
+        expect(screen.getByText('Immutable')).toBeTruthy();
         expect(screen.getByText('Milestone: Q2 schema')).toBeTruthy();
         expect(screen.getByText('Test Owner')).toBeTruthy();
+    });
+
+    it('shows diff baseline state when compare mode is sourced from a version', () => {
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            activeMode: 'compare',
+            compareSourceKind: 'version',
+            compareVersion: {
+                id: 'version-1',
+                diagramId: 'diagram-1',
+                snapshotId: 'snapshot-1',
+                name: 'Version under review',
+                description: null,
+                versionLabel: 'Version 4',
+                origin: 'manual',
+                pinned: false,
+                createdAt: '2026-03-29T15:00:00.000Z',
+                createdBy: {
+                    id: 'user-1',
+                    displayName: 'Test Owner',
+                    email: 'owner@example.com',
+                },
+            },
+        } as never);
+
+        render(<VersionViewBadge />);
+
+        expect(screen.getByText('Diff Baseline')).toBeTruthy();
+        expect(screen.getByText('Version under review')).toBeTruthy();
     });
 });
