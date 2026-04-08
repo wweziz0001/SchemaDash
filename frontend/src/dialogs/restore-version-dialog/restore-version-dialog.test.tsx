@@ -159,6 +159,17 @@ describe('restore version dialog', () => {
                     versionLabel: 'Version 2',
                     origin: 'before_restore',
                 },
+                versions: [
+                    {
+                        ...version,
+                        id: 'version-2',
+                        snapshotId: 'snapshot-2',
+                        name: 'Before restore: Stable release',
+                        versionLabel: 'Version 2',
+                        origin: 'before_restore',
+                    },
+                    version,
+                ],
                 development: {
                     name: 'Development Diagram',
                     documentVersion: 8,

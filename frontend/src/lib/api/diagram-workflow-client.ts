@@ -91,6 +91,7 @@ export interface DiagramWorkflowVersionRestoreResult {
     diagramId: string;
     restoredVersion: DiagramWorkflowVersionSummary;
     safetySnapshotVersion: DiagramWorkflowVersionSummary;
+    versions: DiagramWorkflowVersionSummary[];
     development: {
         name: string;
         documentVersion: number;

@@ -24,6 +24,7 @@ export interface DiagramVersionRestoreResultView {
     diagramId: string;
     restoredVersion: DiagramWorkflowVersionSummaryView;
     safetySnapshotVersion: DiagramWorkflowVersionSummaryView;
+    versions: DiagramWorkflowVersionSummaryView[];
     development: {
         name: string;
         documentVersion: number;
@@ -124,6 +125,9 @@ export class DiagramVersionRestoreService {
             diagramId,
             restoredVersion: this.toVersionSummaryView(version),
             safetySnapshotVersion,
+            versions: this.repository
+                .listVersions(diagramId)
+                .map((item) => this.toVersionSummaryView(item)),
             development: {
                 name: restoredDiagram.diagram.name,
                 documentVersion: restoredDiagram.collaboration.document.version,

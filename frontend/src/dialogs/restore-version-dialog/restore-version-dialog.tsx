@@ -147,10 +147,13 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
             workflow.setVersions(
                 mergeWorkflowVersions({
                     currentVersions: workflow.versions ?? [],
-                    incomingVersions: [
-                        response.result.restoredVersion,
-                        response.result.safetySnapshotVersion,
-                    ],
+                    incomingVersions:
+                        response.result.versions.length > 0
+                            ? response.result.versions
+                            : [
+                                  response.result.restoredVersion,
+                                  response.result.safetySnapshotVersion,
+                              ],
                 })
             );
             workflow.setActiveMode('development');

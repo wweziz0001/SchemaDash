@@ -185,6 +185,13 @@ describe('diagram version restore service', () => {
         expect(restoreResult.safetySnapshotVersion.origin).toBe(
             'before_restore'
         );
+        expect(restoreResult.versions).toHaveLength(2);
+        expect(restoreResult.versions.map((item) => item.id)).toEqual(
+            expect.arrayContaining([
+                version.id,
+                restoreResult.safetySnapshotVersion.id,
+            ])
+        );
         expect(restoreResult.development.name).toBe(
             originalDocument?.name ?? 'Development Diagram'
         );
