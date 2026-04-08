@@ -20,12 +20,14 @@ export const diagramWorkflowConnectionStatusSchema = z.enum([
 export const diagramWorkflowCompareSourceKindSchema = z.enum([
     'live',
     'version',
+    'changelog',
 ]);
 
 export const diagramWorkflowSnapshotKindSchema = z.enum([
     'live',
     'version',
     'system',
+    'changelog',
 ]);
 
 export const diagramWorkflowSnapshotSourceKindSchema = z.enum([
@@ -49,6 +51,39 @@ export const diagramWorkflowVersionOriginSchema = z.enum([
     'before_apply',
 ]);
 
+export const diagramWorkflowChangelogEventTypeSchema = z.enum([
+    'save',
+    'auto_checkpoint',
+    'restore',
+    'revert',
+]);
+
+export const diagramWorkflowCompareSummarySchema = z.object({
+    tables: z.object({
+        added: z.number().int().nonnegative(),
+        removed: z.number().int().nonnegative(),
+        changed: z.number().int().nonnegative(),
+        unchanged: z.number().int().nonnegative(),
+        total: z.number().int().nonnegative(),
+    }),
+    fields: z.object({
+        added: z.number().int().nonnegative(),
+        removed: z.number().int().nonnegative(),
+        changed: z.number().int().nonnegative(),
+        unchanged: z.number().int().nonnegative(),
+        total: z.number().int().nonnegative(),
+    }),
+    relationships: z.object({
+        added: z.number().int().nonnegative(),
+        removed: z.number().int().nonnegative(),
+        changed: z.number().int().nonnegative(),
+        unchanged: z.number().int().nonnegative(),
+        total: z.number().int().nonnegative(),
+    }),
+    totalChanges: z.number().int().nonnegative(),
+    hasChanges: z.boolean(),
+});
+
 export const bindDiagramWorkflowConnectionSchema = z.object({
     connectionId: z.string().trim().min(1),
     importedSchemas: z.array(z.string().trim().min(1)).optional(),
@@ -65,6 +100,21 @@ export const createDiagramWorkflowVersionSchema = z.object({
 export const restoreDiagramWorkflowVersionSchema = z.object({
     baseVersion: z.number().int().min(1),
     sessionId: z.string().trim().min(1).optional(),
+    currentDevelopmentCanonicalSchema: canonicalSchemaSchema,
+});
+
+export const createDiagramWorkflowChangelogEntrySchema = z.object({
+    eventType: diagramWorkflowChangelogEventTypeSchema,
+    sessionId: z.string().trim().min(1).nullable().optional(),
+    sourceDocumentVersion: z.number().int().min(1).nullable().optional(),
+    sourceLabel: z.string().trim().min(1).max(160).nullable().optional(),
+    summary: z.string().trim().min(1).max(240).nullable().optional(),
+    canonicalSchema: canonicalSchemaSchema,
+    diagramDocument: diagramDocumentSchema,
+});
+
+export const revertDiagramWorkflowChangelogEntrySchema = z.object({
+    baseVersion: z.number().int().min(1),
     currentDevelopmentCanonicalSchema: canonicalSchemaSchema,
 });
 
@@ -89,6 +139,12 @@ export type DiagramWorkflowLayoutSource = z.infer<
 export type DiagramWorkflowVersionOrigin = z.infer<
     typeof diagramWorkflowVersionOriginSchema
 >;
+export type DiagramWorkflowChangelogEventType = z.infer<
+    typeof diagramWorkflowChangelogEventTypeSchema
+>;
+export type DiagramWorkflowCompareSummary = z.infer<
+    typeof diagramWorkflowCompareSummarySchema
+>;
 export type BindDiagramWorkflowConnectionInput = z.infer<
     typeof bindDiagramWorkflowConnectionSchema
 >;
@@ -97,4 +153,10 @@ export type CreateDiagramWorkflowVersionInput = z.infer<
 >;
 export type RestoreDiagramWorkflowVersionInput = z.infer<
     typeof restoreDiagramWorkflowVersionSchema
+>;
+export type CreateDiagramWorkflowChangelogEntryInput = z.infer<
+    typeof createDiagramWorkflowChangelogEntrySchema
+>;
+export type RevertDiagramWorkflowChangelogEntryInput = z.infer<
+    typeof revertDiagramWorkflowChangelogEntrySchema
 >;

@@ -2,6 +2,8 @@ import Database from 'better-sqlite3';
 import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 import {
     diagramWorkflowCompareSourceKindSchema,
+    diagramWorkflowCompareSummarySchema,
+    diagramWorkflowChangelogEventTypeSchema,
     diagramWorkflowConnectionStatusSchema,
     diagramWorkflowLayoutSourceSchema,
     diagramWorkflowSnapshotKindSchema,
@@ -9,6 +11,8 @@ import {
     diagramWorkflowSyncStatusSchema,
     diagramWorkflowVersionOriginSchema,
     type DiagramWorkflowCompareSourceKind,
+    type DiagramWorkflowCompareSummary,
+    type DiagramWorkflowChangelogEventType,
     type DiagramWorkflowConnectionStatus,
     type DiagramWorkflowLayoutSource,
     type DiagramWorkflowSnapshotKind,
@@ -61,6 +65,22 @@ export interface DiagramWorkflowVersionRecord {
     versionLabel: string;
     pinned: boolean;
     origin: DiagramWorkflowVersionOrigin;
+    createdByUserId: string | null;
+    createdByDisplayName: string | null;
+    createdByEmail: string | null;
+    createdAt: string;
+}
+
+export interface DiagramWorkflowChangelogRecord {
+    id: string;
+    diagramId: string;
+    snapshotId: string;
+    eventType: DiagramWorkflowChangelogEventType;
+    sessionId: string | null;
+    sourceDocumentVersion: number | null;
+    sourceLabel: string | null;
+    summary: string;
+    changeSummary: DiagramWorkflowCompareSummary | null;
     createdByUserId: string | null;
     createdByDisplayName: string | null;
     createdByEmail: string | null;
@@ -197,6 +217,45 @@ export class DiagramWorkflowRepository {
                         `
                     )
                     .run(10, now);
+            })();
+        }
+
+        if (!appliedVersions.has(11)) {
+            const now = new Date().toISOString();
+            this.db.transaction(() => {
+                this.db.exec(`
+                    CREATE TABLE IF NOT EXISTS diagram_changelog_entries (
+                        id TEXT PRIMARY KEY,
+                        diagram_id TEXT NOT NULL,
+                        snapshot_id TEXT NOT NULL,
+                        event_type TEXT NOT NULL,
+                        session_id TEXT,
+                        source_document_version INTEGER,
+                        source_label TEXT,
+                        summary TEXT NOT NULL,
+                        change_summary_json TEXT,
+                        created_by_user_id TEXT,
+                        created_at TEXT NOT NULL,
+                        FOREIGN KEY(diagram_id) REFERENCES app_diagrams(id) ON DELETE CASCADE,
+                        FOREIGN KEY(snapshot_id) REFERENCES diagram_workflow_snapshots(id) ON DELETE CASCADE,
+                        FOREIGN KEY(created_by_user_id) REFERENCES app_users(id) ON DELETE SET NULL
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_diagram_changelog_entries_diagram_created
+                    ON diagram_changelog_entries(diagram_id, created_at DESC);
+
+                    CREATE INDEX IF NOT EXISTS idx_diagram_changelog_entries_snapshot
+                    ON diagram_changelog_entries(snapshot_id);
+                `);
+
+                this.db
+                    .prepare(
+                        `
+                        INSERT INTO app_migrations (version, applied_at)
+                        VALUES (?, ?)
+                        `
+                    )
+                    .run(11, now);
             })();
         }
     }
@@ -363,6 +422,43 @@ export class DiagramWorkflowRepository {
             );
     }
 
+    putChangelogEntry(entry: DiagramWorkflowChangelogRecord) {
+        this.db
+            .prepare(
+                `
+                INSERT INTO diagram_changelog_entries (
+                    id,
+                    diagram_id,
+                    snapshot_id,
+                    event_type,
+                    session_id,
+                    source_document_version,
+                    source_label,
+                    summary,
+                    change_summary_json,
+                    created_by_user_id,
+                    created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `
+            )
+            .run(
+                entry.id,
+                entry.diagramId,
+                entry.snapshotId,
+                entry.eventType,
+                entry.sessionId,
+                entry.sourceDocumentVersion,
+                entry.sourceLabel,
+                entry.summary,
+                entry.changeSummary
+                    ? JSON.stringify(entry.changeSummary)
+                    : null,
+                entry.createdByUserId,
+                entry.createdAt
+            );
+    }
+
     deleteVersion(versionId: string) {
         this.db
             .prepare(
@@ -439,6 +535,37 @@ export class DiagramWorkflowRepository {
         return row ? this.mapVersion(row) : undefined;
     }
 
+    getChangelogEntry(
+        entryId: string
+    ): DiagramWorkflowChangelogRecord | undefined {
+        const row = this.db
+            .prepare(
+                `
+                SELECT
+                    entry.id,
+                    entry.diagram_id,
+                    entry.snapshot_id,
+                    entry.event_type,
+                    entry.session_id,
+                    entry.source_document_version,
+                    entry.source_label,
+                    entry.summary,
+                    entry.change_summary_json,
+                    entry.created_by_user_id,
+                    entry.created_at,
+                    user.display_name AS created_by_display_name,
+                    user.email AS created_by_email
+                FROM diagram_changelog_entries AS entry
+                LEFT JOIN app_users AS user
+                    ON user.id = entry.created_by_user_id
+                WHERE entry.id = ?
+                `
+            )
+            .get(entryId) as Record<string, unknown> | undefined;
+
+        return row ? this.mapChangelogEntry(row) : undefined;
+    }
+
     listVersions(diagramId: string): DiagramWorkflowVersionRecord[] {
         const rows = this.db
             .prepare(
@@ -466,6 +593,69 @@ export class DiagramWorkflowRepository {
             .all(diagramId) as Array<Record<string, unknown>>;
 
         return rows.map((row) => this.mapVersion(row));
+    }
+
+    listChangelogEntries(diagramId: string): DiagramWorkflowChangelogRecord[] {
+        const rows = this.db
+            .prepare(
+                `
+                SELECT
+                    entry.id,
+                    entry.diagram_id,
+                    entry.snapshot_id,
+                    entry.event_type,
+                    entry.session_id,
+                    entry.source_document_version,
+                    entry.source_label,
+                    entry.summary,
+                    entry.change_summary_json,
+                    entry.created_by_user_id,
+                    entry.created_at,
+                    user.display_name AS created_by_display_name,
+                    user.email AS created_by_email
+                FROM diagram_changelog_entries AS entry
+                LEFT JOIN app_users AS user
+                    ON user.id = entry.created_by_user_id
+                WHERE entry.diagram_id = ?
+                ORDER BY entry.created_at DESC
+                `
+            )
+            .all(diagramId) as Array<Record<string, unknown>>;
+
+        return rows.map((row) => this.mapChangelogEntry(row));
+    }
+
+    getLatestChangelogEntry(
+        diagramId: string
+    ): DiagramWorkflowChangelogRecord | undefined {
+        const row = this.db
+            .prepare(
+                `
+                SELECT
+                    entry.id,
+                    entry.diagram_id,
+                    entry.snapshot_id,
+                    entry.event_type,
+                    entry.session_id,
+                    entry.source_document_version,
+                    entry.source_label,
+                    entry.summary,
+                    entry.change_summary_json,
+                    entry.created_by_user_id,
+                    entry.created_at,
+                    user.display_name AS created_by_display_name,
+                    user.email AS created_by_email
+                FROM diagram_changelog_entries AS entry
+                LEFT JOIN app_users AS user
+                    ON user.id = entry.created_by_user_id
+                WHERE entry.diagram_id = ?
+                ORDER BY entry.created_at DESC
+                LIMIT 1
+                `
+            )
+            .get(diagramId) as Record<string, unknown> | undefined;
+
+        return row ? this.mapChangelogEntry(row) : undefined;
     }
 
     countVersions(diagramId: string): number {
@@ -590,6 +780,42 @@ export class DiagramWorkflowRepository {
             versionLabel: String(row.version_label),
             pinned: Number(row.pinned) === 1,
             origin: diagramWorkflowVersionOriginSchema.parse(row.origin),
+            createdByUserId: row.created_by_user_id
+                ? String(row.created_by_user_id)
+                : null,
+            createdByDisplayName: row.created_by_display_name
+                ? String(row.created_by_display_name)
+                : null,
+            createdByEmail: row.created_by_email
+                ? String(row.created_by_email)
+                : null,
+            createdAt: String(row.created_at),
+        };
+    }
+
+    private mapChangelogEntry(
+        row: Record<string, unknown>
+    ): DiagramWorkflowChangelogRecord {
+        return {
+            id: String(row.id),
+            diagramId: String(row.diagram_id),
+            snapshotId: String(row.snapshot_id),
+            eventType: diagramWorkflowChangelogEventTypeSchema.parse(
+                row.event_type
+            ),
+            sessionId: row.session_id ? String(row.session_id) : null,
+            sourceDocumentVersion:
+                row.source_document_version === null ||
+                row.source_document_version === undefined
+                    ? null
+                    : Number(row.source_document_version),
+            sourceLabel: row.source_label ? String(row.source_label) : null,
+            summary: String(row.summary),
+            changeSummary: row.change_summary_json
+                ? diagramWorkflowCompareSummarySchema.parse(
+                      JSON.parse(String(row.change_summary_json))
+                  )
+                : null,
             createdByUserId: row.created_by_user_id
                 ? String(row.created_by_user_id)
                 : null,
