@@ -6,6 +6,7 @@ import {
     type CanonicalForeignKey,
     type CanonicalSchema,
     type CanonicalTable,
+    type CanonicalUniqueConstraint,
 } from '@schemadash/schema-sync-core';
 import { DatabaseType } from '@/lib/domain/database-type';
 import type {
@@ -384,6 +385,100 @@ const renderFieldType = (column: DBTable['fields'][number]) =>
         typeId: column.type.id,
     })}`;
 
+const buildCanonicalColumnId = ({
+    schemaName,
+    tableName,
+    fieldName,
+}: {
+    schemaName: string;
+    tableName: string;
+    fieldName: string;
+}) => `${schemaName}.${tableName}.${fieldName}`;
+
+const buildUniqueConstraintKey = (columnIds: string[]) =>
+    columnIds.map((columnId) => columnId.toLowerCase()).join('|');
+
+const buildUniqueConstraints = ({
+    table,
+    columnLookup,
+    nonPrimaryIndexes,
+}: {
+    table: DBTable;
+    columnLookup: Map<string, string>;
+    nonPrimaryIndexes: DBIndex[];
+}): CanonicalUniqueConstraint[] => {
+    const schemaName = table.schema ?? defaultSchemaName;
+    const tableName = table.name;
+    const constraints: CanonicalUniqueConstraint[] = [];
+    const seenConstraintKeys = new Set<string>();
+
+    const addConstraint = (constraint: CanonicalUniqueConstraint) => {
+        const constraintKey = buildUniqueConstraintKey(constraint.columnIds);
+        if (
+            constraint.columnIds.length === 0 ||
+            seenConstraintKeys.has(constraintKey)
+        ) {
+            return;
+        }
+
+        seenConstraintKeys.add(constraintKey);
+        constraints.push(constraint);
+    };
+
+    for (const index of nonPrimaryIndexes.filter(
+        (candidate) => candidate.unique
+    )) {
+        const resolvedFieldNames = index.fieldIds
+            .map((fieldId) => columnLookup.get(fieldId))
+            .filter(Boolean);
+        const fallbackConstraintName = `${tableName}_${resolvedFieldNames.join('_')}_key`;
+
+        addConstraint({
+            id:
+                index.syncMetadata?.sourceId ??
+                `${schemaName}.${tableName}.${index.name || fallbackConstraintName}`,
+            name: index.name || fallbackConstraintName,
+            columnIds: index.fieldIds
+                .map((fieldId) => {
+                    const fieldName = columnLookup.get(fieldId);
+                    return fieldName
+                        ? buildCanonicalColumnId({
+                              schemaName,
+                              tableName,
+                              fieldName,
+                          })
+                        : undefined;
+                })
+                .filter(Boolean) as string[],
+            sync: {
+                sourceId: index.syncMetadata?.sourceId,
+                sourceName: index.syncMetadata?.sourceName ?? index.name,
+            },
+        });
+    }
+
+    for (const field of table.fields) {
+        if (!field.unique || field.primaryKey) {
+            continue;
+        }
+
+        const constraintName = `${tableName}_${field.name}_key`;
+        addConstraint({
+            id: `${schemaName}.${tableName}.${constraintName}`,
+            name: constraintName,
+            columnIds: [
+                buildCanonicalColumnId({
+                    schemaName,
+                    tableName,
+                    fieldName: field.name,
+                }),
+            ],
+        });
+    }
+
+    return constraints;
+};
+
 export const diagramToCanonicalSchema = (diagram: Diagram): CanonicalSchema => {
     const canonicalCustomTypes = (diagram.customTypes ?? []).map(
         diagramCustomTypeToCanonicalCustomType
@@ -476,31 +571,11 @@ export const diagramToCanonicalSchema = (diagram: Diagram): CanonicalSchema => {
             (index) => !index.isPrimaryKey
         );
 
-        const uniqueConstraints = nonPrimaryIndexes
-            .filter((index) => index.unique)
-            .map((index) => ({
-                id:
-                    index.syncMetadata?.sourceId ??
-                    `${table.schema ?? 'public'}.${table.name}.${index.name}`,
-                name:
-                    index.name ||
-                    `${table.name}_${index.fieldIds
-                        .map((fieldId) => columnLookup.get(fieldId))
-                        .filter(Boolean)
-                        .join('_')}_key`,
-                columnIds: index.fieldIds
-                    .map((fieldId) => {
-                        const fieldName = columnLookup.get(fieldId);
-                        return fieldName
-                            ? `${table.schema ?? 'public'}.${table.name}.${fieldName}`
-                            : undefined;
-                    })
-                    .filter(Boolean) as string[],
-                sync: {
-                    sourceId: index.syncMetadata?.sourceId,
-                    sourceName: index.syncMetadata?.sourceName ?? index.name,
-                },
-            }));
+        const uniqueConstraints = buildUniqueConstraints({
+            table,
+            columnLookup,
+            nonPrimaryIndexes,
+        });
 
         const indexes = nonPrimaryIndexes
             .filter((index) => !index.unique)

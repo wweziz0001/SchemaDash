@@ -825,6 +825,28 @@ export const createChangePlan = ({
                 kind: 'create_table',
                 table: targetTable,
             });
+
+            changes.push(
+                ...targetTable.indexes.map((index) => ({
+                    id: `add-index:${targetTable.id}:${index.id}`,
+                    kind: 'add_index' as const,
+                    tableId: targetTable.id,
+                    schemaName: targetTable.schemaName,
+                    tableName: targetTable.name,
+                    index: canonicalIndexSchema.parse(index),
+                }))
+            );
+
+            changes.push(
+                ...targetTable.foreignKeys.map((foreignKey) => ({
+                    id: `add-fk:${targetTable.id}:${foreignKey.id}`,
+                    kind: 'add_foreign_key' as const,
+                    tableId: targetTable.id,
+                    schemaName: targetTable.schemaName,
+                    tableName: targetTable.name,
+                    foreignKey,
+                }))
+            );
         }
     }
 
