@@ -209,7 +209,7 @@ Files modified:
 - `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.tsx`
   - Clearer surface/view-state communication on canvas.
 - `frontend/src/pages/editor-page/canvas/canvas.tsx`
-  - Replaced the old in-canvas loading badge with the thin map-top loading strip and now allows table dragging only in readonly workflow modes (`live`, `version`, `compare`) while keeping other edits blocked.
+  - Replaced the old in-canvas loading badge with the thin map-top loading strip, allows table dragging only in readonly workflow modes (`live`, `version`, `compare`) while keeping other edits blocked, and now shows the strip only during workflow-surface transitions instead of ordinary table add/remove rendering.
 - `frontend/src/pages/editor-page/editor-page.tsx`
   - Suspense fallback now uses the lightweight map loading shell instead of the centered spinner.
 - `frontend/src/pages/editor-page/workflow-editor-page.tsx`

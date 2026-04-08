@@ -1465,6 +1465,32 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
 
     const isLoadingDOM =
         tables.length > 0 ? !getInternalNode(tables[0].id) : false;
+    const workflowSurfaceKey = workflow
+        ? [
+              workflow.activeMode,
+              workflow.workflow?.liveSnapshotId ?? 'no-live',
+              workflow.compareVersion?.id ?? 'no-compare-version',
+              workflow.selectedVersion?.id ?? 'no-selected-version',
+          ].join(':')
+        : 'editor';
+    const previousWorkflowSurfaceKeyRef = useRef(workflowSurfaceKey);
+    const [showWorkflowTransitionStrip, setShowWorkflowTransitionStrip] =
+        useState(false);
+
+    useEffect(() => {
+        if (previousWorkflowSurfaceKeyRef.current !== workflowSurfaceKey) {
+            previousWorkflowSurfaceKeyRef.current = workflowSurfaceKey;
+            setShowWorkflowTransitionStrip(true);
+        }
+    }, [workflowSurfaceKey]);
+
+    useEffect(() => {
+        if (!showWorkflowTransitionStrip || isLoadingDOM) {
+            return;
+        }
+
+        setShowWorkflowTransitionStrip(false);
+    }, [isLoadingDOM, showWorkflowTransitionStrip]);
 
     const hasOverlappingTables = useMemo(
         () =>
@@ -1708,7 +1734,9 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                 onMouseLeave={handleMouseLeave}
             >
                 <LivePresenceCursors containerRef={containerRef} />
-                {isLoadingDOM ? <MapLoadingStrip inset /> : null}
+                {showWorkflowTransitionStrip && isLoadingDOM ? (
+                    <MapLoadingStrip inset />
+                ) : null}
                 <ReactFlow
                     onlyRenderVisibleElements
                     colorMode={effectiveTheme}
