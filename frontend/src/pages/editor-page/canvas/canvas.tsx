@@ -55,7 +55,6 @@ import {
 import { Button } from '@/components/button/button';
 import { useLayout } from '@/hooks/use-layout';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { Badge } from '@/components/badge/badge';
 import { useTheme } from '@/hooks/use-theme';
 import { useTranslation } from 'react-i18next';
 import type { DBTable } from '@/lib/domain/db-table';
@@ -125,6 +124,7 @@ import { CompareSummaryChip } from './workflow/compare-summary-chip';
 import { LiveStatusChip } from './workflow/live-status-chip';
 import { LivePresenceCursors } from './live-presence-cursors';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { MapLoadingStrip } from './workflow/map-loading-strip';
 
 const HIGHLIGHTED_EDGE_Z_INDEX = 1;
 const DEFAULT_EDGE_Z_INDEX = 0;
@@ -168,6 +168,7 @@ const tableToTableNode = (
         showDBViews,
         forceShow,
         isRelationshipCreatingTarget = false,
+        draggable = true,
     }: {
         filter?: DiagramFilter;
         databaseType: DatabaseType;
@@ -175,6 +176,7 @@ const tableToTableNode = (
         showDBViews?: boolean;
         forceShow?: boolean;
         isRelationshipCreatingTarget?: boolean;
+        draggable?: boolean;
     }
 ): TableNodeType => {
     // Always use absolute position for now
@@ -199,6 +201,7 @@ const tableToTableNode = (
         id: table.id,
         type: 'table',
         position,
+        draggable,
         data: {
             table,
             isOverlapping: false,
@@ -216,11 +219,13 @@ const areaToAreaNode = (
         filter,
         databaseType,
         filterLoading,
+        draggable = true,
     }: {
         tables: DBTable[];
         filter?: DiagramFilter;
         databaseType: DatabaseType;
         filterLoading: boolean;
+        draggable?: boolean;
     }
 ): AreaNodeType => {
     // Get all tables in this area
@@ -243,6 +248,7 @@ const areaToAreaNode = (
         id: area.id,
         type: 'area',
         position: { x: area.x, y: area.y },
+        draggable,
         data: { area },
         width: area.width,
         height: area.height,
@@ -254,11 +260,15 @@ const areaToAreaNode = (
     };
 };
 
-const noteToNoteNode = (note: Note): NoteNodeType => {
+const noteToNoteNode = (
+    note: Note,
+    { draggable = true }: { draggable?: boolean } = {}
+): NoteNodeType => {
     return {
         id: note.id,
         type: 'note',
         position: { x: note.x, y: note.y },
+        draggable,
         data: { note },
         width: note.width,
         height: note.height,
@@ -306,6 +316,10 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         highlightCustomTypeId,
         updateCursorPresence,
     } = useSchemaDash();
+    const allowReadonlyTableMovement =
+        readonly &&
+        !!workflow &&
+        ['compare', 'live', 'version'].includes(workflow.activeMode);
     const { showSidePanel } = useLayout();
     const { effectiveTheme } = useTheme();
     const { scrollAction, showDBViews, showMiniMapOnCanvas } = useLocalConfig();
@@ -352,6 +366,7 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                 showDBViews,
                 forceShow: shouldForceShowTable(table.id),
                 isRelationshipCreatingTarget: false,
+                draggable: !readonly || allowReadonlyTableMovement,
             })
         )
     );
@@ -378,6 +393,7 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                 showDBViews,
                 forceShow: shouldForceShowTable(table.id),
                 isRelationshipCreatingTarget: false,
+                draggable: !readonly || allowReadonlyTableMovement,
             })
         );
         if (equal(initialNodes, nodes)) {
@@ -391,6 +407,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         filterLoading,
         showDBViews,
         shouldForceShowTable,
+        readonly,
+        allowReadonlyTableMovement,
     ]);
 
     useEffect(() => {
@@ -573,6 +591,7 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                         showDBViews,
                         forceShow: shouldForceShowTable(table.id),
                         isRelationshipCreatingTarget: false,
+                        draggable: !readonly || allowReadonlyTableMovement,
                     });
 
                     // Check if table uses the highlighted custom type
@@ -600,9 +619,12 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                         filter,
                         databaseType,
                         filterLoading,
+                        draggable: !readonly,
                     })
                 ),
-                ...notes.map((note) => noteToNoteNode(note)),
+                ...notes.map((note) =>
+                    noteToNoteNode(note, { draggable: !readonly })
+                ),
                 ...prevNodes.filter(
                     (n) =>
                         n.type === 'temp-cursor' ||
@@ -631,6 +653,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         filterLoading,
         showDBViews,
         shouldForceShowTable,
+        readonly,
+        allowReadonlyTableMovement,
     ]);
 
     // Surgical update for relationship creation target highlighting
@@ -986,9 +1010,26 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
             let changesToApply = changes;
 
             if (readonly) {
-                changesToApply = changesToApply.filter(
-                    (change) => change.type !== 'remove'
-                );
+                changesToApply = changesToApply.filter((change) => {
+                    if (change.type === 'remove') {
+                        return false;
+                    }
+
+                    if (change.type === 'position') {
+                        if (!allowReadonlyTableMovement) {
+                            return false;
+                        }
+
+                        const node = getNode(change.id);
+                        return node?.type === 'table';
+                    }
+
+                    if (change.type === 'dimensions') {
+                        return false;
+                    }
+
+                    return true;
+                });
             }
 
             // Handle area drag changes - add child table movements for visual feedback only
@@ -1285,6 +1326,7 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
             updateNote,
             removeNote,
             readonly,
+            allowReadonlyTableMovement,
             tables,
             areas,
             getNode,
@@ -1423,6 +1465,32 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
 
     const isLoadingDOM =
         tables.length > 0 ? !getInternalNode(tables[0].id) : false;
+    const workflowSurfaceKey = workflow
+        ? [
+              workflow.activeMode,
+              workflow.workflow?.liveSnapshotId ?? 'no-live',
+              workflow.compareVersion?.id ?? 'no-compare-version',
+              workflow.selectedVersion?.id ?? 'no-selected-version',
+          ].join(':')
+        : 'editor';
+    const previousWorkflowSurfaceKeyRef = useRef(workflowSurfaceKey);
+    const [showWorkflowTransitionStrip, setShowWorkflowTransitionStrip] =
+        useState(false);
+
+    useEffect(() => {
+        if (previousWorkflowSurfaceKeyRef.current !== workflowSurfaceKey) {
+            previousWorkflowSurfaceKeyRef.current = workflowSurfaceKey;
+            setShowWorkflowTransitionStrip(true);
+        }
+    }, [workflowSurfaceKey]);
+
+    useEffect(() => {
+        if (!showWorkflowTransitionStrip || isLoadingDOM) {
+            return;
+        }
+
+        setShowWorkflowTransitionStrip(false);
+    }, [isLoadingDOM, showWorkflowTransitionStrip]);
 
     const hasOverlappingTables = useMemo(
         () =>
@@ -1666,6 +1734,9 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                 onMouseLeave={handleMouseLeave}
             >
                 <LivePresenceCursors containerRef={containerRef} />
+                {showWorkflowTransitionStrip && isLoadingDOM ? (
+                    <MapLoadingStrip inset />
+                ) : null}
                 <ReactFlow
                     onlyRenderVisibleElements
                     colorMode={effectiveTheme}
@@ -1683,7 +1754,7 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                     proOptions={{
                         hideAttribution: true,
                     }}
-                    nodesDraggable={!readonly}
+                    nodesDraggable={!readonly || allowReadonlyTableMovement}
                     nodesConnectable={!readonly}
                     fitView={false}
                     nodeTypes={nodeTypes}
@@ -1809,24 +1880,6 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                             </div>
                         </div>
                     </Controls>
-                    {isLoadingDOM ? (
-                        <Controls
-                            position="top-center"
-                            orientation="horizontal"
-                            showZoom={false}
-                            showFitView={false}
-                            showInteractive={false}
-                            className="!shadow-none"
-                        >
-                            <Badge
-                                variant="default"
-                                className="bg-teal-600 text-white"
-                            >
-                                {t('loading_diagram')}
-                            </Badge>
-                        </Controls>
-                    ) : null}
-
                     {!isDesktop && !readonly ? (
                         <Controls
                             position="bottom-left"

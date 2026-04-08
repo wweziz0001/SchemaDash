@@ -363,6 +363,28 @@ export class DiagramWorkflowRepository {
             );
     }
 
+    deleteVersion(versionId: string) {
+        this.db
+            .prepare(
+                `
+                DELETE FROM diagram_versions
+                WHERE id = ?
+                `
+            )
+            .run(versionId);
+    }
+
+    deleteSnapshot(snapshotId: string) {
+        this.db
+            .prepare(
+                `
+                DELETE FROM diagram_workflow_snapshots
+                WHERE id = ?
+                `
+            )
+            .run(snapshotId);
+    }
+
     getSnapshot(snapshotId: string): DiagramWorkflowSnapshotRecord | undefined {
         const row = this.db
             .prepare(
@@ -456,6 +478,20 @@ export class DiagramWorkflowRepository {
                 `
             )
             .get(diagramId) as { count: number };
+
+        return row.count;
+    }
+
+    countVersionsBySnapshot(snapshotId: string): number {
+        const row = this.db
+            .prepare(
+                `
+                SELECT COUNT(*) AS count
+                FROM diagram_versions
+                WHERE snapshot_id = ?
+                `
+            )
+            .get(snapshotId) as { count: number };
 
         return row.count;
     }

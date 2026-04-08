@@ -115,13 +115,14 @@ describe('restore version dialog', () => {
         );
     });
 
-    it('requires explicit confirmation and restores Development through the workflow API', async () => {
+    it('restores Development through the workflow API without manual confirmation text', async () => {
         const user = userEvent.setup();
         const onOpenChange = vi.fn();
+        const loadDiagramFromData = vi.fn();
         const setDevelopmentDiagram = vi.fn();
         const setActiveMode = vi.fn();
+        const setVersions = vi.fn();
         const refreshWorkflow = vi.fn().mockResolvedValue(undefined);
-        const updateDiagramData = vi.fn().mockResolvedValue(undefined);
         const getDiagramSessionState = vi.fn().mockResolvedValue({
             session: { id: 'session-1' },
             collaboration: {
@@ -133,16 +134,18 @@ describe('restore version dialog', () => {
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
             developmentDiagram,
+            versions: [version],
             refreshWorkflow,
             setActiveMode,
             setDevelopmentDiagram,
+            setVersions,
         } as never);
         mockedUseStorage.mockReturnValue({
             getDiagramSessionState,
             getDiagram,
         } as never);
         mockedUseSchemaDash.mockReturnValue({
-            updateDiagramData,
+            loadDiagramFromData,
         } as never);
         mockedRestoreVersionToDevelopment.mockResolvedValue({
             result: {
@@ -156,6 +159,17 @@ describe('restore version dialog', () => {
                     versionLabel: 'Version 2',
                     origin: 'before_restore',
                 },
+                versions: [
+                    {
+                        ...version,
+                        id: 'version-2',
+                        snapshotId: 'snapshot-2',
+                        name: 'Before restore: Stable release',
+                        versionLabel: 'Version 2',
+                        origin: 'before_restore',
+                    },
+                    version,
+                ],
                 development: {
                     name: 'Development Diagram',
                     documentVersion: 8,
@@ -173,14 +187,8 @@ describe('restore version dialog', () => {
         );
 
         const restoreButton = screen.getByRole('button', {
-            name: 'Restore to Development',
+            name: 'Revert to This Version',
         });
-        expect(restoreButton).toBeDisabled();
-
-        await user.type(
-            screen.getByLabelText('Confirmation text'),
-            'RESTORE DEVELOPMENT'
-        );
         expect(restoreButton).not.toBeDisabled();
 
         await user.click(restoreButton);
@@ -190,7 +198,6 @@ describe('restore version dialog', () => {
                 'diagram-1',
                 'version-1',
                 {
-                    confirmationText: 'RESTORE DEVELOPMENT',
                     baseVersion: 7,
                     sessionId: 'session-1',
                     currentDevelopmentCanonicalSchema:
@@ -206,12 +213,18 @@ describe('restore version dialog', () => {
             includeCustomTypes: true,
             includeNotes: true,
         });
-        expect(updateDiagramData).toHaveBeenCalledWith(developmentDiagram, {
-            forceUpdateStorage: true,
-        });
+        expect(loadDiagramFromData).toHaveBeenCalledWith(developmentDiagram);
         expect(setDevelopmentDiagram).toHaveBeenCalledWith(developmentDiagram);
+        expect(setVersions).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({ id: 'version-2' }),
+                expect.objectContaining({ id: 'version-1' }),
+            ])
+        );
         expect(setActiveMode).toHaveBeenCalledWith('development');
-        expect(refreshWorkflow).toHaveBeenCalled();
+        await waitFor(() => {
+            expect(refreshWorkflow).toHaveBeenCalled();
+        });
         expect(onOpenChange).toHaveBeenCalledWith(false);
         expect(toast).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -223,14 +236,16 @@ describe('restore version dialog', () => {
 
     it('shows actionable restore failures without mutating the editor state', async () => {
         const user = userEvent.setup();
-        const updateDiagramData = vi.fn();
+        const loadDiagramFromData = vi.fn();
 
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
             developmentDiagram,
+            versions: [version],
             refreshWorkflow: vi.fn(),
             setActiveMode: vi.fn(),
             setDevelopmentDiagram: vi.fn(),
+            setVersions: vi.fn(),
         } as never);
         mockedUseStorage.mockReturnValue({
             getDiagramSessionState: vi.fn().mockResolvedValue({
@@ -242,7 +257,7 @@ describe('restore version dialog', () => {
             getDiagram: vi.fn(),
         } as never);
         mockedUseSchemaDash.mockReturnValue({
-            updateDiagramData,
+            loadDiagramFromData,
         } as never);
         mockedRestoreVersionToDevelopment.mockRejectedValue(
             new Error('Development changed before the restore could start.')
@@ -256,13 +271,9 @@ describe('restore version dialog', () => {
             />
         );
 
-        await user.type(
-            screen.getByLabelText('Confirmation text'),
-            'RESTORE DEVELOPMENT'
-        );
         await user.click(
             screen.getByRole('button', {
-                name: 'Restore to Development',
+                name: 'Revert to This Version',
             })
         );
 
@@ -273,7 +284,7 @@ describe('restore version dialog', () => {
                 )
             ).toBeTruthy();
         });
-        expect(updateDiagramData).not.toHaveBeenCalled();
+        expect(loadDiagramFromData).not.toHaveBeenCalled();
         expect(toast).toHaveBeenCalledWith(
             expect.objectContaining({
                 title: 'Restore failed',

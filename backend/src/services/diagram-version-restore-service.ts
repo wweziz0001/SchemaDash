@@ -8,7 +8,6 @@ import type {
 } from '../repositories/diagram-workflow-repository.js';
 import {
     restoreDiagramWorkflowVersionSchema,
-    restoreToDevelopmentConfirmationText,
     type RestoreDiagramWorkflowVersionInput,
 } from '../schemas/diagram-workflow.js';
 import type { PersistenceService } from './persistence-service.js';
@@ -24,6 +23,7 @@ export interface DiagramVersionRestoreResultView {
     diagramId: string;
     restoredVersion: DiagramWorkflowVersionSummaryView;
     safetySnapshotVersion: DiagramWorkflowVersionSummaryView;
+    versions: DiagramWorkflowVersionSummaryView[];
     development: {
         name: string;
         documentVersion: number;
@@ -45,17 +45,6 @@ export class DiagramVersionRestoreService {
     ): DiagramVersionRestoreResultView {
         const diagram = this.requireEditableDiagram(diagramId, actor);
         const payload = restoreDiagramWorkflowVersionSchema.parse(input);
-
-        if (
-            payload.confirmationText.trim() !==
-            restoreToDevelopmentConfirmationText
-        ) {
-            throw new AppError(
-                'Restore confirmation text did not match. Reconfirm the restore before trying again.',
-                400,
-                'DIAGRAM_RESTORE_CONFIRMATION_REQUIRED'
-            );
-        }
 
         if (diagram.collaboration.document.version !== payload.baseVersion) {
             throw new AppError(
@@ -124,6 +113,9 @@ export class DiagramVersionRestoreService {
             diagramId,
             restoredVersion: this.toVersionSummaryView(version),
             safetySnapshotVersion,
+            versions: this.repository
+                .listVersions(diagramId)
+                .map((item) => this.toVersionSummaryView(item)),
             development: {
                 name: restoredDiagram.diagram.name,
                 documentVersion: restoredDiagram.collaboration.document.version,

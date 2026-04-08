@@ -91,11 +91,18 @@ export interface DiagramWorkflowVersionRestoreResult {
     diagramId: string;
     restoredVersion: DiagramWorkflowVersionSummary;
     safetySnapshotVersion: DiagramWorkflowVersionSummary;
+    versions: DiagramWorkflowVersionSummary[];
     development: {
         name: string;
         documentVersion: number;
         updatedAt: string;
     };
+}
+
+export interface DiagramWorkflowVersionDeleteResult {
+    diagramId: string;
+    deletedVersionId: string;
+    versions: DiagramWorkflowVersionSummary[];
 }
 
 export const diagramWorkflowClient = {
@@ -153,7 +160,6 @@ export const diagramWorkflowClient = {
         diagramId: string,
         versionId: string,
         payload: {
-            confirmationText: string;
             baseVersion: number;
             sessionId?: string;
             currentDevelopmentCanonicalSchema: CanonicalSchema;
@@ -164,6 +170,13 @@ export const diagramWorkflowClient = {
             {
                 method: 'POST',
                 body: JSON.stringify(payload),
+            }
+        ),
+    deleteVersion: async (diagramId: string, versionId: string) =>
+        requestJson<{ result: DiagramWorkflowVersionDeleteResult }>(
+            `/api/diagrams/${diagramId}/workflow/versions/${versionId}`,
+            {
+                method: 'DELETE',
             }
         ),
 };

@@ -1,9 +1,9 @@
 import React from 'react';
-import { Spinner } from '@/components/spinner/spinner';
 import { DiagramWorkflowProvider } from '@/context/diagram-workflow-context/diagram-workflow-provider';
 import { useDiagramWorkflow } from '@/context/diagram-workflow-context/use-diagram-workflow';
 import { EditorPage } from './editor-page';
 import { TopNavbarMock } from './top-navbar/top-navbar-mock';
+import { MapLoadingCanvasPlaceholder } from './canvas/workflow/map-loading-strip';
 
 const WorkflowEditorPageContent: React.FC = () => {
     const {
@@ -36,9 +36,7 @@ const WorkflowEditorPageContent: React.FC = () => {
         return (
             <section className="flex h-screen w-screen flex-col overflow-hidden bg-background">
                 <TopNavbarMock />
-                <div className="flex flex-1 items-center justify-center">
-                    <Spinner size="large" />
-                </div>
+                <MapLoadingCanvasPlaceholder />
             </section>
         );
     }

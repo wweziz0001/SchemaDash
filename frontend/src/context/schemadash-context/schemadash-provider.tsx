@@ -2108,7 +2108,6 @@ export const SchemaDashProvider: React.FC<
         useCallback(
             async (diagram, options) => {
                 const st = options?.forceUpdateStorage ? storageDB : db;
-                await st.deleteDiagram(diagram.id);
                 await st.addDiagram({ diagram });
                 loadDiagramFromData(diagram);
             },

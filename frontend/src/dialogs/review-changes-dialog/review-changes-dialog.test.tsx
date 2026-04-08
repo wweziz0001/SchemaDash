@@ -211,6 +211,7 @@ describe('review changes dialog', () => {
         const user = userEvent.setup();
 
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            compareSourceKind: 'live',
             workflow: {
                 liveSnapshotId: 'workflow-live-1',
                 connectionId: 'connection-1',
@@ -227,9 +228,8 @@ describe('review changes dialog', () => {
         expect(
             screen.getByPlaceholderText('Search tables and relationships...')
         ).toBeTruthy();
-        expect(screen.getByText('Database')).toBeTruthy();
-        expect(screen.getByText('Development')).toBeTruthy();
-        expect(screen.getByText('Revert All')).toBeTruthy();
+        expect(screen.getAllByText('Live Database').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Development').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Tables').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Relationships').length).toBeGreaterThan(0);
         expect(screen.getAllByText('users').length).toBeGreaterThan(0);
@@ -279,5 +279,46 @@ describe('review changes dialog', () => {
                     false
             ).length
         ).toBeGreaterThan(0);
+    });
+
+    it('uses the selected historical version as the review baseline when compare mode is version-sourced', () => {
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            compareSourceKind: 'version',
+            compareVersion: {
+                id: 'version-2',
+                diagramId: 'diagram-1',
+                snapshotId: 'snapshot-2',
+                name: 'Release Candidate',
+                description: null,
+                versionLabel: 'Version 2',
+                origin: 'manual',
+                pinned: false,
+                createdAt: '2026-03-29T12:00:00.000Z',
+                createdBy: {
+                    id: 'user-1',
+                    displayName: 'Test Owner',
+                    email: 'owner@example.com',
+                },
+                snapshot: {
+                    canonicalSchema: baselineSchema,
+                    createdAt: '2026-03-29T12:00:00.000Z',
+                },
+            },
+            workflow: {
+                liveSnapshotId: 'workflow-live-1',
+                connectionId: 'connection-1',
+            },
+            developmentDiagram,
+        } as never);
+
+        render(<ReviewChangesDialog open={true} onOpenChange={vi.fn()} />);
+
+        expect(screen.getAllByText('Release Candidate').length).toBeGreaterThan(
+            0
+        );
+        expect(
+            screen.getByPlaceholderText('Search tables and relationships...')
+        ).toBeTruthy();
+        expect(screen.queryByText('Review is not available yet')).toBeNull();
     });
 });

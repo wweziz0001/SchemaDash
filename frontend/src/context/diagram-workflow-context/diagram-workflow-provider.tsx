@@ -40,6 +40,33 @@ const mergeWorkflowRecord = (
     };
 };
 
+const mergeVersionSummaries = ({
+    currentVersions,
+    nextVersions,
+}: {
+    currentVersions: DiagramWorkflowVersionSummary[];
+    nextVersions: DiagramWorkflowVersionSummary[];
+}) => {
+    if (nextVersions.length === 0) {
+        return currentVersions;
+    }
+
+    const versionMap = new Map<string, DiagramWorkflowVersionSummary>();
+
+    currentVersions.forEach((version) => {
+        versionMap.set(version.id, version);
+    });
+    nextVersions.forEach((version) => {
+        versionMap.set(version.id, version);
+    });
+
+    return [...versionMap.values()].sort(
+        (left, right) =>
+            new Date(right.createdAt).getTime() -
+            new Date(left.createdAt).getTime()
+    );
+};
+
 const buildLiveDiagram = (
     workflow: DiagramWorkflowRecord
 ): Diagram | undefined => {
@@ -126,6 +153,29 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
     const setDevelopmentDiagramRecord = useCallback((nextDiagram?: Diagram) => {
         setDevelopmentDiagram(nextDiagram);
     }, []);
+    const setVersionSummaries = useCallback(
+        (nextVersions: DiagramWorkflowVersionSummary[]) => {
+            const normalizedVersions = [...nextVersions].sort(
+                (left, right) =>
+                    new Date(right.createdAt).getTime() -
+                    new Date(left.createdAt).getTime()
+            );
+
+            setVersions(normalizedVersions);
+            setVersionRecords((currentRecords) => {
+                const allowedIds = new Set(
+                    normalizedVersions.map((version) => version.id)
+                );
+
+                return Object.fromEntries(
+                    Object.entries(currentRecords).filter(([id]) =>
+                        allowedIds.has(id)
+                    )
+                );
+            });
+        },
+        []
+    );
     const setVersionRecord = useCallback(
         (nextVersion?: DiagramWorkflowVersionRecord) => {
             if (!nextVersion) {
@@ -186,7 +236,12 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
 
             setDevelopmentDiagram(deserializeDiagram(diagramResponse.diagram));
             setWorkflowRecord(workflowResponse.workflow);
-            setVersions(versionsResponse.items);
+            setVersions((currentVersions) =>
+                mergeVersionSummaries({
+                    currentVersions,
+                    nextVersions: versionsResponse.items,
+                })
+            );
         } finally {
             setLoadingWorkflow(false);
         }
@@ -315,6 +370,9 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
             diagramId,
             workflow,
             versions,
+            setVersions: setVersionSummaries,
+            versionRecords,
+            ensureVersionRecord,
             developmentDiagram,
             setDevelopmentDiagram: setDevelopmentDiagramRecord,
             loading,
@@ -342,6 +400,7 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
             compareVersion,
             developmentDiagram,
             diagramId,
+            ensureVersionRecord,
             liveDiagram,
             liveModeEnabled,
             loading,
@@ -351,9 +410,11 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
             requestedMode,
             setActiveMode,
             setDevelopmentDiagramRecord,
+            setVersionSummaries,
             setWorkflowRecord,
             selectedVersion,
             versionDiagram,
+            versionRecords,
             versions,
             workflow,
         ]

@@ -170,7 +170,6 @@ describe('diagram version restore service', () => {
             'diagram-1',
             version.id,
             {
-                confirmationText: 'RESTORE DEVELOPMENT',
                 baseVersion: updatedDiagram.collaboration.document.version,
                 sessionId: 'session-1',
                 currentDevelopmentCanonicalSchema: createCanonicalSchema(
@@ -184,6 +183,13 @@ describe('diagram version restore service', () => {
         expect(restoreResult.restoredVersion.id).toBe(version.id);
         expect(restoreResult.safetySnapshotVersion.origin).toBe(
             'before_restore'
+        );
+        expect(restoreResult.versions).toHaveLength(2);
+        expect(restoreResult.versions.map((item) => item.id)).toEqual(
+            expect.arrayContaining([
+                version.id,
+                restoreResult.safetySnapshotVersion.id,
+            ])
         );
         expect(restoreResult.development.name).toBe(
             originalDocument?.name ?? 'Development Diagram'
@@ -278,7 +284,6 @@ describe('diagram version restore service', () => {
                 'diagram-1',
                 version.id,
                 {
-                    confirmationText: 'RESTORE DEVELOPMENT',
                     baseVersion: 1,
                     currentDevelopmentCanonicalSchema: createCanonicalSchema(
                         'draft_users',

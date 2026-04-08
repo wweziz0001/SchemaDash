@@ -8,8 +8,14 @@ export const getCompareDifferenceCount = (
     }
 
     return (
-        compareResult.summary.tables.total +
-        compareResult.summary.fields.total +
-        compareResult.summary.relationships.total
+        compareResult.summary.tables.added +
+        compareResult.summary.tables.changed +
+        compareResult.summary.tables.removed +
+        compareResult.summary.fields.added +
+        compareResult.summary.fields.changed +
+        compareResult.summary.fields.removed +
+        compareResult.summary.relationships.added +
+        compareResult.summary.relationships.changed +
+        compareResult.summary.relationships.removed
     );
 };

@@ -9,9 +9,19 @@ vi.mock('@/context/diagram-workflow-context/diagram-workflow-context', () => ({
     useOptionalDiagramWorkflow: vi.fn(),
 }));
 
+vi.mock('@/dialogs/review-changes-dialog/review-changes-dialog', () => ({
+    ReviewChangesDialog: ({ open }: { open: boolean }) =>
+        open ? <div>Review Dialog</div> : null,
+}));
+
+vi.mock('@/dialogs/migration-dialog/migration-dialog', () => ({
+    MigrationDialog: ({ open }: { open: boolean }) =>
+        open ? <div>Migration Dialog</div> : null,
+}));
+
 const mockedUseOptionalDiagramWorkflow = vi.mocked(useOptionalDiagramWorkflow);
 
-describe('review dropdown', () => {
+describe('workflow actions menu', () => {
     beforeEach(() => {
         mockedUseOptionalDiagramWorkflow.mockReset();
     });
@@ -25,9 +35,27 @@ describe('review dropdown', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 2 },
-                        relationships: { total: 1 },
+                        tables: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 1,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 2,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 1,
+                        },
                     },
                 },
             },
@@ -38,7 +66,7 @@ describe('review dropdown', () => {
         expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
     });
 
-    it('opens a menu with review changes and migration actions', async () => {
+    it('opens review directly and exposes migration from options for live compare', async () => {
         const user = userEvent.setup();
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
@@ -48,29 +76,49 @@ describe('review dropdown', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 2 },
-                        relationships: { total: 1 },
+                        tables: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 1,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 2,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 1,
+                        },
                     },
                 },
             },
-            setActiveMode: vi.fn(),
         } as never);
 
         render(<WorkflowActionsMenu />);
 
-        expect(screen.getByRole('button', { name: 'Finish' })).toBeTruthy();
         expect(
             screen.getByRole('button', { name: 'Review' })
         ).toHaveTextContent('4');
         await user.click(screen.getByRole('button', { name: 'Review' }));
-
-        expect(
+        await user.click(
             screen.getByRole('menuitem', { name: 'Review Changes' })
-        ).toBeTruthy();
+        );
+        expect(screen.getByText('Review Dialog')).toBeTruthy();
+
+        await user.click(screen.getByRole('button', { name: 'Review' }));
         expect(
             screen.getByRole('menuitem', { name: 'Migration' })
         ).toBeTruthy();
+        await user.click(screen.getByRole('menuitem', { name: 'Migration' }));
+        expect(screen.getByText('Migration Dialog')).toBeTruthy();
     });
 
     it('stays hidden when compare is based on a historical version', () => {
@@ -82,9 +130,27 @@ describe('review dropdown', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 2 },
-                        relationships: { total: 1 },
+                        tables: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 1,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 2,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 1,
+                        },
                     },
                 },
             },
@@ -104,9 +170,27 @@ describe('review dropdown', () => {
             compareRenderModel: {
                 compareResult: {
                     summary: {
-                        tables: { total: 1 },
-                        fields: { total: 2 },
-                        relationships: { total: 1 },
+                        tables: {
+                            added: 0,
+                            changed: 1,
+                            removed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 1,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 2,
+                        },
+                        relationships: {
+                            added: 0,
+                            changed: 0,
+                            removed: 1,
+                            unchanged: 0,
+                            total: 1,
+                        },
                     },
                 },
             },
@@ -115,34 +199,5 @@ describe('review dropdown', () => {
         render(<WorkflowActionsMenu />);
 
         expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
-        expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
-    });
-
-    it('returns to development when finish is pressed', async () => {
-        const user = userEvent.setup();
-        const setActiveMode = vi.fn();
-
-        mockedUseOptionalDiagramWorkflow.mockReturnValue({
-            diagramId: 'diagram-1',
-            compareModeEnabled: true,
-            compareSourceKind: 'live',
-            activeMode: 'compare',
-            compareRenderModel: {
-                compareResult: {
-                    summary: {
-                        tables: { total: 1 },
-                        fields: { total: 2 },
-                        relationships: { total: 1 },
-                    },
-                },
-            },
-            setActiveMode,
-        } as never);
-
-        render(<WorkflowActionsMenu />);
-
-        await user.click(screen.getByRole('button', { name: 'Finish' }));
-
-        expect(setActiveMode).toHaveBeenCalledWith('development');
     });
 });

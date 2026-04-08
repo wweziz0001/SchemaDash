@@ -7,11 +7,94 @@ import type {
 } from './layout-context';
 import { layoutContext } from './layout-context';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useParams, useSearchParams } from 'react-router-dom';
+
+const SIDEBAR_SECTION_STORAGE_KEY = 'schemadash.layout.sidebar-section';
+const VERSIONS_TAB_STORAGE_KEY = 'schemadash.layout.versions-tab';
+
+const readStoredValue = (key: string) => {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    try {
+        return window.sessionStorage.getItem(key);
+    } catch {
+        return null;
+    }
+};
+
+const writeStoredValue = (key: string, value: string) => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    try {
+        window.sessionStorage.setItem(key, value);
+    } catch {
+        // Ignore storage failures and keep layout state in memory only.
+    }
+};
+
+const buildDiagramScopedKey = (baseKey: string, diagramId?: string) =>
+    `${baseKey}:${diagramId ?? 'workspace'}`;
+
+const isSidebarSection = (value: string | null): value is SidebarSection =>
+    value === 'dbml' ||
+    value === 'tables' ||
+    value === 'refs' ||
+    value === 'customTypes' ||
+    value === 'visuals' ||
+    value === 'versions';
+
+const isVersionsTab = (value: string | null): value is VersionsTab =>
+    value === 'version' || value === 'changelog';
+
+const getWorkflowSidebarSection = (
+    searchParams: URLSearchParams
+): SidebarSection => {
+    const workflow = searchParams.get('workflow');
+    const hasVersionWorkflow =
+        (workflow === 'version' && !!searchParams.get('versionId')) ||
+        (workflow === 'compare' && !!searchParams.get('compareVersionId'));
+
+    return hasVersionWorkflow ? 'versions' : 'tables';
+};
+
+const getInitialSidebarSection = ({
+    searchParams,
+    diagramId,
+}: {
+    searchParams: URLSearchParams;
+    diagramId?: string;
+}): SidebarSection => {
+    const workflowSidebarSection = getWorkflowSidebarSection(searchParams);
+
+    if (workflowSidebarSection === 'versions') {
+        return workflowSidebarSection;
+    }
+
+    const storedSection = readStoredValue(
+        buildDiagramScopedKey(SIDEBAR_SECTION_STORAGE_KEY, diagramId)
+    );
+
+    return isSidebarSection(storedSection) ? storedSection : 'tables';
+};
+
+const getInitialVersionsTab = (diagramId?: string): VersionsTab => {
+    const storedTab = readStoredValue(
+        buildDiagramScopedKey(VERSIONS_TAB_STORAGE_KEY, diagramId)
+    );
+
+    return isVersionsTab(storedTab) ? storedTab : 'version';
+};
 
 export const LayoutProvider: React.FC<React.PropsWithChildren> = ({
     children,
 }) => {
     const { isMd: isDesktop } = useBreakpoint('md');
+    const { diagramId } = useParams<{ diagramId: string }>();
+    const [searchParams] = useSearchParams();
     const [openedTableInSidebar, setOpenedTableInSidebar] = React.useState<
         string | undefined
     >();
@@ -27,11 +110,16 @@ export const LayoutProvider: React.FC<React.PropsWithChildren> = ({
     const [openedCustomTypeInSidebar, setOpenedCustomTypeInSidebar] =
         React.useState<string | undefined>();
     const [selectedSidebarSection, setSelectedSidebarSection] =
-        React.useState<SidebarSection>('tables');
+        React.useState<SidebarSection>(() =>
+            getInitialSidebarSection({
+                searchParams,
+                diagramId,
+            })
+        );
     const [selectedVisualsTab, setSelectedVisualsTab] =
         React.useState<VisualsTab>('areas');
     const [selectedVersionsTab, setSelectedVersionsTab] =
-        React.useState<VersionsTab>('version');
+        React.useState<VersionsTab>(() => getInitialVersionsTab(diagramId));
     const [isSidePanelShowed, setIsSidePanelShowed] =
         React.useState<boolean>(isDesktop);
 
@@ -65,6 +153,29 @@ export const LayoutProvider: React.FC<React.PropsWithChildren> = ({
     const toggleSidePanel: LayoutContext['toggleSidePanel'] = () => {
         setIsSidePanelShowed((prevIsSidePanelShowed) => !prevIsSidePanelShowed);
     };
+
+    React.useEffect(() => {
+        if (getWorkflowSidebarSection(searchParams) !== 'versions') {
+            return;
+        }
+
+        setSelectedSidebarSection('versions');
+        setSelectedVersionsTab('version');
+    }, [searchParams]);
+
+    React.useEffect(() => {
+        writeStoredValue(
+            buildDiagramScopedKey(SIDEBAR_SECTION_STORAGE_KEY, diagramId),
+            selectedSidebarSection
+        );
+    }, [diagramId, selectedSidebarSection]);
+
+    React.useEffect(() => {
+        writeStoredValue(
+            buildDiagramScopedKey(VERSIONS_TAB_STORAGE_KEY, diagramId),
+            selectedVersionsTab
+        );
+    }, [diagramId, selectedVersionsTab]);
 
     const openTableFromSidebar: LayoutContext['openTableFromSidebar'] = (
         tableId

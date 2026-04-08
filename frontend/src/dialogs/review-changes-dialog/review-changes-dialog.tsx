@@ -13,7 +13,6 @@ import {
     ResizablePanel,
     ResizablePanelGroup,
 } from '@/components/resizable/resizable';
-import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import {
     Tabs,
     TabsContent,
@@ -23,6 +22,7 @@ import {
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { exportBaseSQL } from '@/lib/data/sql-export/export-sql-script';
 import { buildReviewGrouping } from '@/lib/diagram-workflow/review-grouping';
+import { getAuthoritativeVersionCanonicalSchema } from '@/lib/diagram-workflow/version-canonical';
 import type { DBTable } from '@/lib/domain/db-table';
 import type { Diagram } from '@/lib/domain/diagram';
 import { canonicalSchemaToDiagram } from '@/lib/schema-sync/canonical-adapters';
@@ -325,25 +325,25 @@ const getRowToneClassName = ({
     if (missing) {
         return cn(
             baseClassName,
-            'border-slate-300 bg-slate-50/70 text-slate-400 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-500'
+            'border-slate-200 bg-slate-50/70 text-slate-400 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-500'
         );
     }
 
     if (status === 'added' && surface === 'target') {
         return cn(
             baseClassName,
-            'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100',
+            'bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100',
             selected &&
-                'border-emerald-500 ring-1 ring-emerald-500 dark:border-emerald-500'
+                'border-emerald-100 ring-1 ring-emerald-500 dark:border-emerald-500'
         );
     }
 
     if (status === 'removed' && surface === 'baseline') {
         return cn(
             baseClassName,
-            'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-100',
+            'bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-100',
             selected &&
-                'border-rose-500 ring-1 ring-rose-500 dark:border-rose-500'
+                'border-rose-100 ring-1 ring-rose-500 dark:border-rose-500'
         );
     }
 
@@ -525,7 +525,9 @@ const ReviewCodePane: React.FC<{
     lines: ReviewAlignedCodeLine[];
     emptyLabel: string;
     surface: ReviewSurface;
-}> = ({ lines, emptyLabel, surface }) => {
+    viewportRef?: React.RefObject<HTMLDivElement | null>;
+    onViewportScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
+}> = ({ lines, emptyLabel, surface, viewportRef, onViewportScroll }) => {
     if (lines.length === 0) {
         return (
             <div className="h-full overflow-hidden rounded-lg border bg-background">
@@ -547,7 +549,11 @@ const ReviewCodePane: React.FC<{
 
     return (
         <div className="h-full overflow-hidden rounded-lg border bg-background">
-            <ScrollArea className="h-full">
+            <div
+                ref={viewportRef}
+                onScroll={onViewportScroll}
+                className="h-full overflow-auto"
+            >
                 <div className="min-h-[220px] min-w-max font-mono text-[13px] leading-6">
                     {lines.map((line) => {
                         const cell =
@@ -577,7 +583,7 @@ const ReviewCodePane: React.FC<{
                         );
                     })}
                 </div>
-            </ScrollArea>
+            </div>
         </div>
     );
 };
@@ -590,6 +596,8 @@ const ReviewColumnList: React.FC<{
     onSelect: (itemId: string) => void;
     emptyState: string;
     showActions?: boolean;
+    viewportRef?: React.RefObject<HTMLDivElement | null>;
+    onViewportScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
 }> = ({
     heading,
     items,
@@ -598,6 +606,8 @@ const ReviewColumnList: React.FC<{
     onSelect,
     emptyState,
     showActions = false,
+    viewportRef,
+    onViewportScroll,
 }) => {
     const tableItems = items.filter((item) => item.kind === 'table');
     const relationshipItems = items.filter(
@@ -654,7 +664,7 @@ const ReviewColumnList: React.FC<{
                                 onClick={() => onSelect(item.id)}
                             >
                                 {missing ? (
-                                    <span className="h-4 w-full rounded bg-transparent" />
+                                    <span className="h-5 w-full rounded bg-transparent" />
                                 ) : (
                                     <>
                                         <span className="w-3 shrink-0 text-center font-semibold">
@@ -692,7 +702,7 @@ const ReviewColumnList: React.FC<{
                         variant="ghost"
                         size="sm"
                         disabled
-                        className="h-7 gap-1.5 px-2 text-xs text-foreground"
+                        className="h-5 gap-1.5 px-2 text-xs text-foreground"
                         title="Revert actions are not wired into this review surface yet."
                     >
                         <Undo2 className="size-3.5" />
@@ -701,7 +711,11 @@ const ReviewColumnList: React.FC<{
                 ) : null}
             </div>
 
-            <ScrollArea className="min-h-0 flex-1">
+            <div
+                ref={viewportRef}
+                onScroll={onViewportScroll}
+                className="min-h-0 flex-1 overflow-auto"
+            >
                 <div className="space-y-6 p-3">
                     {renderGroup({
                         title: 'Tables',
@@ -719,7 +733,7 @@ const ReviewColumnList: React.FC<{
                         </div>
                     ) : null}
                 </div>
-            </ScrollArea>
+            </div>
         </div>
     );
 };
@@ -735,8 +749,89 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
     );
     const [format, setFormat] = React.useState<ReviewFormat>('sql');
 
+    const baselineListViewportRef = React.useRef<HTMLDivElement | null>(null);
+    const targetListViewportRef = React.useRef<HTMLDivElement | null>(null);
+    const listSyncLockRef = React.useRef(false);
+
+    const baselineCodeViewportRef = React.useRef<HTMLDivElement | null>(null);
+    const targetCodeViewportRef = React.useRef<HTMLDivElement | null>(null);
+    const codeSyncLockRef = React.useRef(false);
+
+    const syncListScroll = React.useCallback(
+        (
+            source: 'baseline' | 'target',
+            event: React.UIEvent<HTMLDivElement>
+        ) => {
+            if (listSyncLockRef.current) {
+                return;
+            }
+
+            const sourceElement = event.currentTarget;
+            const targetElement =
+                source === 'baseline'
+                    ? targetListViewportRef.current
+                    : baselineListViewportRef.current;
+
+            if (!targetElement) {
+                return;
+            }
+
+            listSyncLockRef.current = true;
+            targetElement.scrollTop = sourceElement.scrollTop;
+            targetElement.scrollLeft = sourceElement.scrollLeft;
+
+            requestAnimationFrame(() => {
+                listSyncLockRef.current = false;
+            });
+        },
+        []
+    );
+
+    const syncCodeScroll = React.useCallback(
+        (
+            source: 'baseline' | 'target',
+            event: React.UIEvent<HTMLDivElement>
+        ) => {
+            if (codeSyncLockRef.current) {
+                return;
+            }
+
+            const sourceElement = event.currentTarget;
+            const targetElement =
+                source === 'baseline'
+                    ? targetCodeViewportRef.current
+                    : baselineCodeViewportRef.current;
+
+            if (!targetElement) {
+                return;
+            }
+
+            codeSyncLockRef.current = true;
+            targetElement.scrollTop = sourceElement.scrollTop;
+            targetElement.scrollLeft = sourceElement.scrollLeft;
+
+            requestAnimationFrame(() => {
+                codeSyncLockRef.current = false;
+            });
+        },
+        []
+    );
+
     const developmentDiagram = workflow?.developmentDiagram;
-    const baselineSchema = workflow?.workflow?.liveSnapshot?.canonicalSchema;
+    const baselineSchema =
+        workflow?.compareSourceKind === 'version'
+            ? getAuthoritativeVersionCanonicalSchema(workflow.compareVersion)
+            : workflow?.workflow?.liveSnapshot?.canonicalSchema;
+    const baselineHeading =
+        workflow?.compareSourceKind === 'version'
+            ? workflow.compareVersion?.name?.trim() ||
+              workflow.compareVersion?.versionLabel ||
+              'Selected Version'
+            : 'Live Database';
+    const reviewUnavailableMessage =
+        workflow?.compareSourceKind === 'version'
+            ? 'Load the selected version and keep a development diagram available to inspect a structured review of this historical baseline.'
+            : 'Sync a live snapshot and keep a development diagram loaded to inspect a structured review of the compare baseline.';
 
     const reviewGrouping = React.useMemo(
         () =>
@@ -969,18 +1064,44 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
         [preview.baselineCode, preview.targetCode]
     );
 
+    React.useEffect(() => {
+        const leftList = baselineListViewportRef.current;
+        const rightList = targetListViewportRef.current;
+
+        if (leftList && rightList) {
+            rightList.scrollTop = leftList.scrollTop;
+            rightList.scrollLeft = leftList.scrollLeft;
+        }
+    }, [selectedItemId, filteredItems.length, open]);
+
+    React.useEffect(() => {
+        const leftCode = baselineCodeViewportRef.current;
+        const rightCode = targetCodeViewportRef.current;
+
+        if (leftCode && rightCode) {
+            rightCode.scrollTop = leftCode.scrollTop;
+            rightCode.scrollLeft = leftCode.scrollLeft;
+        }
+    }, [
+        selectedItemId,
+        format,
+        preview.baselineCode,
+        preview.targetCode,
+        open,
+    ]);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 className="flex h-[88vh] w-[min(1730px,96vw)] max-w-none flex-col overflow-hidden p-0"
                 showClose
             >
-                <div className="border-b px-6 py-5">
-                    <DialogTitle className="text-[30px] font-semibold tracking-tight">
+                <div className="border-b px-6 py-2">
+                    <DialogTitle className="text-[25px] font-semibold tracking-tight">
                         Review Proposed Changes
                     </DialogTitle>
                     <DialogDescription className="sr-only">
-                        Review the live Database baseline against the current
+                        Review the compare baseline against the current
                         Development schema in a dual-pane compare browser.
                     </DialogDescription>
                 </div>
@@ -990,14 +1111,12 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                         <Alert>
                             <AlertTitle>Review is not available yet</AlertTitle>
                             <AlertDescription>
-                                Sync a live snapshot and keep a development
-                                diagram loaded to inspect a structured review of
-                                the compare baseline.
+                                {reviewUnavailableMessage}
                             </AlertDescription>
                         </Alert>
                     </div>
                 ) : (
-                    <div className="flex min-h-0 flex-1 flex-col gap-4 px-6 pb-6 pt-4">
+                    <div className="flex min-h-0 flex-1 flex-col gap-2 px-6 pb-6 pt-0">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
@@ -1006,7 +1125,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                     setSearchQuery(event.target.value)
                                 }
                                 placeholder="Search tables and relationships..."
-                                className="h-11 pl-10"
+                                className="h-9 pl-10"
                             />
                         </div>
 
@@ -1023,7 +1142,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                         >
                                             <ResizablePanel defaultSize={50}>
                                                 <ReviewColumnList
-                                                    heading="Database"
+                                                    heading={baselineHeading}
                                                     items={filteredItems}
                                                     surface="baseline"
                                                     selectedItemId={
@@ -1031,6 +1150,15 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                     }
                                                     onSelect={setSelectedItemId}
                                                     emptyState="No matching Database changes."
+                                                    viewportRef={
+                                                        baselineListViewportRef
+                                                    }
+                                                    onViewportScroll={(event) =>
+                                                        syncListScroll(
+                                                            'baseline',
+                                                            event
+                                                        )
+                                                    }
                                                 />
                                             </ResizablePanel>
                                             <ResizableHandle withHandle />
@@ -1045,6 +1173,15 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                     onSelect={setSelectedItemId}
                                                     emptyState="No matching Development changes."
                                                     showActions
+                                                    viewportRef={
+                                                        targetListViewportRef
+                                                    }
+                                                    onViewportScroll={(event) =>
+                                                        syncListScroll(
+                                                            'target',
+                                                            event
+                                                        )
+                                                    }
                                                 />
                                             </ResizablePanel>
                                         </ResizablePanelGroup>
@@ -1094,6 +1231,17 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                             lines={previewLines}
                                                             emptyLabel="No baseline SQL for this selected change."
                                                             surface="baseline"
+                                                            viewportRef={
+                                                                baselineCodeViewportRef
+                                                            }
+                                                            onViewportScroll={(
+                                                                event
+                                                            ) =>
+                                                                syncCodeScroll(
+                                                                    'baseline',
+                                                                    event
+                                                                )
+                                                            }
                                                         />
                                                     </ResizablePanel>
                                                     <ResizableHandle
@@ -1106,6 +1254,17 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                             lines={previewLines}
                                                             emptyLabel="No development SQL for this selected change."
                                                             surface="target"
+                                                            viewportRef={
+                                                                targetCodeViewportRef
+                                                            }
+                                                            onViewportScroll={(
+                                                                event
+                                                            ) =>
+                                                                syncCodeScroll(
+                                                                    'target',
+                                                                    event
+                                                                )
+                                                            }
                                                         />
                                                     </ResizablePanel>
                                                 </ResizablePanelGroup>
@@ -1126,6 +1285,17 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                             lines={previewLines}
                                                             emptyLabel="No baseline DBML for this selected change."
                                                             surface="baseline"
+                                                            viewportRef={
+                                                                baselineCodeViewportRef
+                                                            }
+                                                            onViewportScroll={(
+                                                                event
+                                                            ) =>
+                                                                syncCodeScroll(
+                                                                    'baseline',
+                                                                    event
+                                                                )
+                                                            }
                                                         />
                                                     </ResizablePanel>
                                                     <ResizableHandle
@@ -1138,6 +1308,17 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                                             lines={previewLines}
                                                             emptyLabel="No development DBML for this selected change."
                                                             surface="target"
+                                                            viewportRef={
+                                                                targetCodeViewportRef
+                                                            }
+                                                            onViewportScroll={(
+                                                                event
+                                                            ) =>
+                                                                syncCodeScroll(
+                                                                    'target',
+                                                                    event
+                                                                )
+                                                            }
                                                         />
                                                     </ResizablePanel>
                                                 </ResizablePanelGroup>

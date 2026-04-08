@@ -257,8 +257,8 @@ export const ar: LanguageTranslation = {
                 clear: 'مسح التصفية',
                 no_results: 'لم يتم العثور على إصدارات مطابقة للتصفية.',
                 tabs: {
-                    version: 'اللقطات',
-                    changelog: 'سير العمل',
+                    version: 'الاصدارات',
+                    changelog: 'سجل التغييرات',
                 },
                 empty_state: {
                     title: 'لا توجد إصدارات',

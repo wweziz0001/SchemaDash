@@ -49,8 +49,6 @@ export const diagramWorkflowVersionOriginSchema = z.enum([
     'before_apply',
 ]);
 
-export const restoreToDevelopmentConfirmationText = 'RESTORE DEVELOPMENT';
-
 export const bindDiagramWorkflowConnectionSchema = z.object({
     connectionId: z.string().trim().min(1),
     importedSchemas: z.array(z.string().trim().min(1)).optional(),
@@ -65,7 +63,6 @@ export const createDiagramWorkflowVersionSchema = z.object({
 });
 
 export const restoreDiagramWorkflowVersionSchema = z.object({
-    confirmationText: z.string().trim().min(1),
     baseVersion: z.number().int().min(1),
     sessionId: z.string().trim().min(1).optional(),
     currentDevelopmentCanonicalSchema: canonicalSchemaSchema,

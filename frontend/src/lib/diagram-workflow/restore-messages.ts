@@ -4,14 +4,9 @@ import type {
 } from '@/lib/api/diagram-workflow-client';
 import { getVersionDisplayLabel } from './version-labels';
 
-export const RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT = 'RESTORE DEVELOPMENT';
-
 export const getRestoreVersionHeading = (
     version: Pick<DiagramWorkflowVersionSummary, 'name' | 'versionLabel'>
 ) => getVersionDisplayLabel(version);
-
-export const getRestoreConfirmationHint = () =>
-    `Type ${RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT} to continue.`;
 
 export const getRestoreSuccessDescription = (
     result: DiagramWorkflowVersionRestoreResult
@@ -26,8 +21,8 @@ export const getRestoreFailureMessage = (error: unknown) =>
 export const getRestoreWarningLines = (
     version: Pick<DiagramWorkflowVersionSummary, 'name' | 'versionLabel'>
 ) => [
-    `${getRestoreVersionHeading(version)} will be copied into Development.`,
-    'The stored version will remain immutable and unchanged.',
-    'Your current Development content will be replaced.',
-    'SchemaDash will create an automatic safety snapshot first before replacing Development.',
+    `${getRestoreVersionHeading(version)} will be copied into Development as the new editable head.`,
+    'The stored version remains immutable and can still be opened later.',
+    'Your current Development content will be replaced once the revert finishes.',
+    'SchemaDash creates an automatic safety snapshot before changing Development.',
 ];

@@ -90,13 +90,7 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                     <DiagramName />
                     {showWorkflowChrome ? <WorkflowModeSwitcher /> : null}
                 </div>
-                {showWorkflowChrome ? (
-                    <div className="rounded-xl border bg-muted/15 p-2 shadow-sm">
-                        <div className="flex flex-wrap justify-center gap-2">
-                            <VersionViewBadge />
-                        </div>
-                    </div>
-                ) : null}
+                {showWorkflowChrome ? <VersionViewBadge /> : null}
             </div>
         </nav>
     );
