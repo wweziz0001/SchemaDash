@@ -8,10 +8,12 @@ import {
     getVersionDisplayLabel,
     getVersionOriginLabel,
 } from '@/lib/diagram-workflow/version-labels';
+import type { VersionDifferenceSummary } from '@/lib/diagram-workflow/version-difference-summary';
 import { ArrowRight, History } from 'lucide-react';
 
 export interface VersionListItemProps {
     version: DiagramWorkflowVersionSummary;
+    differenceSummary?: VersionDifferenceSummary;
     active?: boolean;
     compareBaseline?: boolean;
     onOpen: () => void;
@@ -19,6 +21,7 @@ export interface VersionListItemProps {
 
 export const VersionListItem: React.FC<VersionListItemProps> = ({
     version,
+    differenceSummary,
     active = false,
     compareBaseline = false,
     onOpen,
@@ -78,10 +81,38 @@ export const VersionListItem: React.FC<VersionListItemProps> = ({
                             <div className="text-sm font-semibold text-foreground">
                                 {getVersionDisplayLabel(version)}
                             </div>
-                            <p className="line-clamp-2 text-sm text-muted-foreground">
-                                {version.description?.trim() ||
-                                    'No description was saved for this snapshot.'}
-                            </p>
+                            {differenceSummary?.segments.length ? (
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                                    {differenceSummary.segments.map(
+                                        (segment) => (
+                                            <span
+                                                key={`${version.id}-${segment.label}`}
+                                                className={cn(
+                                                    'font-medium',
+                                                    segment.tone === 'added' &&
+                                                        'text-emerald-600 dark:text-emerald-400',
+                                                    segment.tone ===
+                                                        'removed' &&
+                                                        'text-rose-600 dark:text-rose-400',
+                                                    segment.tone ===
+                                                        'changed' &&
+                                                        'text-amber-600 dark:text-amber-400',
+                                                    segment.tone === 'muted' &&
+                                                        'text-muted-foreground'
+                                                )}
+                                            >
+                                                {segment.label}
+                                            </span>
+                                        )
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="line-clamp-2 text-sm text-muted-foreground">
+                                    {differenceSummary?.message ||
+                                        version.description?.trim() ||
+                                        'No description was saved for this snapshot.'}
+                                </p>
+                            )}
                         </div>
                     </div>
 

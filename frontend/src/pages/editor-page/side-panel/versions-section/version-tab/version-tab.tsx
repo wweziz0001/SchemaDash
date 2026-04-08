@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/badge/badge';
 import { Button } from '@/components/button/button';
 import { EmptyState } from '@/components/empty-state/empty-state';
@@ -8,7 +8,13 @@ import { CreateVersionDialog } from '@/dialogs/create-version-dialog/create-vers
 import { RestoreVersionDialog } from '@/dialogs/restore-version-dialog/restore-version-dialog';
 import type { DiagramWorkflowVersionSummary } from '@/lib/api/diagram-workflow-client';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { compareCanonicalSchemas } from '@schemadash/schema-sync-core/compare';
 import { formatVersionRelativeTime } from '@/lib/diagram-workflow/version-labels';
+import {
+    buildVersionDifferenceSummary,
+    getInitialVersionDifferenceSummary,
+} from '@/lib/diagram-workflow/version-difference-summary';
+import { getAuthoritativeVersionCanonicalSchema } from '@/lib/diagram-workflow/version-canonical';
 import { cn } from '@/lib/utils';
 import { Clock3, GitBranch, Plus, Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -92,6 +98,26 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
         [workflow?.versions]
     );
 
+    useEffect(() => {
+        if (!workflow?.ensureVersionRecord) {
+            return;
+        }
+
+        const missingVersionIds = versions
+            .map((version) => version.id)
+            .filter((versionId) => !workflow.versionRecords[versionId]);
+
+        if (missingVersionIds.length === 0) {
+            return;
+        }
+
+        void Promise.all(
+            missingVersionIds.map((versionId) =>
+                workflow.ensureVersionRecord(versionId)
+            )
+        );
+    }, [versions, workflow]);
+
     const filteredVersions = useMemo(() => {
         const normalizedFilter = filterText.trim().toLowerCase();
 
@@ -116,6 +142,41 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
     }, [filterText, versions]);
 
     const latestVersion = versions[0];
+    const versionDifferenceSummaries = useMemo(() => {
+        const summaries = new Map<
+            string,
+            ReturnType<typeof buildVersionDifferenceSummary>
+        >();
+
+        versions.forEach((version, index) => {
+            const previousVersion = versions[index + 1];
+
+            if (!previousVersion) {
+                summaries.set(version.id, getInitialVersionDifferenceSummary());
+                return;
+            }
+
+            const currentRecord = workflow?.versionRecords[version.id];
+            const previousRecord = workflow?.versionRecords[previousVersion.id];
+
+            if (!currentRecord || !previousRecord) {
+                return;
+            }
+
+            const compareResult = compareCanonicalSchemas({
+                baseline:
+                    getAuthoritativeVersionCanonicalSchema(previousRecord),
+                target: getAuthoritativeVersionCanonicalSchema(currentRecord),
+            });
+
+            summaries.set(
+                version.id,
+                buildVersionDifferenceSummary(compareResult)
+            );
+        });
+
+        return summaries;
+    }, [versions, workflow?.versionRecords]);
     const developmentStatus = getDevelopmentStatus({
         activeMode: workflow?.activeMode,
         compareSourceKind: workflow?.compareSourceKind,
@@ -297,6 +358,9 @@ export const VersionTab: React.FC<VersionTabProps> = () => {
                                     <VersionListItem
                                         key={version.id}
                                         version={version}
+                                        differenceSummary={versionDifferenceSummaries.get(
+                                            version.id
+                                        )}
                                         active={
                                             workflow?.activeMode ===
                                                 'version' &&

@@ -32,7 +32,7 @@ Important files for this task:
 - `frontend/src/pages/editor-page/side-panel/versions-section/version-tab/version-tab.tsx`
   - Main Versions sidebar list surface. Now includes the stronger Development card and the upgraded version browsing UI.
 - `frontend/src/pages/editor-page/side-panel/versions-section/version-tab/version-list-item.tsx`
-  - Visual presentation for immutable version cards and inline actions.
+  - Visual presentation for immutable version cards and inline actions, including the compact per-version delta line against the previous snapshot.
 - `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.tsx`
   - Lightweight workflow timeline for Development plus immutable snapshots.
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
@@ -90,6 +90,7 @@ What was implemented:
   - a clear Development card as the editable head
   - more polished immutable version cards
   - clearer selected/viewing/diff-source states
+  - a compact change summary on each version card showing how that snapshot differs from the previous one, with fallbacks for `Initial version` and `Only visual changes`
 - Refined the top workflow strip with:
   - better snapshot identity/status treatment
   - clearer Development / View Diffs / Hide Diffs controls
@@ -156,9 +157,13 @@ Files modified:
 - `frontend/src/lib/diagram-workflow/restore-messages.ts`
   - Updated revert wording while keeping the safety semantics intact.
 - `frontend/src/pages/editor-page/side-panel/versions-section/version-tab/version-tab.tsx`
-  - Refined Versions sidebar structure and Development presentation.
+  - Refined Versions sidebar structure and Development presentation, and now loads adjacent version records to compute visible delta summaries in the list.
 - `frontend/src/pages/editor-page/side-panel/versions-section/version-tab/version-list-item.tsx`
-  - Refined version cards, metadata, states, and actions.
+  - Refined version cards, metadata, states, actions, and inline diff-summary rendering.
+- `frontend/src/lib/diagram-workflow/version-difference-summary.ts`
+  - Helper that turns snapshot compare summaries into compact `+/-/~` labels for the Versions list.
+- `frontend/src/lib/diagram-workflow/version-difference-summary.test.ts`
+  - Unit coverage for initial, visual-only, table-delta, and relationship-delta summaries.
 - `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.tsx`
   - Rebuilt as a workflow timeline surface.
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`

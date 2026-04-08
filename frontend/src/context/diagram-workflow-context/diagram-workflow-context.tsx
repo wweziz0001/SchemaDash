@@ -18,6 +18,10 @@ export interface DiagramWorkflowContextValue {
     workflow?: DiagramWorkflowRecord;
     versions: DiagramWorkflowVersionSummary[];
     setVersions: (versions: DiagramWorkflowVersionSummary[]) => void;
+    versionRecords: Record<string, DiagramWorkflowVersionRecord>;
+    ensureVersionRecord: (
+        versionId: string
+    ) => Promise<DiagramWorkflowVersionRecord | undefined>;
     developmentDiagram?: Diagram;
     setDevelopmentDiagram: (diagram?: Diagram) => void;
     loading: boolean;
