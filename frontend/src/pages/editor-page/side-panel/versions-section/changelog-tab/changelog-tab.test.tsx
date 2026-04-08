@@ -15,49 +15,97 @@ describe('changelog tab', () => {
         mockedUseOptionalDiagramWorkflow.mockReset();
     });
 
-    it('renders the workflow timeline with development and immutable snapshots', () => {
+    it('renders Development and real changelog timeline entries instead of versions copy', () => {
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
-            activeMode: 'compare',
-            compareSourceKind: 'version',
-            compareVersion: {
-                id: 'version-2',
-                versionLabel: 'Version 2',
-                name: 'Release Candidate',
+            activeMode: 'changelog',
+            compareSourceKind: 'changelog',
+            selectedChangelogEntry: {
+                id: 'entry-2',
             },
-            versions: [
+            compareChangelogEntry: {
+                id: 'entry-1',
+            },
+            changelogEntries: [
                 {
-                    id: 'version-2',
-                    versionLabel: 'Version 2',
-                    name: 'Release Candidate',
-                    description: 'Candidate before launch',
-                    origin: 'manual',
-                    createdAt: '2026-03-29T12:00:00.000Z',
+                    id: 'entry-2',
+                    diagramId: 'diagram-1',
+                    snapshotId: 'snapshot-2',
+                    eventType: 'save',
+                    sessionId: 'session-1',
+                    sourceDocumentVersion: 9,
+                    sourceLabel: 'Development save',
+                    summary: 'Saved Development changes.',
+                    changeSummary: {
+                        tables: {
+                            added: 1,
+                            removed: 0,
+                            changed: 0,
+                            unchanged: 0,
+                            total: 1,
+                        },
+                        fields: {
+                            added: 2,
+                            removed: 0,
+                            changed: 0,
+                            unchanged: 0,
+                            total: 2,
+                        },
+                        relationships: {
+                            added: 0,
+                            removed: 0,
+                            changed: 0,
+                            unchanged: 0,
+                            total: 0,
+                        },
+                        totalChanges: 3,
+                        hasChanges: true,
+                    },
+                    fingerprint: 'fingerprint-2',
+                    createdAt: '2026-04-08T10:00:00.000Z',
                     createdBy: {
                         id: 'user-1',
                         displayName: 'Test Owner',
+                        email: 'owner@example.com',
                     },
                 },
                 {
-                    id: 'version-1',
-                    versionLabel: 'Version 1',
-                    name: 'Initial schema',
-                    description: 'First saved version',
-                    origin: 'milestone',
-                    createdAt: '2026-03-28T12:00:00.000Z',
-                    createdBy: {
-                        id: 'user-1',
-                        displayName: 'Test Owner',
-                    },
+                    id: 'entry-1',
+                    diagramId: 'diagram-1',
+                    snapshotId: 'snapshot-1',
+                    eventType: 'auto_checkpoint',
+                    sessionId: null,
+                    sourceDocumentVersion: null,
+                    sourceLabel: null,
+                    summary: 'Captured an automatic Development checkpoint.',
+                    changeSummary: null,
+                    fingerprint: 'fingerprint-1',
+                    createdAt: '2026-04-08T09:57:00.000Z',
+                    createdBy: null,
                 },
             ],
+            changelogRecords: {
+                'entry-1': { id: 'entry-1' },
+                'entry-2': { id: 'entry-2' },
+            },
+            ensureChangelogRecord: vi.fn(),
+            setActiveMode: vi.fn(),
+            openChangelogEntry: vi.fn(),
+            compareChangelogToDevelopment: vi.fn(),
         } as never);
 
         render(<ChangelogTab />);
 
-        expect(screen.getByText('Workflow Timeline')).toBeTruthy();
-        expect(screen.getByText('Development')).toBeTruthy();
-        expect(screen.getByText('Release Candidate')).toBeTruthy();
-        expect(screen.getByText('Initial schema')).toBeTruthy();
-        expect(screen.getByText('Diff source')).toBeTruthy();
+        expect(
+            screen.getByText('A timeline of actual Development history.')
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText('Current Development Version')
+        ).toBeInTheDocument();
+        expect(screen.getByText('+ 1 table')).toBeInTheDocument();
+        expect(screen.getByText('1 save')).toBeInTheDocument();
+        expect(screen.getByText('Only visual changes')).toBeInTheDocument();
+        expect(screen.getByText('5 min checkpoint')).toBeInTheDocument();
+        expect(screen.getAllByText('Viewing').length).toBeGreaterThan(0);
+        expect(screen.getByText('Diff')).toBeInTheDocument();
     });
 });

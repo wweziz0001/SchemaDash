@@ -8,54 +8,29 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/dialog/dialog';
+import { useToast } from '@/components/toast/use-toast';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useStorage } from '@/hooks/use-storage';
 import { persistenceClient } from '@/lib/api/persistence-client';
-import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
-import { useToast } from '@/components/toast/use-toast';
-import type { DiagramWorkflowVersionSummary } from '@/lib/api/diagram-workflow-client';
+import type { DiagramWorkflowChangelogSummary } from '@/lib/api/diagram-workflow-client';
 import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';
-import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import {
-    getRestoreFailureMessage,
-    getRestoreSuccessDescription,
-    getRestoreVersionHeading,
-} from '@/lib/diagram-workflow/restore-messages';
+    getChangelogEntryTitle,
+    getChangelogEventLabel,
+} from '@/lib/diagram-workflow/changelog-entry-format';
+import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
 import { RotateCcw } from 'lucide-react';
-import { RestoreWarningPanel } from './restore-warning-panel';
 
-const mergeWorkflowVersions = ({
-    currentVersions,
-    incomingVersions,
-}: {
-    currentVersions: DiagramWorkflowVersionSummary[];
-    incomingVersions: DiagramWorkflowVersionSummary[];
-}) => {
-    const versionMap = new Map<string, DiagramWorkflowVersionSummary>();
-
-    currentVersions.forEach((item) => {
-        versionMap.set(item.id, item);
-    });
-    incomingVersions.forEach((item) => {
-        versionMap.set(item.id, item);
-    });
-
-    return [...versionMap.values()].sort(
-        (left, right) =>
-            new Date(right.createdAt).getTime() -
-            new Date(left.createdAt).getTime()
-    );
-};
-
-export interface RestoreVersionDialogProps {
+export interface RevertChangelogDialogProps {
     open: boolean;
-    version?: DiagramWorkflowVersionSummary;
+    entry?: DiagramWorkflowChangelogSummary;
     onOpenChange: (open: boolean) => void;
 }
 
-export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
+export const RevertChangelogDialog: React.FC<RevertChangelogDialogProps> = ({
     open,
-    version,
+    entry,
     onOpenChange,
 }) => {
     const workflow = useOptionalDiagramWorkflow();
@@ -65,8 +40,8 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
     const [submitting, setSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const handleRestore = async () => {
-        if (!version || !workflow?.diagramId || !workflow.developmentDiagram) {
+    const handleRevert = async () => {
+        if (!entry || !workflow?.diagramId || !workflow.developmentDiagram) {
             return;
         }
 
@@ -89,9 +64,9 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
             }
 
             const response =
-                await diagramWorkflowClient.restoreVersionToDevelopment(
+                await diagramWorkflowClient.revertChangelogEntryToDevelopment(
                     workflow.diagramId,
-                    version.id,
+                    entry.id,
                     {
                         baseVersion,
                         currentDevelopmentCanonicalSchema:
@@ -118,40 +93,22 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
                 workflow.setDevelopmentDiagram(refreshedDiagram);
             }
 
-            workflow.setVersions(
-                mergeWorkflowVersions({
-                    currentVersions: workflow.versions ?? [],
-                    incomingVersions:
-                        response.result.versions.length > 0
-                            ? response.result.versions
-                            : [
-                                  response.result.restoredVersion,
-                                  response.result.safetySnapshotVersion,
-                              ],
-                })
-            );
-            workflow.setChangelogEntries([
-                ...(response.result.changelog ?? []),
-                response.result.createdChangelogEntry,
-            ]);
+            workflow.setVersions(response.result.versions);
+            workflow.setChangelogEntries(response.result.changelog);
             workflow.setActiveMode('development');
             onOpenChange(false);
             toast({
-                title: 'Development restored',
-                description: getRestoreSuccessDescription(response.result),
-            });
-            void workflow.refreshWorkflow().catch((refreshError) => {
-                toast({
-                    title: 'Versions updated with limited refresh',
-                    description: getRestoreFailureMessage(refreshError),
-                    variant: 'destructive',
-                });
+                title: 'Development reverted',
+                description: `Development now reflects ${getChangelogEntryTitle(entry)}. A safety snapshot was created first.`,
             });
         } catch (error) {
-            const message = getRestoreFailureMessage(error);
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Revert failed. Try refreshing and retrying.';
             setErrorMessage(message);
             toast({
-                title: 'Restore failed',
+                title: 'Revert failed',
                 description: message,
                 variant: 'destructive',
             });
@@ -160,35 +117,31 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
         }
     };
 
-    const confirmDisabled = !version || submitting;
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent showClose className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>Revert to This Version</DialogTitle>
+                    <DialogTitle>Revert to This Changelog State</DialogTitle>
                     <DialogDescription className="text-sm leading-6 text-muted-foreground">
-                        Replace Development with{' '}
-                        <span className="font-medium text-foreground">
-                            {version
-                                ? getRestoreVersionHeading(version)
-                                : 'the selected version'}
-                        </span>
-                        . The saved version will remain available afterwards.
+                        Replace Development with the read-only state captured by
+                        this changelog entry. The original timeline stays
+                        immutable and a safety snapshot is created first.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
                     <div className="rounded-2xl border bg-muted/20 px-4 py-3 text-sm">
                         <span className="font-medium text-foreground">
-                            {version
-                                ? getRestoreVersionHeading(version)
-                                : 'Selected version'}
+                            {entry
+                                ? getChangelogEntryTitle(entry)
+                                : 'Selected state'}
                         </span>{' '}
-                        will become the new Development state.
+                        from the{' '}
+                        {entry
+                            ? getChangelogEventLabel(entry.eventType)
+                            : 'changelog'}{' '}
+                        entry will become the new Development state.
                     </div>
-
-                    {version ? <RestoreWarningPanel version={version} /> : null}
 
                     {errorMessage ? (
                         <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
@@ -207,12 +160,14 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
                     </Button>
                     <Button
                         variant="destructive"
-                        disabled={confirmDisabled}
-                        onClick={() => void handleRestore()}
+                        onClick={() => void handleRevert()}
+                        disabled={!entry || submitting}
                         className="gap-1.5"
                     >
                         <RotateCcw className="size-4" />
-                        {submitting ? 'Reverting...' : 'Revert to This Version'}
+                        {submitting
+                            ? 'Reverting...'
+                            : 'Revert to This Changelog State'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

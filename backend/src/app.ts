@@ -9,6 +9,7 @@ import type { AppRepository } from './repositories/app-repository.js';
 import type { MetadataRepository } from './repositories/metadata-repository.js';
 import { registerAdminRoutes } from './routes/admin-routes.js';
 import { registerAuthRoutes } from './routes/auth-routes.js';
+import { registerDiagramChangelogRoutes } from './routes/diagram-changelog-routes.js';
 import { registerDiagramMigrationRoutes } from './routes/diagram-migration-routes.js';
 import { registerDiagramVersionRestoreRoutes } from './routes/diagram-version-restore-routes.js';
 import { registerDiagramWorkflowRoutes } from './routes/diagram-workflow-routes.js';
@@ -110,6 +111,7 @@ export const buildApp = (options?: {
     registerHealthRoutes(app, context);
     registerPersistenceRoutes(app, context);
     registerDiagramWorkflowRoutes(app, context);
+    registerDiagramChangelogRoutes(app, context);
     registerDiagramVersionRestoreRoutes(app, context);
     registerDiagramMigrationRoutes(app, context);
     registerSchemaSyncRoutes(app, context);

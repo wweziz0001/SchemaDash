@@ -15,6 +15,7 @@ import {
     diagramWorkflowClient,
     type DiagramWorkflowVersionSummary,
 } from '@/lib/api/diagram-workflow-client';
+import { captureDiagramWorkflowChangelogEntry } from '@/lib/diagram-workflow/capture-changelog-entry';
 import { getVersionDisplayLabel } from '@/lib/diagram-workflow/version-labels';
 import { Trash2 } from 'lucide-react';
 
@@ -49,6 +50,18 @@ export const DeleteVersionDialog: React.FC<DeleteVersionDialogProps> = ({
                 workflow.diagramId,
                 version.id
             );
+
+            void captureDiagramWorkflowChangelogEntry({
+                diagramId: workflow.diagramId,
+                diagram: workflow.developmentDiagram,
+                eventType: 'version_deleted',
+                sourceLabel: versionLabel,
+                summary: `Deleted version ${versionLabel}.`,
+            }).then((entry) => {
+                if (entry) {
+                    workflow.upsertChangelogEntry(entry);
+                }
+            });
 
             workflow.setVersions(response.result.versions);
             workflow.setActiveMode('development');

@@ -11,6 +11,7 @@ export type DiagramWorkflowSyncStatus =
     | 'error';
 
 export type DiagramWorkflowConnectionStatus = 'unknown' | 'ok' | 'failed';
+export type DiagramWorkflowCompareSourceKind = 'live' | 'version' | 'changelog';
 
 export type DiagramWorkflowVersionOrigin =
     | 'manual'
@@ -18,6 +19,19 @@ export type DiagramWorkflowVersionOrigin =
     | 'system'
     | 'before_restore'
     | 'before_apply';
+
+export type DiagramWorkflowChangelogEventType =
+    | 'change'
+    | 'save'
+    | 'auto_checkpoint'
+    | 'restore'
+    | 'revert'
+    | 'version_created'
+    | 'version_deleted'
+    | 'version_viewed'
+    | 'diagram_renamed'
+    | 'live_connected'
+    | 'live_synced';
 
 export interface DiagramWorkflowLiveSnapshot {
     id: string;
@@ -42,7 +56,7 @@ export interface DiagramWorkflowRecord {
     lastConnectedAt: string | null;
     lastSyncedAt: string | null;
     lastSyncError: string | null;
-    defaultCompareSourceKind: 'live' | 'version' | null;
+    defaultCompareSourceKind: DiagramWorkflowCompareSourceKind | null;
     defaultCompareSourceId: string | null;
     updatedAt: string;
     liveSnapshot: DiagramWorkflowLiveSnapshot | null;
@@ -91,6 +105,8 @@ export interface DiagramWorkflowVersionRestoreResult {
     diagramId: string;
     restoredVersion: DiagramWorkflowVersionSummary;
     safetySnapshotVersion: DiagramWorkflowVersionSummary;
+    createdChangelogEntry: DiagramWorkflowChangelogSummary;
+    changelog: DiagramWorkflowChangelogSummary[];
     versions: DiagramWorkflowVersionSummary[];
     development: {
         name: string;
@@ -103,6 +119,74 @@ export interface DiagramWorkflowVersionDeleteResult {
     diagramId: string;
     deletedVersionId: string;
     versions: DiagramWorkflowVersionSummary[];
+}
+
+export interface DiagramWorkflowCompareCountSummary {
+    added: number;
+    removed: number;
+    changed: number;
+    unchanged: number;
+    total: number;
+}
+
+export interface DiagramWorkflowChangelogChangeSummary {
+    tables: DiagramWorkflowCompareCountSummary;
+    fields: DiagramWorkflowCompareCountSummary;
+    relationships: DiagramWorkflowCompareCountSummary;
+    totalChanges: number;
+    hasChanges: boolean;
+}
+
+export interface DiagramWorkflowChangelogAuthor {
+    id: string;
+    displayName: string;
+    email: string | null;
+}
+
+export interface DiagramWorkflowChangelogSummary {
+    id: string;
+    diagramId: string;
+    snapshotId: string;
+    eventType: DiagramWorkflowChangelogEventType;
+    sessionId: string | null;
+    sourceDocumentVersion: number | null;
+    sourceLabel: string | null;
+    summary: string;
+    changeSummary: DiagramWorkflowChangelogChangeSummary | null;
+    fingerprint: string;
+    createdAt: string;
+    createdBy: DiagramWorkflowChangelogAuthor | null;
+}
+
+export interface DiagramWorkflowChangelogRecord extends DiagramWorkflowChangelogSummary {
+    snapshot: {
+        id: string;
+        fingerprint: string;
+        canonicalSchema: CanonicalSchema;
+        diagramDocument: DiagramDto | null;
+        layoutSource: 'captured' | 'derived' | 'auto_layout';
+        sourceKind: 'introspection' | 'development' | 'restore' | 'apply';
+        createdAt: string;
+    };
+}
+
+export interface DiagramWorkflowChangelogCaptureResult {
+    created: boolean;
+    entry: DiagramWorkflowChangelogRecord;
+}
+
+export interface DiagramWorkflowChangelogRevertResult {
+    diagramId: string;
+    revertedEntry: DiagramWorkflowChangelogSummary;
+    createdEntry: DiagramWorkflowChangelogSummary;
+    safetySnapshotVersion: DiagramWorkflowVersionSummary;
+    changelog: DiagramWorkflowChangelogSummary[];
+    versions: DiagramWorkflowVersionSummary[];
+    development: {
+        name: string;
+        documentVersion: number;
+        updatedAt: string;
+    };
 }
 
 export const diagramWorkflowClient = {
@@ -135,9 +219,17 @@ export const diagramWorkflowClient = {
         requestJson<{ items: DiagramWorkflowVersionSummary[] }>(
             `/api/diagrams/${diagramId}/workflow/versions`
         ),
+    listChangelog: async (diagramId: string) =>
+        requestJson<{ items: DiagramWorkflowChangelogSummary[] }>(
+            `/api/diagrams/${diagramId}/workflow/changelog`
+        ),
     getVersion: async (diagramId: string, versionId: string) =>
         requestJson<{ version: DiagramWorkflowVersionRecord }>(
             `/api/diagrams/${diagramId}/workflow/versions/${versionId}`
+        ),
+    getChangelogEntry: async (diagramId: string, entryId: string) =>
+        requestJson<{ entry: DiagramWorkflowChangelogRecord }>(
+            `/api/diagrams/${diagramId}/workflow/changelog/${entryId}`
         ),
     createVersion: async (
         diagramId: string,
@@ -151,6 +243,25 @@ export const diagramWorkflowClient = {
     ) =>
         requestJson<{ version: DiagramWorkflowVersionRecord }>(
             `/api/diagrams/${diagramId}/workflow/versions`,
+            {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            }
+        ),
+    captureChangelogEntry: async (
+        diagramId: string,
+        payload: {
+            eventType: DiagramWorkflowChangelogEventType;
+            sessionId?: string | null;
+            sourceDocumentVersion?: number | null;
+            sourceLabel?: string | null;
+            summary?: string | null;
+            canonicalSchema: CanonicalSchema;
+            diagramDocument: DiagramDto;
+        }
+    ) =>
+        requestJson<{ result: DiagramWorkflowChangelogCaptureResult }>(
+            `/api/diagrams/${diagramId}/workflow/changelog`,
             {
                 method: 'POST',
                 body: JSON.stringify(payload),
@@ -177,6 +288,21 @@ export const diagramWorkflowClient = {
             `/api/diagrams/${diagramId}/workflow/versions/${versionId}`,
             {
                 method: 'DELETE',
+            }
+        ),
+    revertChangelogEntryToDevelopment: async (
+        diagramId: string,
+        entryId: string,
+        payload: {
+            baseVersion: number;
+            currentDevelopmentCanonicalSchema: CanonicalSchema;
+        }
+    ) =>
+        requestJson<{ result: DiagramWorkflowChangelogRevertResult }>(
+            `/api/diagrams/${diagramId}/workflow/changelog/${entryId}/revert-to-development`,
+            {
+                method: 'POST',
+                body: JSON.stringify(payload),
             }
         ),
 };

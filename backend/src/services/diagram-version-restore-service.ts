@@ -1,13 +1,19 @@
 import { hashCanonicalSchema } from '@schemadash/schema-sync-core';
 import type { AppUserRecord } from '../repositories/app-repository.js';
 import type {
+    DiagramWorkflowChangelogSummaryView,
+    DiagramChangelogService,
+} from './diagram-changelog-service.js';
+import type {
     DiagramWorkflowRepository,
     DiagramWorkflowSnapshotRecord,
     DiagramWorkflowStateRecord,
     DiagramWorkflowVersionRecord,
 } from '../repositories/diagram-workflow-repository.js';
 import {
+    revertDiagramWorkflowChangelogEntrySchema,
     restoreDiagramWorkflowVersionSchema,
+    type RevertDiagramWorkflowChangelogEntryInput,
     type RestoreDiagramWorkflowVersionInput,
 } from '../schemas/diagram-workflow.js';
 import type { PersistenceService } from './persistence-service.js';
@@ -23,6 +29,22 @@ export interface DiagramVersionRestoreResultView {
     diagramId: string;
     restoredVersion: DiagramWorkflowVersionSummaryView;
     safetySnapshotVersion: DiagramWorkflowVersionSummaryView;
+    createdChangelogEntry: DiagramWorkflowChangelogSummaryView;
+    changelog: DiagramWorkflowChangelogSummaryView[];
+    versions: DiagramWorkflowVersionSummaryView[];
+    development: {
+        name: string;
+        documentVersion: number;
+        updatedAt: string;
+    };
+}
+
+export interface DiagramChangelogRevertResultView {
+    diagramId: string;
+    revertedEntry: DiagramWorkflowChangelogSummaryView;
+    createdEntry: DiagramWorkflowChangelogSummaryView;
+    safetySnapshotVersion: DiagramWorkflowVersionSummaryView;
+    changelog: DiagramWorkflowChangelogSummaryView[];
     versions: DiagramWorkflowVersionSummaryView[];
     development: {
         name: string;
@@ -34,7 +56,8 @@ export interface DiagramVersionRestoreResultView {
 export class DiagramVersionRestoreService {
     constructor(
         private readonly repository: DiagramWorkflowRepository,
-        private readonly persistenceService: PersistenceService
+        private readonly persistenceService: PersistenceService,
+        private readonly changelogService: DiagramChangelogService
     ) {}
 
     restoreVersionToDevelopment(
@@ -108,11 +131,136 @@ export class DiagramVersionRestoreService {
             },
             actor
         );
+        const createdChangelogEntry = this.changelogService.captureEntry(
+            diagramId,
+            {
+                eventType: 'restore',
+                sourceDocumentVersion:
+                    restoredDiagram.collaboration.document.version,
+                sourceLabel: version.name?.trim() || version.versionLabel,
+                summary: `Restored Development from ${version.name?.trim() || version.versionLabel}.`,
+                canonicalSchema: snapshot.canonicalSchema,
+                diagramDocument: {
+                    ...snapshot.diagramDocument,
+                    id: diagramId,
+                    schemaSync: diagram.diagram.schemaSync,
+                    updatedAt: new Date(createdAt),
+                },
+            },
+            actor
+        ).entry;
 
         return {
             diagramId,
             restoredVersion: this.toVersionSummaryView(version),
             safetySnapshotVersion,
+            createdChangelogEntry,
+            changelog: this.changelogService.listChangelog(diagramId, actor),
+            versions: this.repository
+                .listVersions(diagramId)
+                .map((item) => this.toVersionSummaryView(item)),
+            development: {
+                name: restoredDiagram.diagram.name,
+                documentVersion: restoredDiagram.collaboration.document.version,
+                updatedAt: restoredDiagram.updatedAt,
+            },
+        };
+    }
+
+    restoreChangelogEntryToDevelopment(
+        diagramId: string,
+        entryId: string,
+        input: unknown,
+        actor?: AppUserRecord | null
+    ): DiagramChangelogRevertResultView {
+        const diagram = this.requireEditableDiagram(diagramId, actor);
+        const payload = revertDiagramWorkflowChangelogEntrySchema.parse(input);
+
+        if (diagram.collaboration.document.version !== payload.baseVersion) {
+            throw new AppError(
+                'Development changed before the revert could start. Reload the editor and try again.',
+                409,
+                'DIAGRAM_RESTORE_CONFLICT'
+            );
+        }
+
+        const entry = this.changelogService.getChangelogEntry(
+            diagramId,
+            entryId,
+            actor
+        );
+        const snapshot = this.repository.getSnapshot(entry.snapshotId);
+
+        if (!snapshot || snapshot.diagramId !== diagramId) {
+            throw new AppError(
+                'Changelog snapshot not found.',
+                404,
+                'DIAGRAM_CHANGELOG_SNAPSHOT_NOT_FOUND'
+            );
+        }
+
+        if (!snapshot.diagramDocument) {
+            throw new AppError(
+                'This changelog entry cannot be restored because its stored diagram document is unavailable.',
+                409,
+                'DIAGRAM_CHANGELOG_RESTORE_UNAVAILABLE'
+            );
+        }
+
+        const createdAt = new Date().toISOString();
+        const workflowState = this.repository.getState(diagramId);
+        const sourceLabel = entry.sourceLabel ?? entry.summary;
+        const safetySnapshotVersion = this.createSafetySnapshotVersion({
+            diagram,
+            versionLabelOverride: sourceLabel,
+            workflowState,
+            actor,
+            createdAt,
+            currentDevelopmentCanonicalSchema:
+                payload.currentDevelopmentCanonicalSchema,
+        });
+
+        const restoredDiagram = this.persistenceService.upsertDiagram(
+            diagramId,
+            {
+                projectId: diagram.projectId,
+                ownerUserId: diagram.ownerUserId ?? undefined,
+                description: diagram.description,
+                baseVersion: payload.baseVersion,
+                diagram: {
+                    ...snapshot.diagramDocument,
+                    id: diagramId,
+                    schemaSync: diagram.diagram.schemaSync,
+                    updatedAt: createdAt,
+                },
+            },
+            actor
+        );
+        const createdEntry = this.changelogService.captureEntry(
+            diagramId,
+            {
+                eventType: 'revert',
+                sourceDocumentVersion:
+                    restoredDiagram.collaboration.document.version,
+                sourceLabel,
+                summary: `Reverted Development to ${sourceLabel}.`,
+                canonicalSchema: snapshot.canonicalSchema,
+                diagramDocument: {
+                    ...snapshot.diagramDocument,
+                    id: diagramId,
+                    schemaSync: diagram.diagram.schemaSync,
+                    updatedAt: new Date(createdAt),
+                },
+            },
+            actor
+        ).entry;
+
+        return {
+            diagramId,
+            revertedEntry: entry,
+            createdEntry,
+            safetySnapshotVersion,
+            changelog: this.changelogService.listChangelog(diagramId, actor),
             versions: this.repository
                 .listVersions(diagramId)
                 .map((item) => this.toVersionSummaryView(item)),
@@ -127,17 +275,21 @@ export class DiagramVersionRestoreService {
     private createSafetySnapshotVersion({
         diagram,
         version,
+        versionLabelOverride,
         workflowState,
         actor,
         createdAt,
         currentDevelopmentCanonicalSchema,
     }: {
         diagram: PersistedDiagramView;
-        version: DiagramWorkflowVersionRecord;
+        version?: DiagramWorkflowVersionRecord;
+        versionLabelOverride?: string;
         workflowState?: DiagramWorkflowStateRecord;
         actor?: AppUserRecord | null;
         createdAt: string;
-        currentDevelopmentCanonicalSchema: RestoreDiagramWorkflowVersionInput['currentDevelopmentCanonicalSchema'];
+        currentDevelopmentCanonicalSchema:
+            | RestoreDiagramWorkflowVersionInput['currentDevelopmentCanonicalSchema']
+            | RevertDiagramWorkflowChangelogEntryInput['currentDevelopmentCanonicalSchema'];
     }): DiagramWorkflowVersionSummaryView {
         const fingerprint = hashCanonicalSchema(
             currentDevelopmentCanonicalSchema
@@ -154,7 +306,10 @@ export class DiagramVersionRestoreService {
         const safetyVersionId = generateId();
         const safetyVersionNumber =
             this.repository.countVersions(diagram.id) + 1;
-        const restoreLabel = version.name?.trim() || version.versionLabel;
+        const restoreLabel =
+            versionLabelOverride ??
+            (version ? version.name?.trim() || version.versionLabel : null) ??
+            'selected state';
         const safetySnapshot: DiagramWorkflowSnapshotRecord = {
             id: snapshotId,
             diagramId: diagram.id,

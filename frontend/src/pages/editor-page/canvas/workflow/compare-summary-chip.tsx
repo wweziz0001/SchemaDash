@@ -2,6 +2,7 @@ import React from 'react';
 import { Badge } from '@/components/badge/badge';
 import { GitBranch, GitCompareArrows, History } from 'lucide-react';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { getChangelogEntryTitle } from '@/lib/diagram-workflow/changelog-entry-format';
 import { getVersionDisplayLabel } from '@/lib/diagram-workflow/version-labels';
 
 export const CompareSummaryChip: React.FC = () => {
@@ -16,9 +17,13 @@ export const CompareSummaryChip: React.FC = () => {
 
     const { summary } = workflow.compareRenderModel.compareResult;
     const baselineLabel =
-        workflow.compareSourceKind === 'version' && workflow.compareVersion
-            ? getVersionDisplayLabel(workflow.compareVersion)
-            : 'Live Database';
+        workflow.compareSourceKind === 'changelog' &&
+        workflow.compareChangelogEntry
+            ? getChangelogEntryTitle(workflow.compareChangelogEntry)
+            : workflow.compareSourceKind === 'version' &&
+                workflow.compareVersion
+              ? getVersionDisplayLabel(workflow.compareVersion)
+              : 'Live Database';
     const totalAdded =
         summary.tables.added +
         summary.fields.added +

@@ -9,6 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { labelVariants } from '@/components/label/label-variants';
 import { Badge } from '@/components/badge/badge';
+import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { captureDiagramWorkflowChangelogEntry } from '@/lib/diagram-workflow/capture-changelog-entry';
 import {
     Tooltip,
     TooltipContent,
@@ -28,6 +30,7 @@ export const DiagramName: React.FC<DiagramNameProps> = () => {
     } = useSchemaDash();
 
     const { t } = useTranslation();
+    const workflow = useOptionalDiagramWorkflow();
     const [editMode, setEditMode] = useState(false);
     const [editedDiagramName, setEditedDiagramName] =
         React.useState(diagramName);
@@ -52,11 +55,31 @@ export const DiagramName: React.FC<DiagramNameProps> = () => {
             return;
         }
 
-        if (editedDiagramName.trim()) {
-            updateDiagramName(editedDiagramName.trim());
+        const nextName = editedDiagramName.trim();
+        if (nextName && nextName !== diagramName) {
+            void updateDiagramName(nextName).then(() => {
+                void captureDiagramWorkflowChangelogEntry({
+                    diagramId: workflow?.diagramId,
+                    diagram: workflow?.developmentDiagram ?? currentDiagram,
+                    eventType: 'diagram_renamed',
+                    sourceLabel: nextName,
+                    summary: `Renamed Development to ${nextName}.`,
+                }).then((entry) => {
+                    if (entry) {
+                        workflow?.upsertChangelogEntry(entry);
+                    }
+                });
+            });
         }
         setEditMode(false);
-    }, [editedDiagramName, readonly, updateDiagramName]);
+    }, [
+        currentDiagram,
+        diagramName,
+        editedDiagramName,
+        readonly,
+        updateDiagramName,
+        workflow,
+    ]);
 
     // Handle click outside to save and exit edit mode
     useClickAway(inputRef, editDiagramName);

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Badge } from '@/components/badge/badge';
 import { DatabaseZap } from 'lucide-react';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
+import { getChangelogEntryTitle } from '@/lib/diagram-workflow/changelog-entry-format';
 import { getVersionDisplayLabel } from '@/lib/diagram-workflow/version-labels';
 
 const formatTimestamp = (value: string) =>
@@ -90,23 +91,29 @@ export const LiveStatusChip: React.FC = () => {
                       label: 'Snapshot read-only',
                       title: 'Historical version views are immutable and read-only.',
                   }
-                : workflow.activeMode === 'compare'
+                : workflow.activeMode === 'changelog'
                   ? {
                         variant: 'secondary' as const,
-                        label: 'Compare read-only',
-                        title: 'Compare mode is a read-only review of Live Database versus Development.',
+                        label: 'Changelog read-only',
+                        title: 'Historical changelog entries are immutable and read-only.',
                     }
-                  : workflow.activeMode === 'live'
+                  : workflow.activeMode === 'compare'
                     ? {
                           variant: 'secondary' as const,
-                          label: 'Live read-only',
-                          title: 'Live Database mode is read-only.',
+                          label: 'Compare read-only',
+                          title: 'Compare mode is a read-only review of a selected baseline versus Development.',
                       }
-                    : {
-                          variant: 'outline' as const,
-                          label: 'Development editable',
-                          title: 'Development mode remains editable.',
-                      };
+                    : workflow.activeMode === 'live'
+                      ? {
+                            variant: 'secondary' as const,
+                            label: 'Live read-only',
+                            title: 'Live Database mode is read-only.',
+                        }
+                      : {
+                            variant: 'outline' as const,
+                            label: 'Development editable',
+                            title: 'Development mode remains editable.',
+                        };
 
         const surfaceBadge =
             workflow.activeMode === 'version' && workflow.selectedVersion
@@ -115,31 +122,46 @@ export const LiveStatusChip: React.FC = () => {
                       label: `Viewing ${getVersionDisplayLabel(workflow.selectedVersion)}`,
                       title: 'You are looking at an immutable historical snapshot.',
                   }
-                : workflow.activeMode === 'compare' &&
-                    workflow.compareSourceKind === 'version' &&
-                    workflow.compareVersion
+                : workflow.activeMode === 'changelog' &&
+                    workflow.selectedChangelogEntry
                   ? {
                         variant: 'outline' as const,
-                        label: `${getVersionDisplayLabel(workflow.compareVersion)} -> Development`,
-                        title: 'Diff view between the selected historical version and Development.',
+                        label: `Viewing ${getChangelogEntryTitle(workflow.selectedChangelogEntry)}`,
+                        title: 'You are looking at an immutable historical changelog state.',
                     }
-                  : workflow.activeMode === 'compare'
+                  : workflow.activeMode === 'compare' &&
+                      workflow.compareSourceKind === 'changelog' &&
+                      workflow.compareChangelogEntry
                     ? {
                           variant: 'outline' as const,
-                          label: 'Live Database -> Development',
-                          title: 'Diff view between the live snapshot and Development.',
+                          label: `${getChangelogEntryTitle(workflow.compareChangelogEntry)} -> Development`,
+                          title: 'Diff view between the selected changelog entry and Development.',
                       }
-                    : workflow.activeMode === 'development'
+                    : workflow.activeMode === 'compare' &&
+                        workflow.compareSourceKind === 'version' &&
+                        workflow.compareVersion
                       ? {
                             variant: 'outline' as const,
-                            label: 'Development head',
-                            title: 'Current editable head of the workflow.',
+                            label: `${getVersionDisplayLabel(workflow.compareVersion)} -> Development`,
+                            title: 'Diff view between the selected historical version and Development.',
                         }
-                      : {
-                            variant: 'outline' as const,
-                            label: 'Live snapshot',
-                            title: 'Last synced live schema snapshot.',
-                        };
+                      : workflow.activeMode === 'compare'
+                        ? {
+                              variant: 'outline' as const,
+                              label: 'Live Database -> Development',
+                              title: 'Diff view between the live snapshot and Development.',
+                          }
+                        : workflow.activeMode === 'development'
+                          ? {
+                                variant: 'outline' as const,
+                                label: 'Development head',
+                                title: 'Current editable head of the workflow.',
+                            }
+                          : {
+                                variant: 'outline' as const,
+                                label: 'Live snapshot',
+                                title: 'Last synced live schema snapshot.',
+                            };
 
         return {
             connectionBadge,

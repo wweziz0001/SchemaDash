@@ -6,6 +6,7 @@ import { ApplyService } from '../services/apply-service.js';
 import { AdminService } from '../services/admin-service.js';
 import { AuthService } from '../services/auth-service.js';
 import { ConnectionsService } from '../services/connections-service.js';
+import { DiagramChangelogService } from '../services/diagram-changelog-service.js';
 import { DiagramMigrationService } from '../services/diagram-migration-service.js';
 import { DiagramVersionRestoreService } from '../services/diagram-version-restore-service.js';
 import { DiagramWorkflowService } from '../services/diagram-workflow-service.js';
@@ -27,6 +28,7 @@ export interface AppContext {
     diagramMigrationService: DiagramMigrationService;
     persistenceService: PersistenceService;
     diagramWorkflowService: DiagramWorkflowService;
+    diagramChangelogService: DiagramChangelogService;
     diagramVersionRestoreService: DiagramVersionRestoreService;
     close: () => void;
 }
@@ -84,9 +86,14 @@ export const createAppContext = (
         persistenceService,
         schemaSyncService
     );
-    const diagramVersionRestoreService = new DiagramVersionRestoreService(
+    const diagramChangelogService = new DiagramChangelogService(
         diagramWorkflowRepository,
         persistenceService
+    );
+    const diagramVersionRestoreService = new DiagramVersionRestoreService(
+        diagramWorkflowRepository,
+        persistenceService,
+        diagramChangelogService
     );
     const diagramMigrationService = new DiagramMigrationService(
         diagramWorkflowRepository,
@@ -109,6 +116,7 @@ export const createAppContext = (
         diagramMigrationService,
         persistenceService,
         diagramWorkflowService,
+        diagramChangelogService,
         diagramVersionRestoreService,
         close: () => {
             if (!options?.metadataRepository) {
