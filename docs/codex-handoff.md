@@ -182,7 +182,7 @@ Files modified:
 - `frontend/src/context/diagram-workflow-context/diagram-workflow-context.tsx`
   - Workflow context now exposes a versions setter so restore flows can preserve version history locally before the authoritative refresh returns.
 - `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
-  - Provides the new versions setter used by restore flows and now merges version summaries defensively so background workflow refreshes cannot wipe the existing versions list with an empty response.
+  - Provides the workflow versions setter used by restore/delete flows. Background refreshes still merge defensively, but explicit UI updates now replace the versions list and prune stale cached version records so deleted versions disappear immediately without waiting for a full page reload.
 - `frontend/src/context/schemadash-context/schemadash-provider.tsx`
   - `updateDiagramData(...)` no longer uses the dangerous `delete + add` sequence against authoritative storage. It now writes through `addDiagram(...)` directly, which preserves the existing remote diagram row and prevents `ON DELETE CASCADE` from wiping workflow versions and snapshots.
 - `backend/src/services/diagram-version-restore-service.ts`

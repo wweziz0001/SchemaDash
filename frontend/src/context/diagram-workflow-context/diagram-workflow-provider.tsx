@@ -155,12 +155,24 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
     }, []);
     const setVersionSummaries = useCallback(
         (nextVersions: DiagramWorkflowVersionSummary[]) => {
-            setVersions((currentVersions) =>
-                mergeVersionSummaries({
-                    currentVersions,
-                    nextVersions,
-                })
+            const normalizedVersions = [...nextVersions].sort(
+                (left, right) =>
+                    new Date(right.createdAt).getTime() -
+                    new Date(left.createdAt).getTime()
             );
+
+            setVersions(normalizedVersions);
+            setVersionRecords((currentRecords) => {
+                const allowedIds = new Set(
+                    normalizedVersions.map((version) => version.id)
+                );
+
+                return Object.fromEntries(
+                    Object.entries(currentRecords).filter(([id]) =>
+                        allowedIds.has(id)
+                    )
+                );
+            });
         },
         []
     );
