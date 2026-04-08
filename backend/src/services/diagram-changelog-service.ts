@@ -65,6 +65,12 @@ const buildFallbackSummary = (
     sourceLabel: string | null,
     hasPreviousEntry: boolean
 ) => {
+    if (eventType === 'change') {
+        return hasPreviousEntry
+            ? 'Captured Development changes.'
+            : 'Captured the first Development changes.';
+    }
+
     if (eventType === 'auto_checkpoint') {
         return hasPreviousEntry
             ? 'Captured an automatic Development checkpoint.'
@@ -81,6 +87,36 @@ const buildFallbackSummary = (
         return sourceLabel
             ? `Reverted Development to ${sourceLabel}.`
             : 'Reverted Development to a historical changelog state.';
+    }
+
+    if (eventType === 'version_created') {
+        return sourceLabel
+            ? `Created version ${sourceLabel}.`
+            : 'Created a new immutable version.';
+    }
+
+    if (eventType === 'version_deleted') {
+        return sourceLabel
+            ? `Deleted version ${sourceLabel}.`
+            : 'Deleted an immutable version.';
+    }
+
+    if (eventType === 'version_viewed') {
+        return sourceLabel
+            ? `Viewed ${sourceLabel}.`
+            : 'Viewed a historical version.';
+    }
+
+    if (eventType === 'live_connected') {
+        return sourceLabel
+            ? `Linked Development to live database ${sourceLabel}.`
+            : 'Linked Development to a live database.';
+    }
+
+    if (eventType === 'live_synced') {
+        return sourceLabel
+            ? `Synced Live Database from ${sourceLabel}.`
+            : 'Synced the Live Database baseline.';
     }
 
     return hasPreviousEntry
@@ -281,7 +317,15 @@ export class DiagramChangelogService {
         fingerprint: string;
         sourceDocumentVersion: number | null;
     }) {
-        if (eventType === 'restore' || eventType === 'revert') {
+        if (
+            eventType === 'restore' ||
+            eventType === 'revert' ||
+            eventType === 'version_created' ||
+            eventType === 'version_deleted' ||
+            eventType === 'version_viewed' ||
+            eventType === 'live_connected' ||
+            eventType === 'live_synced'
+        ) {
             return false;
         }
 

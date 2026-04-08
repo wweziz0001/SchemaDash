@@ -17,6 +17,7 @@ import { serializeDiagram } from '@/lib/persistence/diagram-serialization';
 import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';
+import { captureDiagramWorkflowChangelogEntry } from '@/lib/diagram-workflow/capture-changelog-entry';
 
 export interface CreateVersionDialogProps {
     open: boolean;
@@ -66,14 +67,32 @@ export const CreateVersionDialog: React.FC<CreateVersionDialogProps> = ({
 
         setSubmitting(true);
         try {
-            await diagramWorkflowClient.createVersion(workflow.diagramId, {
-                name: name.trim() || null,
-                description: description.trim() || null,
-                origin: 'manual',
-                canonicalSchema: diagramToCanonicalSchema(
-                    workflow.developmentDiagram
-                ),
-                diagramDocument: serializeDiagram(workflow.developmentDiagram),
+            const response = await diagramWorkflowClient.createVersion(
+                workflow.diagramId,
+                {
+                    name: name.trim() || null,
+                    description: description.trim() || null,
+                    origin: 'manual',
+                    canonicalSchema: diagramToCanonicalSchema(
+                        workflow.developmentDiagram
+                    ),
+                    diagramDocument: serializeDiagram(
+                        workflow.developmentDiagram
+                    ),
+                }
+            );
+            void captureDiagramWorkflowChangelogEntry({
+                diagramId: workflow.diagramId,
+                diagram: workflow.developmentDiagram,
+                eventType: 'version_created',
+                sourceLabel:
+                    response.version.name?.trim() ||
+                    response.version.versionLabel,
+                summary: `Created version ${response.version.name?.trim() || response.version.versionLabel}.`,
+            }).then((entry) => {
+                if (entry) {
+                    workflow.upsertChangelogEntry(entry);
+                }
             });
             if (onCreated) {
                 await onCreated();

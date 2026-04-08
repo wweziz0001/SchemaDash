@@ -13,6 +13,7 @@ import {
     type DiagramWorkflowVersionSummary,
 } from '@/lib/api/diagram-workflow-client';
 import { buildCompareRenderModel } from '@/lib/diagram-workflow/compare-render-model';
+import { captureDiagramWorkflowChangelogEntry } from '@/lib/diagram-workflow/capture-changelog-entry';
 import { getAuthoritativeChangelogCanonicalSchema } from '@/lib/diagram-workflow/changelog-entry-format';
 import { getAuthoritativeVersionCanonicalSchema } from '@/lib/diagram-workflow/version-canonical';
 import {
@@ -470,6 +471,20 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
 
     const openVersion = useCallback(
         (versionId: string) => {
+            const version = versionRecords[versionId];
+            void captureDiagramWorkflowChangelogEntry({
+                diagramId,
+                diagram: developmentDiagram,
+                eventType: 'version_viewed',
+                sourceLabel:
+                    version?.name?.trim() || version?.versionLabel || versionId,
+                summary: `Viewed ${version?.name?.trim() || version?.versionLabel || versionId}.`,
+            }).then((entry) => {
+                if (entry) {
+                    setChangelogRecord(entry);
+                }
+            });
+
             const nextParams = new URLSearchParams(searchParams);
             nextParams.set('workflow', 'version');
             nextParams.set('versionId', versionId);
@@ -478,7 +493,14 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
             nextParams.delete('changelogId');
             setSearchParams(nextParams, { replace: true });
         },
-        [searchParams, setSearchParams]
+        [
+            developmentDiagram,
+            diagramId,
+            searchParams,
+            setChangelogRecord,
+            setSearchParams,
+            versionRecords,
+        ]
     );
     const openChangelogEntry = useCallback(
         (entryId: string) => {

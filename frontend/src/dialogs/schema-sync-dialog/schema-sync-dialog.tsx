@@ -31,6 +31,7 @@ import { useDialog } from '@/hooks/use-dialog';
 import type { BaseDialogProps } from '@/dialogs/common/base-dialog-props';
 import { schemaSyncClient } from '@/lib/api/schema-sync-client';
 import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
+import { captureDiagramWorkflowChangelogEntry } from '@/lib/diagram-workflow/capture-changelog-entry';
 import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 
@@ -191,6 +192,10 @@ export const SchemaSyncDialog: React.FC<SchemaSyncDialogProps> = ({
             }
 
             const normalizedSchemas = schemas.length > 0 ? schemas : ['public'];
+            const previousConnectionId =
+                workflow?.workflow?.connectionId ??
+                currentDiagram.schemaSync?.connectionId ??
+                null;
 
             await diagramWorkflowClient.bindConnection(currentDiagram.id, {
                 connectionId,
@@ -218,13 +223,32 @@ export const SchemaSyncDialog: React.FC<SchemaSyncDialogProps> = ({
             setPreviewPlan(undefined);
             setApplyResult(undefined);
             workflow?.setWorkflowRecord(response.workflow);
+            void captureDiagramWorkflowChangelogEntry({
+                diagramId: workflow?.diagramId ?? currentDiagram.id,
+                diagram: workflow?.developmentDiagram ?? currentDiagram,
+                eventType:
+                    previousConnectionId &&
+                    previousConnectionId === connectionId
+                        ? 'live_synced'
+                        : 'live_connected',
+                sourceLabel: response.workflow.connectionName ?? connectionId,
+                summary:
+                    previousConnectionId &&
+                    previousConnectionId === connectionId
+                        ? `Synced Live Database from ${response.workflow.connectionName ?? connectionId}.`
+                        : `Linked Development to live database ${response.workflow.connectionName ?? connectionId}.`,
+            }).then((entry) => {
+                if (entry) {
+                    workflow?.upsertChangelogEntry(entry);
+                }
+            });
             toast({
                 title: 'Live database synced',
                 description:
                     'Development stayed editable while Live Database updated separately.',
             });
         },
-        [currentDiagram.id, toast, updateDiagramSyncMetadata, workflow]
+        [currentDiagram, toast, updateDiagramSyncMetadata, workflow]
     );
 
     const refreshFromDatabase = useCallback(async () => {

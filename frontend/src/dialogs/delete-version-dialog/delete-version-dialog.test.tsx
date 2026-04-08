@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DeleteVersionDialog } from './delete-version-dialog';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';
+import { captureDiagramWorkflowChangelogEntry } from '@/lib/diagram-workflow/capture-changelog-entry';
 
 const toast = vi.fn();
 
@@ -18,6 +19,10 @@ vi.mock('@/lib/api/diagram-workflow-client', () => ({
     },
 }));
 
+vi.mock('@/lib/diagram-workflow/capture-changelog-entry', () => ({
+    captureDiagramWorkflowChangelogEntry: vi.fn(),
+}));
+
 vi.mock('@/components/toast/use-toast', () => ({
     useToast: () => ({
         toast,
@@ -26,6 +31,9 @@ vi.mock('@/components/toast/use-toast', () => ({
 
 const mockedUseOptionalDiagramWorkflow = vi.mocked(useOptionalDiagramWorkflow);
 const mockedDeleteVersion = vi.mocked(diagramWorkflowClient.deleteVersion);
+const mockedCaptureChangelogEntry = vi.mocked(
+    captureDiagramWorkflowChangelogEntry
+);
 
 const version = {
     id: 'version-1',
@@ -45,6 +53,10 @@ describe('delete version dialog', () => {
         toast.mockReset();
         mockedUseOptionalDiagramWorkflow.mockReset();
         mockedDeleteVersion.mockReset();
+        mockedCaptureChangelogEntry.mockReset();
+        mockedCaptureChangelogEntry.mockResolvedValue({
+            id: 'entry-1',
+        } as never);
     });
 
     it('deletes the selected version and returns to Development', async () => {
@@ -56,6 +68,11 @@ describe('delete version dialog', () => {
 
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
+            developmentDiagram: {
+                id: 'diagram-1',
+                name: 'Development Diagram',
+            },
+            upsertChangelogEntry: vi.fn(),
             setVersions,
             setActiveMode,
             refreshWorkflow,
@@ -87,6 +104,13 @@ describe('delete version dialog', () => {
             );
         });
         expect(setVersions).toHaveBeenCalledWith([]);
+        expect(mockedCaptureChangelogEntry).toHaveBeenCalledWith(
+            expect.objectContaining({
+                diagramId: 'diagram-1',
+                eventType: 'version_deleted',
+                sourceLabel: 'Stable release',
+            })
+        );
         expect(setActiveMode).toHaveBeenCalledWith('development');
         expect(onOpenChange).toHaveBeenCalledWith(false);
         await waitFor(() => {
@@ -104,6 +128,11 @@ describe('delete version dialog', () => {
 
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
+            developmentDiagram: {
+                id: 'diagram-1',
+                name: 'Development Diagram',
+            },
+            upsertChangelogEntry: vi.fn(),
             setVersions: vi.fn(),
             setActiveMode: vi.fn(),
             refreshWorkflow: vi.fn(),

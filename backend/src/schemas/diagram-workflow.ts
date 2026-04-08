@@ -52,10 +52,16 @@ export const diagramWorkflowVersionOriginSchema = z.enum([
 ]);
 
 export const diagramWorkflowChangelogEventTypeSchema = z.enum([
+    'change',
     'save',
     'auto_checkpoint',
     'restore',
     'revert',
+    'version_created',
+    'version_deleted',
+    'version_viewed',
+    'live_connected',
+    'live_synced',
 ]);
 
 export const diagramWorkflowCompareSummarySchema = z.object({

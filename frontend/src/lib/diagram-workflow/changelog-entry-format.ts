@@ -17,6 +17,10 @@ import {
 export const getChangelogEventLabel = (
     eventType: DiagramWorkflowChangelogEventType
 ) => {
+    if (eventType === 'change') {
+        return 'Change';
+    }
+
     if (eventType === 'auto_checkpoint') {
         return 'Auto Checkpoint';
     }
@@ -29,6 +33,26 @@ export const getChangelogEventLabel = (
         return 'Revert';
     }
 
+    if (eventType === 'version_created') {
+        return 'Version Created';
+    }
+
+    if (eventType === 'version_deleted') {
+        return 'Version Deleted';
+    }
+
+    if (eventType === 'version_viewed') {
+        return 'Version Viewed';
+    }
+
+    if (eventType === 'live_connected') {
+        return 'Live Linked';
+    }
+
+    if (eventType === 'live_synced') {
+        return 'Live Sync';
+    }
+
     return 'Save';
 };
 
@@ -38,7 +62,15 @@ export const getChangelogEntryTitle = (
         'summary' | 'sourceLabel' | 'eventType'
     >
 ) => {
-    if (entry.eventType === 'restore' || entry.eventType === 'revert') {
+    if (
+        entry.eventType === 'restore' ||
+        entry.eventType === 'revert' ||
+        entry.eventType === 'version_created' ||
+        entry.eventType === 'version_deleted' ||
+        entry.eventType === 'version_viewed' ||
+        entry.eventType === 'live_connected' ||
+        entry.eventType === 'live_synced'
+    ) {
         return entry.sourceLabel?.trim() || entry.summary;
     }
 

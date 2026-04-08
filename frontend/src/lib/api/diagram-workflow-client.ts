@@ -21,10 +21,16 @@ export type DiagramWorkflowVersionOrigin =
     | 'before_apply';
 
 export type DiagramWorkflowChangelogEventType =
+    | 'change'
     | 'save'
     | 'auto_checkpoint'
     | 'restore'
-    | 'revert';
+    | 'revert'
+    | 'version_created'
+    | 'version_deleted'
+    | 'version_viewed'
+    | 'live_connected'
+    | 'live_synced';
 
 export interface DiagramWorkflowLiveSnapshot {
     id: string;

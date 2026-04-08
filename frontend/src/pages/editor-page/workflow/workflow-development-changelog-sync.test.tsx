@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkflowDevelopmentChangelogSync } from './workflow-development-changelog-sync';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { useSchemaDash } from '@/hooks/use-schemadash';
-import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';
+import { captureDiagramWorkflowChangelogEntry } from '@/lib/diagram-workflow/capture-changelog-entry';
 import { diagramToCanonicalSchema } from '@/lib/schema-sync/canonical-adapters';
 import { serializeDiagram } from '@/lib/persistence/diagram-serialization';
 
@@ -16,10 +16,8 @@ vi.mock('@/hooks/use-schemadash', () => ({
     useSchemaDash: vi.fn(),
 }));
 
-vi.mock('@/lib/api/diagram-workflow-client', () => ({
-    diagramWorkflowClient: {
-        captureChangelogEntry: vi.fn(),
-    },
+vi.mock('@/lib/diagram-workflow/capture-changelog-entry', () => ({
+    captureDiagramWorkflowChangelogEntry: vi.fn(),
 }));
 
 vi.mock('@/lib/schema-sync/canonical-adapters', () => ({
@@ -33,7 +31,7 @@ vi.mock('@/lib/persistence/diagram-serialization', () => ({
 const mockedUseOptionalDiagramWorkflow = vi.mocked(useOptionalDiagramWorkflow);
 const mockedUseSchemaDash = vi.mocked(useSchemaDash);
 const mockedCaptureChangelogEntry = vi.mocked(
-    diagramWorkflowClient.captureChangelogEntry
+    captureDiagramWorkflowChangelogEntry
 );
 const mockedDiagramToCanonicalSchema = vi.mocked(diagramToCanonicalSchema);
 const mockedSerializeDiagram = vi.mocked(serializeDiagram);
@@ -58,12 +56,7 @@ describe('workflow development changelog sync', () => {
         } as never);
         mockedSerializeDiagram.mockReturnValue({ id: 'diagram-1' } as never);
         mockedCaptureChangelogEntry.mockResolvedValue({
-            result: {
-                created: true,
-                entry: {
-                    id: 'entry-1',
-                },
-            },
+            id: 'entry-1',
         } as never);
     });
 
@@ -81,6 +74,10 @@ describe('workflow development changelog sync', () => {
 
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
+            activeMode: 'development',
+            workflow: {
+                diagramAccess: 'owner',
+            },
             changelogEntries: [],
             upsertChangelogEntry,
         } as never);
@@ -105,8 +102,8 @@ describe('workflow development changelog sync', () => {
         });
 
         expect(mockedCaptureChangelogEntry).toHaveBeenCalledWith(
-            'diagram-1',
             expect.objectContaining({
+                diagramId: 'diagram-1',
                 eventType: 'save',
                 sessionId: 'session-1',
                 sourceDocumentVersion: 7,
@@ -154,9 +151,78 @@ describe('workflow development changelog sync', () => {
         });
 
         expect(mockedCaptureChangelogEntry).toHaveBeenCalledWith(
-            'diagram-1',
             expect.objectContaining({
+                diagramId: 'diagram-1',
                 eventType: 'auto_checkpoint',
+            })
+        );
+        expect(upsertChangelogEntry).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'entry-1' })
+        );
+    });
+
+    it('captures direct Development changes even when no save session marker is present yet', async () => {
+        const upsertChangelogEntry = vi.fn();
+        let serializedDiagram = {
+            id: 'diagram-1',
+            name: 'Development Diagram',
+            tables: [{ id: 'table-1', name: 'users' }],
+        };
+
+        mockedSerializeDiagram.mockImplementation(
+            () => serializedDiagram as never
+        );
+        mockedUseOptionalDiagramWorkflow.mockReturnValue({
+            diagramId: 'diagram-1',
+            activeMode: 'development',
+            workflow: {
+                diagramAccess: 'owner',
+            },
+            changelogEntries: [],
+            upsertChangelogEntry,
+        } as never);
+        mockedUseSchemaDash.mockReturnValue({
+            currentDiagram: {
+                id: 'diagram-1',
+                name: 'Development Diagram',
+                updatedAt: new Date('2026-04-08T10:00:00.000Z'),
+            },
+            readonly: false,
+            diagramSession: undefined,
+        } as never);
+
+        const rendered = render(<WorkflowDevelopmentChangelogSync />);
+
+        serializedDiagram = {
+            id: 'diagram-1',
+            name: 'Renamed Development Diagram',
+            tables: [
+                { id: 'table-1', name: 'users' },
+                { id: 'table-2', name: 'orders' },
+            ],
+        };
+        mockedUseSchemaDash.mockReturnValue({
+            currentDiagram: {
+                id: 'diagram-1',
+                name: 'Renamed Development Diagram',
+                updatedAt: new Date('2026-04-08T10:00:10.000Z'),
+            },
+            readonly: false,
+            diagramSession: undefined,
+        } as never);
+
+        rendered.rerender(<WorkflowDevelopmentChangelogSync />);
+
+        await act(async () => {
+            vi.advanceTimersByTime(4 * 1000);
+            await Promise.resolve();
+        });
+
+        expect(mockedCaptureChangelogEntry).toHaveBeenCalledWith(
+            expect.objectContaining({
+                diagramId: 'diagram-1',
+                eventType: 'change',
+                summary: 'Captured Development changes.',
             })
         );
         expect(upsertChangelogEntry).toHaveBeenCalledWith(

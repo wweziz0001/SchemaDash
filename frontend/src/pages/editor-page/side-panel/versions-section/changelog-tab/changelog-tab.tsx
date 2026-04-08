@@ -15,7 +15,7 @@ const getDevelopmentDescription = ({
     compareSourceKind: 'live' | 'version' | 'changelog' | null | undefined;
 }) => {
     if (activeMode === 'development') {
-        return 'This is the editable head of the diagram. Save, restore, and automatic checkpoints all feed the changelog timeline without turning it into a Versions clone.';
+        return 'This is the editable head of the diagram. Direct edits, saves, restores, version actions, live-sync events, and automatic checkpoints all feed the changelog timeline without turning it into a Versions clone.';
     }
 
     if (activeMode === 'changelog') {
@@ -93,9 +93,10 @@ export const ChangelogTab: React.FC<ChangelogTabProps> = () => {
                                 </h2>
                                 <p className="max-w-xl text-sm leading-6 text-muted-foreground">
                                     Changelog entries come from ongoing
-                                    Development activity such as saves,
-                                    checkpoints, and revert flows. Versions stay
-                                    separate as intentional named milestones.
+                                    Development activity such as direct edits,
+                                    saves, version actions, live sync, and
+                                    revert flows. Versions stay separate as
+                                    intentional named milestones.
                                 </p>
                             </div>
 
@@ -127,7 +128,7 @@ export const ChangelogTab: React.FC<ChangelogTabProps> = () => {
                     {entries.length === 0 ? (
                         <EmptyState
                             title="No changelog entries yet"
-                            description="Save the Development diagram or keep working long enough for the first automatic checkpoint to be captured."
+                            description="Edit the Development diagram, save it, create a version, or keep working long enough for the first automatic checkpoint to be captured."
                             className="mt-8"
                         />
                     ) : (
