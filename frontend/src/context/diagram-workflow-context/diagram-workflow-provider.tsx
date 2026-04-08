@@ -40,6 +40,33 @@ const mergeWorkflowRecord = (
     };
 };
 
+const mergeVersionSummaries = ({
+    currentVersions,
+    nextVersions,
+}: {
+    currentVersions: DiagramWorkflowVersionSummary[];
+    nextVersions: DiagramWorkflowVersionSummary[];
+}) => {
+    if (nextVersions.length === 0) {
+        return currentVersions;
+    }
+
+    const versionMap = new Map<string, DiagramWorkflowVersionSummary>();
+
+    currentVersions.forEach((version) => {
+        versionMap.set(version.id, version);
+    });
+    nextVersions.forEach((version) => {
+        versionMap.set(version.id, version);
+    });
+
+    return [...versionMap.values()].sort(
+        (left, right) =>
+            new Date(right.createdAt).getTime() -
+            new Date(left.createdAt).getTime()
+    );
+};
+
 const buildLiveDiagram = (
     workflow: DiagramWorkflowRecord
 ): Diagram | undefined => {
@@ -128,7 +155,12 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
     }, []);
     const setVersionSummaries = useCallback(
         (nextVersions: DiagramWorkflowVersionSummary[]) => {
-            setVersions(nextVersions);
+            setVersions((currentVersions) =>
+                mergeVersionSummaries({
+                    currentVersions,
+                    nextVersions,
+                })
+            );
         },
         []
     );
@@ -192,7 +224,12 @@ export const DiagramWorkflowProvider: React.FC<React.PropsWithChildren> = ({
 
             setDevelopmentDiagram(deserializeDiagram(diagramResponse.diagram));
             setWorkflowRecord(workflowResponse.workflow);
-            setVersions(versionsResponse.items);
+            setVersions((currentVersions) =>
+                mergeVersionSummaries({
+                    currentVersions,
+                    nextVersions: versionsResponse.items,
+                })
+            );
         } finally {
             setLoadingWorkflow(false);
         }
