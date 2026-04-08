@@ -22,6 +22,7 @@ import {
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { exportBaseSQL } from '@/lib/data/sql-export/export-sql-script';
 import { buildReviewGrouping } from '@/lib/diagram-workflow/review-grouping';
+import { getAuthoritativeVersionCanonicalSchema } from '@/lib/diagram-workflow/version-canonical';
 import type { DBTable } from '@/lib/domain/db-table';
 import type { Diagram } from '@/lib/domain/diagram';
 import { canonicalSchemaToDiagram } from '@/lib/schema-sync/canonical-adapters';
@@ -817,7 +818,20 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
     );
 
     const developmentDiagram = workflow?.developmentDiagram;
-    const baselineSchema = workflow?.workflow?.liveSnapshot?.canonicalSchema;
+    const baselineSchema =
+        workflow?.compareSourceKind === 'version'
+            ? getAuthoritativeVersionCanonicalSchema(workflow.compareVersion)
+            : workflow?.workflow?.liveSnapshot?.canonicalSchema;
+    const baselineHeading =
+        workflow?.compareSourceKind === 'version'
+            ? workflow.compareVersion?.name?.trim() ||
+              workflow.compareVersion?.versionLabel ||
+              'Selected Version'
+            : 'Live Database';
+    const reviewUnavailableMessage =
+        workflow?.compareSourceKind === 'version'
+            ? 'Load the selected version and keep a development diagram available to inspect a structured review of this historical baseline.'
+            : 'Sync a live snapshot and keep a development diagram loaded to inspect a structured review of the compare baseline.';
 
     const reviewGrouping = React.useMemo(
         () =>
@@ -1087,7 +1101,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                         Review Proposed Changes
                     </DialogTitle>
                     <DialogDescription className="sr-only">
-                        Review the live Database baseline against the current
+                        Review the compare baseline against the current
                         Development schema in a dual-pane compare browser.
                     </DialogDescription>
                 </div>
@@ -1097,9 +1111,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                         <Alert>
                             <AlertTitle>Review is not available yet</AlertTitle>
                             <AlertDescription>
-                                Sync a live snapshot and keep a development
-                                diagram loaded to inspect a structured review of
-                                the compare baseline.
+                                {reviewUnavailableMessage}
                             </AlertDescription>
                         </Alert>
                     </div>
@@ -1130,7 +1142,7 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
                                         >
                                             <ResizablePanel defaultSize={50}>
                                                 <ReviewColumnList
-                                                    heading="Database"
+                                                    heading={baselineHeading}
                                                     items={filteredItems}
                                                     surface="baseline"
                                                     selectedItemId={

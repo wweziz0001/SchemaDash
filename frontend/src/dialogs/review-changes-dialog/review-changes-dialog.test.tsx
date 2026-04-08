@@ -226,9 +226,7 @@ describe('review changes dialog', () => {
 
         expect(screen.getByText('Review Proposed Changes')).toBeTruthy();
         expect(
-            screen.getByPlaceholderText(
-                'Search changed tables, relationships, and related entities...'
-            )
+            screen.getByPlaceholderText('Search tables and relationships...')
         ).toBeTruthy();
         expect(screen.getAllByText('Live Database').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Development').length).toBeGreaterThan(0);
@@ -319,9 +317,8 @@ describe('review changes dialog', () => {
             0
         );
         expect(
-            screen.getAllByText(
-                'Immutable historical snapshot selected as the review baseline.'
-            ).length
-        ).toBeGreaterThan(0);
+            screen.getByPlaceholderText('Search tables and relationships...')
+        ).toBeTruthy();
+        expect(screen.queryByText('Review is not available yet')).toBeNull();
     });
 });
