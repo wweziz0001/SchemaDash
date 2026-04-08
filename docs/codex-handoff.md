@@ -179,6 +179,8 @@ Files modified:
   - Workflow context now exposes a versions setter so restore flows can preserve version history locally before the authoritative refresh returns.
 - `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
   - Provides the new versions setter used by restore flows.
+- `frontend/src/context/layout-context/layout-provider.tsx`
+  - Sidebar layout state now persists the last selected section/tab per diagram in session storage, which keeps the Versions panel open across workflow remounts such as restore-to-development.
 - `frontend/src/pages/editor-page/canvas/workflow/compare-summary-chip.tsx`
   - Clearer diff-view messaging on canvas.
 - `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.tsx`
@@ -227,6 +229,7 @@ Workflow/UI changes:
   - version baseline to development
 - The revert modal now uses "Revert to This Version" language, but still calls the existing restore-to-development API.
 - After a successful revert, the frontend now immediately merges the restored snapshot and the newly created safety snapshot into the local versions list before issuing the background workflow refresh.
+- The editor sidebar now remembers that the user was in `Versions`, so restoring back to `Development` no longer makes the UI jump back to `Tables` and appear as if all versions disappeared.
 - The Changelog tab now behaves like a workflow timeline instead of a set of static info cards.
 - Canvas chips now more clearly identify whether the user is looking at:
   - live snapshot
@@ -264,6 +267,7 @@ What was verified:
 - Review dialog behavior and version-baseline support
 - Revert modal confirmation behavior and unchanged API flow
 - Revert flow now preserves the versions list locally after success instead of relying entirely on the follow-up refresh
+- Sidebar state now persists across workflow remounts, which prevents `Versions` from visually disappearing after a restore or similar mode transition
 - Canvas live/version/diff chips
 - Changelog timeline rendering
 
@@ -363,3 +367,5 @@ Commit list created for this task:
   - Replaced the remaining square full-screen loader overlay with the same map-top loading strip used elsewhere in the editor.
 - `fix: preserve versions after restoring a snapshot`
   - Revert now updates the local versions list immediately with the safety snapshot and existing historical entries so restoring a version replaces Development without making saved versions disappear from the sidebar.
+- `fix: preserve versions sidebar after workflow restores`
+  - Persisted the selected sidebar section/tab per diagram so restore-to-development and similar workflow remounts keep the `Versions` panel visible instead of snapping back to `Tables`.
