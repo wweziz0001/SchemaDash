@@ -1,6 +1,9 @@
 import { createContext, useContext } from 'react';
 import type { Diagram } from '@/lib/domain/diagram';
 import type {
+    DiagramWorkflowChangelogRecord,
+    DiagramWorkflowChangelogSummary,
+    DiagramWorkflowCompareSourceKind,
     DiagramWorkflowRecord,
     DiagramWorkflowVersionRecord,
     DiagramWorkflowVersionSummary,
@@ -11,7 +14,8 @@ export type DiagramWorkflowMode =
     | 'development'
     | 'live'
     | 'compare'
-    | 'version';
+    | 'version'
+    | 'changelog';
 
 export interface DiagramWorkflowContextValue {
     diagramId?: string;
@@ -22,6 +26,13 @@ export interface DiagramWorkflowContextValue {
     ensureVersionRecord: (
         versionId: string
     ) => Promise<DiagramWorkflowVersionRecord | undefined>;
+    changelogEntries: DiagramWorkflowChangelogSummary[];
+    setChangelogEntries: (entries: DiagramWorkflowChangelogSummary[]) => void;
+    upsertChangelogEntry: (entry: DiagramWorkflowChangelogRecord) => void;
+    changelogRecords: Record<string, DiagramWorkflowChangelogRecord>;
+    ensureChangelogRecord: (
+        entryId: string
+    ) => Promise<DiagramWorkflowChangelogRecord | undefined>;
     developmentDiagram?: Diagram;
     setDevelopmentDiagram: (diagram?: Diagram) => void;
     loading: boolean;
@@ -29,17 +40,22 @@ export interface DiagramWorkflowContextValue {
     activeMode: DiagramWorkflowMode;
     liveDiagram?: Diagram;
     versionDiagram?: Diagram;
+    changelogDiagram?: Diagram;
     compareRenderModel?: CompareRenderModel;
-    compareSourceKind: 'live' | 'version' | null;
+    compareSourceKind: DiagramWorkflowCompareSourceKind | null;
     compareVersion?: DiagramWorkflowVersionRecord;
+    compareChangelogEntry?: DiagramWorkflowChangelogRecord;
     selectedVersion?: DiagramWorkflowVersionRecord;
+    selectedChangelogEntry?: DiagramWorkflowChangelogRecord;
     liveModeEnabled: boolean;
     compareModeEnabled: boolean;
     refreshWorkflow: () => Promise<void>;
     setWorkflowRecord: (workflow?: DiagramWorkflowRecord) => void;
     setActiveMode: (mode: DiagramWorkflowMode) => void;
     openVersion: (versionId: string) => void;
+    openChangelogEntry: (entryId: string) => void;
     compareVersionToDevelopment: (versionId: string) => void;
+    compareChangelogToDevelopment: (entryId: string) => void;
 }
 
 export const diagramWorkflowContext = createContext<
