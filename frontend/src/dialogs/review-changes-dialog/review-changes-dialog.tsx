@@ -21,6 +21,7 @@ import {
 } from '@/components/tabs/tabs';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { exportBaseSQL } from '@/lib/data/sql-export/export-sql-script';
+import { getAuthoritativeChangelogCanonicalSchema } from '@/lib/diagram-workflow/changelog-entry-format';
 import { buildReviewGrouping } from '@/lib/diagram-workflow/review-grouping';
 import { getAuthoritativeVersionCanonicalSchema } from '@/lib/diagram-workflow/version-canonical';
 import type { DBTable } from '@/lib/domain/db-table';
@@ -819,19 +820,29 @@ export const ReviewChangesDialog: React.FC<ReviewChangesDialogProps> = ({
 
     const developmentDiagram = workflow?.developmentDiagram;
     const baselineSchema =
-        workflow?.compareSourceKind === 'version'
-            ? getAuthoritativeVersionCanonicalSchema(workflow.compareVersion)
-            : workflow?.workflow?.liveSnapshot?.canonicalSchema;
+        workflow?.compareSourceKind === 'changelog'
+            ? getAuthoritativeChangelogCanonicalSchema(
+                  workflow.compareChangelogEntry
+              )
+            : workflow?.compareSourceKind === 'version'
+              ? getAuthoritativeVersionCanonicalSchema(workflow.compareVersion)
+              : workflow?.workflow?.liveSnapshot?.canonicalSchema;
     const baselineHeading =
-        workflow?.compareSourceKind === 'version'
-            ? workflow.compareVersion?.name?.trim() ||
-              workflow.compareVersion?.versionLabel ||
-              'Selected Version'
-            : 'Live Database';
+        workflow?.compareSourceKind === 'changelog'
+            ? workflow.compareChangelogEntry?.sourceLabel?.trim() ||
+              workflow.compareChangelogEntry?.summary ||
+              'Selected Changelog Entry'
+            : workflow?.compareSourceKind === 'version'
+              ? workflow.compareVersion?.name?.trim() ||
+                workflow.compareVersion?.versionLabel ||
+                'Selected Version'
+              : 'Live Database';
     const reviewUnavailableMessage =
-        workflow?.compareSourceKind === 'version'
-            ? 'Load the selected version and keep a development diagram available to inspect a structured review of this historical baseline.'
-            : 'Sync a live snapshot and keep a development diagram loaded to inspect a structured review of the compare baseline.';
+        workflow?.compareSourceKind === 'changelog'
+            ? 'Load the selected changelog entry and keep a development diagram available to inspect a structured review of this historical baseline.'
+            : workflow?.compareSourceKind === 'version'
+              ? 'Load the selected version and keep a development diagram available to inspect a structured review of this historical baseline.'
+              : 'Sync a live snapshot and keep a development diagram loaded to inspect a structured review of the compare baseline.';
 
     const reviewGrouping = React.useMemo(
         () =>

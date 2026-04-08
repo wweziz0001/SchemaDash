@@ -7,8 +7,13 @@ import {
     DropdownMenuTrigger,
 } from '@/components/dropdown-menu/dropdown-menu';
 import { DeleteVersionDialog } from '@/dialogs/delete-version-dialog/delete-version-dialog';
+import { RevertChangelogDialog } from '@/dialogs/revert-changelog-dialog/revert-changelog-dialog';
 import { RestoreVersionDialog } from '@/dialogs/restore-version-dialog/restore-version-dialog';
 import { ReviewChangesDialog } from '@/dialogs/review-changes-dialog/review-changes-dialog';
+import {
+    getAuthoritativeChangelogCanonicalSchema,
+    getChangelogEntryTitle,
+} from '@/lib/diagram-workflow/changelog-entry-format';
 import { cn } from '@/lib/utils';
 import {
     ChevronDown,
@@ -30,6 +35,7 @@ export const WorkflowModeSwitcher: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();
     const [reviewOpen, setReviewOpen] = useState(false);
     const [restoreOpen, setRestoreOpen] = useState(false);
+    const [revertChangelogOpen, setRevertChangelogOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const hasWorkflowChrome = !!workflow?.diagramId;
 
@@ -38,24 +44,44 @@ export const WorkflowModeSwitcher: React.FC = () => {
         (workflow?.compareSourceKind === 'version'
             ? workflow?.compareVersion
             : undefined);
+    const changelogSource =
+        workflow?.selectedChangelogEntry ??
+        (workflow?.compareSourceKind === 'changelog'
+            ? workflow?.compareChangelogEntry
+            : undefined);
     const canRestoreVersion =
         !!workflow?.compareVersion &&
         (workflow?.workflow?.diagramAccess === 'edit' ||
             workflow?.workflow?.diagramAccess === 'owner');
     const canDeleteVersion = canRestoreVersion;
-    const showSnapshotWorkflow = !!versionSource;
+    const canRevertChangelog =
+        !!changelogSource &&
+        (workflow?.workflow?.diagramAccess === 'edit' ||
+            workflow?.workflow?.diagramAccess === 'owner');
+    const showSnapshotWorkflow = !!versionSource || !!changelogSource;
     const selectedVersionLabel = versionSource
         ? getVersionDisplayLabel(versionSource)
-        : '';
+        : changelogSource
+          ? getChangelogEntryTitle(changelogSource)
+          : '';
+    const historySourceKind = versionSource
+        ? 'version'
+        : changelogSource
+          ? 'changelog'
+          : null;
     const showCompareButton = workflow?.activeMode !== 'compare';
     const versionPreviewCompareResult = useMemo(() => {
-        if (!workflow?.selectedVersion || !workflow.developmentDiagram) {
+        if (!workflow?.developmentDiagram) {
             return undefined;
         }
 
-        const baselineSchema = getAuthoritativeVersionCanonicalSchema(
-            workflow.selectedVersion
-        );
+        const baselineSchema = workflow.selectedVersion
+            ? getAuthoritativeVersionCanonicalSchema(workflow.selectedVersion)
+            : workflow.selectedChangelogEntry
+              ? getAuthoritativeChangelogCanonicalSchema(
+                    workflow.selectedChangelogEntry
+                )
+              : undefined;
 
         if (!baselineSchema) {
             return undefined;
@@ -65,15 +91,22 @@ export const WorkflowModeSwitcher: React.FC = () => {
             baselineSchema,
             developmentDiagram: workflow.developmentDiagram,
         }).compareResult;
-    }, [workflow?.developmentDiagram, workflow?.selectedVersion]);
+    }, [
+        workflow?.developmentDiagram,
+        workflow?.selectedChangelogEntry,
+        workflow?.selectedVersion,
+    ]);
     const compareResultForCounts =
-        workflow?.activeMode === 'version' && workflow.selectedVersion
+        (workflow?.activeMode === 'version' && workflow.selectedVersion) ||
+        (workflow?.activeMode === 'changelog' &&
+            workflow.selectedChangelogEntry)
             ? versionPreviewCompareResult
             : workflow?.compareRenderModel?.compareResult;
     const compareDifferenceCount = getCompareDifferenceCount(
         compareResultForCounts
     );
-    const compareButtonLabel = 'Compare';
+    const compareButtonLabel =
+        historySourceKind === 'changelog' ? 'View Diffs' : 'Compare';
 
     if (!hasWorkflowChrome || !workflow) {
         return null;
@@ -94,19 +127,28 @@ export const WorkflowModeSwitcher: React.FC = () => {
                             <Button
                                 size="sm"
                                 variant={
-                                    workflow.activeMode === 'version'
+                                    workflow.activeMode === 'version' ||
+                                    workflow.activeMode === 'changelog'
                                         ? 'secondary'
                                         : 'outline'
                                 }
                                 className={cn(
                                     'h-6 gap-1.5 rounded-none rounded-l-[5px] px-2.5 text-xs font-medium shadow-none',
-                                    workflow.activeMode === 'version'
+                                    workflow.activeMode === 'version' ||
+                                        workflow.activeMode === 'changelog'
                                         ? 'bg-background text-foreground ring-1 ring-border'
                                         : 'text-muted-foreground hover:text-accent-foreground'
                                 )}
                                 onClick={() => {
                                     if (versionSource) {
                                         workflow.openVersion(versionSource.id);
+                                        return;
+                                    }
+
+                                    if (changelogSource) {
+                                        workflow.openChangelogEntry(
+                                            changelogSource.id
+                                        );
                                     }
                                 }}
                             >
@@ -165,20 +207,53 @@ export const WorkflowModeSwitcher: React.FC = () => {
                                             return;
                                         }
 
+                                        if (
+                                            workflow.activeMode === 'compare' &&
+                                            workflow.compareSourceKind ===
+                                                'changelog' &&
+                                            workflow.compareChangelogEntry
+                                        ) {
+                                            workflow.openChangelogEntry(
+                                                workflow.compareChangelogEntry
+                                                    .id
+                                            );
+                                            return;
+                                        }
+
                                         if (versionSource) {
                                             workflow.compareVersionToDevelopment(
                                                 versionSource.id
                                             );
+                                            return;
+                                        }
+
+                                        if (changelogSource) {
+                                            workflow.compareChangelogToDevelopment(
+                                                changelogSource.id
+                                            );
                                         }
                                     }}
                                     title={
-                                        workflow.compareModeEnabled
-                                            ? 'Inspect live database versus development in a read-only compare view'
-                                            : 'Sync a live database and load a development diagram to enable compare'
+                                        historySourceKind === 'changelog'
+                                            ? workflow.activeMode ===
+                                                  'compare' &&
+                                              workflow.compareSourceKind ===
+                                                  'changelog'
+                                                ? 'Return to the selected changelog state'
+                                                : 'Inspect this changelog state against current Development'
+                                            : workflow.compareModeEnabled
+                                              ? 'Inspect the selected version against current Development in a read-only compare view'
+                                              : 'Load Development and the selected history entry to enable compare'
                                     }
                                 >
                                     <GitCompareArrows className="size-3.5 text-sky-600 dark:text-sky-400" />
-                                    <span>{compareButtonLabel}</span>
+                                    <span>
+                                        {workflow.activeMode === 'compare' &&
+                                        workflow.compareSourceKind ===
+                                            'changelog'
+                                            ? 'Hide Diffs'
+                                            : compareButtonLabel}
+                                    </span>
                                     {compareDifferenceCount > 0 ? (
                                         <span
                                             aria-hidden="true"
@@ -256,12 +331,63 @@ export const WorkflowModeSwitcher: React.FC = () => {
                                         className="h-6 border-rose-200 bg-rose-50 px-2.5 text-xs font-semibold text-rose-700 shadow-none hover:bg-rose-100 hover:text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-950/60 dark:hover:text-rose-100"
                                         onClick={() =>
                                             workflow.openVersion(
-                                                workflow.compareVersion.id
+                                                workflow.compareVersion!.id
                                             )
                                         }
                                     >
                                         Finish
                                     </Button>
+                                    <ReviewChangesDialog
+                                        open={reviewOpen}
+                                        onOpenChange={setReviewOpen}
+                                    />
+                                </div>
+                            ) : workflow.selectedChangelogEntry ||
+                              workflow.compareChangelogEntry ? (
+                                <div className="ml-2 flex items-center gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="relative h-6 gap-1.5 border-sky-200 bg-sky-50 px-2.5 text-xs font-semibold text-sky-700 shadow-none hover:bg-sky-100 hover:text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-200 dark:hover:bg-sky-950/60 dark:hover:text-sky-100"
+                                        onClick={() => setReviewOpen(true)}
+                                    >
+                                        Review
+                                        {compareDifferenceCount > 0 ? (
+                                            <span
+                                                aria-hidden="true"
+                                                className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-semibold leading-none text-white"
+                                            >
+                                                {compareDifferenceCount}
+                                            </span>
+                                        ) : null}
+                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-6 gap-1.5 border-amber-200 bg-amber-50 px-2.5 text-xs font-semibold text-amber-700 shadow-none hover:bg-amber-100 hover:text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-950/60 dark:hover:text-amber-100"
+                                            >
+                                                Options
+                                                <ChevronDown className="size-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent
+                                            align="center"
+                                            className="w-56"
+                                        >
+                                            <DropdownMenuItem
+                                                disabled={!canRevertChangelog}
+                                                onSelect={() =>
+                                                    setRevertChangelogOpen(true)
+                                                }
+                                                className="text-rose-600 focus:text-rose-700 dark:text-rose-300 dark:focus:text-rose-200"
+                                            >
+                                                <RotateCcw className="mr-2 size-4" />
+                                                Revert to This Changelog State
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                     <ReviewChangesDialog
                                         open={reviewOpen}
                                         onOpenChange={setReviewOpen}
@@ -391,6 +517,14 @@ export const WorkflowModeSwitcher: React.FC = () => {
                         onOpenChange={setDeleteOpen}
                     />
                 </>
+            ) : null}
+
+            {changelogSource ? (
+                <RevertChangelogDialog
+                    open={revertChangelogOpen}
+                    entry={changelogSource}
+                    onOpenChange={setRevertChangelogOpen}
+                />
             ) : null}
         </>
     );

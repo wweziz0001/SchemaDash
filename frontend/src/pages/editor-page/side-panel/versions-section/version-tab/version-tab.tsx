@@ -27,7 +27,7 @@ const getDevelopmentStatus = ({
     compareSourceKind,
 }: {
     activeMode: string | undefined;
-    compareSourceKind: 'live' | 'version' | null | undefined;
+    compareSourceKind: 'live' | 'version' | 'changelog' | null | undefined;
 }) => {
     if (activeMode === 'development') {
         return {
@@ -45,6 +45,16 @@ const getDevelopmentStatus = ({
             tone: 'viewing' as const,
             description:
                 'Development is shown as the editable target beside a historical snapshot.',
+        };
+    }
+
+    if (activeMode === 'compare' && compareSourceKind === 'changelog') {
+        return {
+            label: 'Viewing',
+            secondaryLabel: 'Diff target',
+            tone: 'viewing' as const,
+            description:
+                'Development is shown as the editable target beside a historical changelog state.',
         };
     }
 

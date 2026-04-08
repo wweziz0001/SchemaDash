@@ -8,6 +8,8 @@ import { MapLoadingCanvasPlaceholder } from './canvas/workflow/map-loading-strip
 const WorkflowEditorPageContent: React.FC = () => {
     const {
         activeMode,
+        changelogDiagram,
+        compareChangelogEntry,
         compareRenderModel,
         diagramId,
         liveDiagram,
@@ -22,10 +24,14 @@ const WorkflowEditorPageContent: React.FC = () => {
 
     const waitingForReadonlyTarget =
         (requestedMode === 'version' && !selectedVersion) ||
+        (requestedMode === 'changelog' && !changelogDiagram) ||
         (requestedMode === 'compare' &&
             compareSourceKind === 'version' &&
             !compareVersion) ||
-        (requestedMode !== 'version' && !workflow);
+        (requestedMode === 'compare' &&
+            compareSourceKind === 'changelog' &&
+            !compareChangelogEntry) ||
+        (requestedMode !== 'development' && !workflow);
 
     if (
         diagramId &&
@@ -49,19 +55,23 @@ const WorkflowEditorPageContent: React.FC = () => {
                     ? liveDiagram
                     : activeMode === 'version'
                       ? versionDiagram
-                      : activeMode === 'compare'
-                        ? compareRenderModel?.diagram
-                        : undefined
+                      : activeMode === 'changelog'
+                        ? changelogDiagram
+                        : activeMode === 'compare'
+                          ? compareRenderModel?.diagram
+                          : undefined
             }
             readonly={
                 activeMode === 'live' ||
                 activeMode === 'compare' ||
-                activeMode === 'version'
+                activeMode === 'version' ||
+                activeMode === 'changelog'
             }
             disableAuthoritativeSync={
                 activeMode === 'live' ||
                 activeMode === 'compare' ||
-                activeMode === 'version'
+                activeMode === 'version' ||
+                activeMode === 'changelog'
             }
         />
     );
