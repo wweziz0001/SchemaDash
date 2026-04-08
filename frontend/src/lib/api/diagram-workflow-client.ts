@@ -160,7 +160,6 @@ export const diagramWorkflowClient = {
         diagramId: string,
         versionId: string,
         payload: {
-            confirmationText: string;
             baseVersion: number;
             sessionId?: string;
             currentDevelopmentCanonicalSchema: CanonicalSchema;

@@ -170,7 +170,6 @@ describe('diagram version restore service', () => {
             'diagram-1',
             version.id,
             {
-                confirmationText: 'RESTORE DEVELOPMENT',
                 baseVersion: updatedDiagram.collaboration.document.version,
                 sessionId: 'session-1',
                 currentDevelopmentCanonicalSchema: createCanonicalSchema(
@@ -285,7 +284,6 @@ describe('diagram version restore service', () => {
                 'diagram-1',
                 version.id,
                 {
-                    confirmationText: 'RESTORE DEVELOPMENT',
                     baseVersion: 1,
                     currentDevelopmentCanonicalSchema: createCanonicalSchema(
                         'draft_users',

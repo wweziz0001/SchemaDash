@@ -4,14 +4,9 @@ import type {
 } from '@/lib/api/diagram-workflow-client';
 import { getVersionDisplayLabel } from './version-labels';
 
-export const RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT = 'RESTORE DEVELOPMENT';
-
 export const getRestoreVersionHeading = (
     version: Pick<DiagramWorkflowVersionSummary, 'name' | 'versionLabel'>
 ) => getVersionDisplayLabel(version);
-
-export const getRestoreConfirmationHint = () =>
-    `Type ${RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT} to confirm that Development should be replaced.`;
 
 export const getRestoreSuccessDescription = (
     result: DiagramWorkflowVersionRestoreResult

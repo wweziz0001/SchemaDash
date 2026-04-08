@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Badge } from '@/components/badge/badge';
+import React, { useState } from 'react';
 import { Button } from '@/components/button/button';
 import {
     Dialog,
@@ -9,8 +8,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/dialog/dialog';
-import { Input } from '@/components/input/input';
-import { Label } from '@/components/label/label';
 import { useSchemaDash } from '@/hooks/use-schemadash';
 import { useStorage } from '@/hooks/use-storage';
 import { persistenceClient } from '@/lib/api/persistence-client';
@@ -20,13 +17,11 @@ import type { DiagramWorkflowVersionSummary } from '@/lib/api/diagram-workflow-c
 import { diagramWorkflowClient } from '@/lib/api/diagram-workflow-client';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import {
-    getRestoreConfirmationHint,
     getRestoreFailureMessage,
     getRestoreSuccessDescription,
     getRestoreVersionHeading,
-    RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT,
 } from '@/lib/diagram-workflow/restore-messages';
-import { ArrowRight, RotateCcw, ShieldCheck } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { RestoreWarningPanel } from './restore-warning-panel';
 
 const mergeWorkflowVersions = ({
@@ -67,25 +62,8 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
     const storage = useStorage();
     const { loadDiagramFromData } = useSchemaDash();
     const { toast } = useToast();
-    const [confirmationText, setConfirmationText] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (!open) {
-            setConfirmationText('');
-            setErrorMessage(null);
-        }
-    }, [open]);
-
-    const confirmDisabled = useMemo(
-        () =>
-            !version ||
-            submitting ||
-            confirmationText.trim() !==
-                RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT,
-        [confirmationText, submitting, version]
-    );
 
     const handleRestore = async () => {
         if (!version || !workflow?.diagramId || !workflow.developmentDiagram) {
@@ -115,7 +93,6 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
                     workflow.diagramId,
                     version.id,
                     {
-                        confirmationText: confirmationText.trim(),
                         baseVersion,
                         sessionId: sessionState?.session.id,
                         currentDevelopmentCanonicalSchema:
@@ -180,74 +157,32 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
         }
     };
 
+    const confirmDisabled = !version || submitting;
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent showClose className="sm:max-w-2xl">
+            <DialogContent showClose className="sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>Revert to This Version</DialogTitle>
-                    <DialogDescription className="text-sm leading-6">
-                        Replace the current Development diagram with{' '}
+                    <DialogDescription className="text-sm leading-6 text-muted-foreground">
+                        Replace Development with{' '}
                         <span className="font-medium text-foreground">
                             {version
                                 ? getRestoreVersionHeading(version)
                                 : 'the selected version'}
-                        </span>{' '}
-                        while preserving the snapshot itself and creating a
-                        safety copy of Development first.
+                        </span>
+                        . The saved version will remain available afterwards.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
-                    <div className="rounded-2xl border bg-gradient-to-br from-slate-50 via-white to-rose-50/70 p-4 shadow-sm dark:from-slate-950 dark:via-slate-950 dark:to-rose-950/20">
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div className="space-y-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Badge variant="outline">
-                                        Source snapshot
-                                    </Badge>
-                                    <Badge variant="secondary">Immutable</Badge>
-                                    <Badge variant="outline">
-                                        Target Development
-                                    </Badge>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-3 text-sm">
-                                    <div className="rounded-2xl border bg-background px-4 py-3 shadow-sm">
-                                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                            From
-                                        </div>
-                                        <div className="pt-1 font-semibold text-foreground">
-                                            {version
-                                                ? getRestoreVersionHeading(
-                                                      version
-                                                  )
-                                                : 'Selected version'}
-                                        </div>
-                                    </div>
-                                    <div className="flex size-10 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm">
-                                        <ArrowRight className="size-4" />
-                                    </div>
-                                    <div className="rounded-2xl border bg-background px-4 py-3 shadow-sm">
-                                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                            To
-                                        </div>
-                                        <div className="pt-1 font-semibold text-foreground">
-                                            Development
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="rounded-2xl border bg-background px-4 py-3 shadow-sm">
-                                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                    <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
-                                    Safety behavior preserved
-                                </div>
-                                <p className="pt-2 text-sm text-muted-foreground">
-                                    Development is snapshotted automatically
-                                    before the revert is applied.
-                                </p>
-                            </div>
-                        </div>
+                    <div className="rounded-2xl border bg-muted/20 px-4 py-3 text-sm">
+                        <span className="font-medium text-foreground">
+                            {version
+                                ? getRestoreVersionHeading(version)
+                                : 'Selected version'}
+                        </span>{' '}
+                        will become the new Development state.
                     </div>
 
                     {version ? <RestoreWarningPanel version={version} /> : null}
@@ -257,33 +192,6 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
                             {errorMessage}
                         </div>
                     ) : null}
-
-                    <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
-                        <div>
-                            <Label htmlFor="restore-confirmation-text">
-                                Confirmation text
-                            </Label>
-                            <p className="pt-1 text-sm text-muted-foreground">
-                                This prevents accidental replacement of the
-                                current Development state.
-                            </p>
-                        </div>
-                        <Input
-                            id="restore-confirmation-text"
-                            value={confirmationText}
-                            onChange={(event) =>
-                                setConfirmationText(event.target.value)
-                            }
-                            placeholder={
-                                RESTORE_TO_DEVELOPMENT_CONFIRMATION_TEXT
-                            }
-                            autoComplete="off"
-                            disabled={submitting}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            {getRestoreConfirmationHint()}
-                        </p>
-                    </div>
                 </div>
 
                 <DialogFooter>

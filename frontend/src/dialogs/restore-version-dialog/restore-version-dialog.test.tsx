@@ -115,7 +115,7 @@ describe('restore version dialog', () => {
         );
     });
 
-    it('requires explicit confirmation and restores Development through the workflow API', async () => {
+    it('restores Development through the workflow API without manual confirmation text', async () => {
         const user = userEvent.setup();
         const onOpenChange = vi.fn();
         const loadDiagramFromData = vi.fn();
@@ -189,12 +189,6 @@ describe('restore version dialog', () => {
         const restoreButton = screen.getByRole('button', {
             name: 'Revert to This Version',
         });
-        expect(restoreButton).toBeDisabled();
-
-        await user.type(
-            screen.getByLabelText('Confirmation text'),
-            'RESTORE DEVELOPMENT'
-        );
         expect(restoreButton).not.toBeDisabled();
 
         await user.click(restoreButton);
@@ -204,7 +198,6 @@ describe('restore version dialog', () => {
                 'diagram-1',
                 'version-1',
                 {
-                    confirmationText: 'RESTORE DEVELOPMENT',
                     baseVersion: 7,
                     sessionId: 'session-1',
                     currentDevelopmentCanonicalSchema:
@@ -278,10 +271,6 @@ describe('restore version dialog', () => {
             />
         );
 
-        await user.type(
-            screen.getByLabelText('Confirmation text'),
-            'RESTORE DEVELOPMENT'
-        );
         await user.click(
             screen.getByRole('button', {
                 name: 'Revert to This Version',
