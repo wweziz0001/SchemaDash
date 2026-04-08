@@ -118,11 +118,11 @@ describe('restore version dialog', () => {
     it('requires explicit confirmation and restores Development through the workflow API', async () => {
         const user = userEvent.setup();
         const onOpenChange = vi.fn();
+        const loadDiagramFromData = vi.fn();
         const setDevelopmentDiagram = vi.fn();
         const setActiveMode = vi.fn();
         const setVersions = vi.fn();
         const refreshWorkflow = vi.fn().mockResolvedValue(undefined);
-        const updateDiagramData = vi.fn().mockResolvedValue(undefined);
         const getDiagramSessionState = vi.fn().mockResolvedValue({
             session: { id: 'session-1' },
             collaboration: {
@@ -145,7 +145,7 @@ describe('restore version dialog', () => {
             getDiagram,
         } as never);
         mockedUseSchemaDash.mockReturnValue({
-            updateDiagramData,
+            loadDiagramFromData,
         } as never);
         mockedRestoreVersionToDevelopment.mockResolvedValue({
             result: {
@@ -220,9 +220,7 @@ describe('restore version dialog', () => {
             includeCustomTypes: true,
             includeNotes: true,
         });
-        expect(updateDiagramData).toHaveBeenCalledWith(developmentDiagram, {
-            forceUpdateStorage: true,
-        });
+        expect(loadDiagramFromData).toHaveBeenCalledWith(developmentDiagram);
         expect(setDevelopmentDiagram).toHaveBeenCalledWith(developmentDiagram);
         expect(setVersions).toHaveBeenCalledWith(
             expect.arrayContaining([
@@ -245,7 +243,7 @@ describe('restore version dialog', () => {
 
     it('shows actionable restore failures without mutating the editor state', async () => {
         const user = userEvent.setup();
-        const updateDiagramData = vi.fn();
+        const loadDiagramFromData = vi.fn();
 
         mockedUseOptionalDiagramWorkflow.mockReturnValue({
             diagramId: 'diagram-1',
@@ -266,7 +264,7 @@ describe('restore version dialog', () => {
             getDiagram: vi.fn(),
         } as never);
         mockedUseSchemaDash.mockReturnValue({
-            updateDiagramData,
+            loadDiagramFromData,
         } as never);
         mockedRestoreVersionToDevelopment.mockRejectedValue(
             new Error('Development changed before the restore could start.')
@@ -297,7 +295,7 @@ describe('restore version dialog', () => {
                 )
             ).toBeTruthy();
         });
-        expect(updateDiagramData).not.toHaveBeenCalled();
+        expect(loadDiagramFromData).not.toHaveBeenCalled();
         expect(toast).toHaveBeenCalledWith(
             expect.objectContaining({
                 title: 'Restore failed',

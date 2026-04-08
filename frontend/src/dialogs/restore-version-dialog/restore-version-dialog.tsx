@@ -65,7 +65,7 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
 }) => {
     const workflow = useOptionalDiagramWorkflow();
     const storage = useStorage();
-    const { updateDiagramData } = useSchemaDash();
+    const { loadDiagramFromData } = useSchemaDash();
     const { toast } = useToast();
     const [confirmationText, setConfirmationText] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -138,9 +138,7 @@ export const RestoreVersionDialog: React.FC<RestoreVersionDialogProps> = ({
             );
 
             if (refreshedDiagram) {
-                await updateDiagramData(refreshedDiagram, {
-                    forceUpdateStorage: true,
-                });
+                loadDiagramFromData(refreshedDiagram);
                 workflow.setDevelopmentDiagram(refreshedDiagram);
             }
 

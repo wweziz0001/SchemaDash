@@ -112,6 +112,7 @@ What was implemented:
   - stronger safety snapshot messaging
   - unchanged underlying restore/revert API behavior
   - a follow-up safety fix that keeps the versions list populated locally after a successful restore by immediately preserving existing versions and inserting the automatic `before_restore` snapshot before the background workflow refresh completes
+  - a later root-cause fix for disappearing versions after restore: the restore dialog now refreshes the local diagram cache and reloads the editor state without rewriting the diagram through the generic `updateDiagramData(..., { forceUpdateStorage: true })` path
 - Refined the Changelog tab and canvas chips with:
   - a real workflow timeline
   - clearer relationship between Development and immutable versions
@@ -174,11 +175,13 @@ Files modified:
 - `frontend/src/dialogs/restore-version-dialog/restore-warning-panel.tsx`
   - Reworked warning panel hierarchy.
 - `frontend/src/dialogs/restore-version-dialog/restore-version-dialog.tsx`
-  - Reworked revert modal hierarchy/copy and now preserves local versions state immediately after a successful restore so historical versions do not disappear from the sidebar while workflow data refreshes.
+  - Reworked revert modal hierarchy/copy, preserves local versions state immediately after a successful restore, and now reloads the freshly restored Development diagram into the editor without performing a second remote diagram rewrite.
 - `frontend/src/context/diagram-workflow-context/diagram-workflow-context.tsx`
   - Workflow context now exposes a versions setter so restore flows can preserve version history locally before the authoritative refresh returns.
 - `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
   - Provides the new versions setter used by restore flows and now merges version summaries defensively so background workflow refreshes cannot wipe the existing versions list with an empty response.
+- `frontend/src/context/schemadash-context/schemadash-provider.tsx`
+  - `updateDiagramData(...)` no longer uses the dangerous `delete + add` sequence against authoritative storage. It now writes through `addDiagram(...)` directly, which preserves the existing remote diagram row and prevents `ON DELETE CASCADE` from wiping workflow versions and snapshots.
 - `backend/src/services/diagram-version-restore-service.ts`
   - Restore-to-development now returns the full authoritative versions list immediately after the restore transaction so the frontend can repopulate all historical versions without waiting for a follow-up refresh.
 - `frontend/src/lib/api/diagram-workflow-client.ts`
@@ -236,6 +239,7 @@ Workflow/UI changes:
 - Workflow refresh now merges incoming version summaries with existing ones, which prevents post-restore refreshes from clearing the visible versions list if the server temporarily returns an empty or partial set.
 - Restore-to-development now returns the full list of versions from the backend response itself, so the frontend can restore the complete historical list immediately instead of reconstructing it from partial local state.
 - The editor sidebar now remembers that the user was in `Versions`, so restoring back to `Development` no longer makes the UI jump back to `Tables` and appear as if all versions disappeared.
+- Root cause note: the disappearing-history bug was ultimately tied to the frontend calling `updateDiagramData(..., { forceUpdateStorage: true })` after restore. That path used `deleteDiagram()` followed by `addDiagram()`. Because authoritative storage propagates `deleteDiagram()` to the backend, it could delete the diagram row and trigger `ON DELETE CASCADE`, which also removed workflow versions/snapshots. The fix was to stop deleting the diagram during replacement updates and to make the restore flow reload local editor state without issuing a second authoritative rewrite.
 - The Changelog tab now behaves like a workflow timeline instead of a set of static info cards.
 - Canvas chips now more clearly identify whether the user is looking at:
   - live snapshot
