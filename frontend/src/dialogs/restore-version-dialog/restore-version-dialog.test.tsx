@@ -122,6 +122,7 @@ describe('restore version dialog', () => {
         const setDevelopmentDiagram = vi.fn();
         const setActiveMode = vi.fn();
         const setVersions = vi.fn();
+        const setChangelogEntries = vi.fn();
         const refreshWorkflow = vi.fn().mockResolvedValue(undefined);
         const getDiagramSessionState = vi.fn().mockResolvedValue({
             session: { id: 'session-1' },
@@ -138,6 +139,7 @@ describe('restore version dialog', () => {
             refreshWorkflow,
             setActiveMode,
             setDevelopmentDiagram,
+            setChangelogEntries,
             setVersions,
         } as never);
         mockedUseStorage.mockReturnValue({
@@ -170,6 +172,44 @@ describe('restore version dialog', () => {
                     },
                     version,
                 ],
+                createdChangelogEntry: {
+                    id: 'changelog-2',
+                    diagramId: 'diagram-1',
+                    snapshotId: 'changelog-snapshot-2',
+                    eventType: 'restore',
+                    sessionId: null,
+                    sourceDocumentVersion: 8,
+                    sourceLabel: 'Stable release',
+                    summary: 'Restored Development from Stable release.',
+                    changeSummary: null,
+                    fingerprint: 'restored-fingerprint',
+                    createdAt: '2026-03-29T14:00:00.000Z',
+                    createdBy: {
+                        id: 'user-1',
+                        displayName: 'Test Owner',
+                        email: 'owner@example.com',
+                    },
+                },
+                changelog: [
+                    {
+                        id: 'changelog-2',
+                        diagramId: 'diagram-1',
+                        snapshotId: 'changelog-snapshot-2',
+                        eventType: 'restore',
+                        sessionId: null,
+                        sourceDocumentVersion: 8,
+                        sourceLabel: 'Stable release',
+                        summary: 'Restored Development from Stable release.',
+                        changeSummary: null,
+                        fingerprint: 'restored-fingerprint',
+                        createdAt: '2026-03-29T14:00:00.000Z',
+                        createdBy: {
+                            id: 'user-1',
+                            displayName: 'Test Owner',
+                            email: 'owner@example.com',
+                        },
+                    },
+                ],
                 development: {
                     name: 'Development Diagram',
                     documentVersion: 8,
@@ -199,7 +239,6 @@ describe('restore version dialog', () => {
                 'version-1',
                 {
                     baseVersion: 7,
-                    sessionId: 'session-1',
                     currentDevelopmentCanonicalSchema:
                         developmentCanonicalSchema,
                 }
@@ -219,6 +258,11 @@ describe('restore version dialog', () => {
             expect.arrayContaining([
                 expect.objectContaining({ id: 'version-2' }),
                 expect.objectContaining({ id: 'version-1' }),
+            ])
+        );
+        expect(setChangelogEntries).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({ id: 'changelog-2' }),
             ])
         );
         expect(setActiveMode).toHaveBeenCalledWith('development');
@@ -245,6 +289,7 @@ describe('restore version dialog', () => {
             refreshWorkflow: vi.fn(),
             setActiveMode: vi.fn(),
             setDevelopmentDiagram: vi.fn(),
+            setChangelogEntries: vi.fn(),
             setVersions: vi.fn(),
         } as never);
         mockedUseStorage.mockReturnValue({

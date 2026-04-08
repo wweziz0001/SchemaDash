@@ -9,6 +9,7 @@ import type {
 import { AppRepository } from '../src/repositories/app-repository.js';
 import { DiagramWorkflowRepository } from '../src/repositories/diagram-workflow-repository.js';
 import { MetadataRepository } from '../src/repositories/metadata-repository.js';
+import { DiagramChangelogService } from '../src/services/diagram-changelog-service.js';
 import { PersistenceService } from '../src/services/persistence-service.js';
 import { DiagramWorkflowService } from '../src/services/diagram-workflow-service.js';
 import { DiagramVersionRestoreService } from '../src/services/diagram-version-restore-service.js';
@@ -92,14 +93,20 @@ const createHarness = () => {
         persistenceService,
         schemaSyncService
     );
-    const restoreService = new DiagramVersionRestoreService(
+    const changelogService = new DiagramChangelogService(
         workflowRepository,
         persistenceService
+    );
+    const restoreService = new DiagramVersionRestoreService(
+        workflowRepository,
+        persistenceService,
+        changelogService
     );
 
     return {
         actor: bootstrap.user,
         appRepository,
+        changelogService,
         defaultProjectId: bootstrap.defaultProject.id,
         persistenceService,
         restoreService,
@@ -122,6 +129,7 @@ describe('diagram version restore service', () => {
         const {
             actor,
             appRepository,
+            changelogService,
             defaultProjectId,
             persistenceService,
             restoreService,
@@ -184,6 +192,11 @@ describe('diagram version restore service', () => {
         expect(restoreResult.safetySnapshotVersion.origin).toBe(
             'before_restore'
         );
+        expect(restoreResult.createdChangelogEntry.eventType).toBe('restore');
+        expect(restoreResult.createdChangelogEntry.sourceLabel).toBe(
+            'Stable release'
+        );
+        expect(restoreResult.changelog).toHaveLength(1);
         expect(restoreResult.versions).toHaveLength(2);
         expect(restoreResult.versions.map((item) => item.id)).toEqual(
             expect.arrayContaining([
@@ -232,6 +245,94 @@ describe('diagram version restore service', () => {
         );
         expect(workflowService.listVersions('diagram-1', actor)).toHaveLength(
             2
+        );
+        expect(changelogService.listChangelog('diagram-1', actor)).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    eventType: 'restore',
+                    sourceLabel: 'Stable release',
+                }),
+            ])
+        );
+    });
+
+    it('reverts Development from a changelog entry while preserving immutable history', () => {
+        const {
+            actor,
+            appRepository,
+            changelogService,
+            defaultProjectId,
+            persistenceService,
+            restoreService,
+        } = createHarness();
+
+        persistenceService.upsertDiagram(
+            'diagram-1',
+            {
+                projectId: defaultProjectId,
+                ownerUserId: actor.id,
+                baseVersion: 1,
+                diagram: {
+                    id: 'diagram-1',
+                    name: 'Current Development',
+                    databaseType: 'postgresql',
+                    tables: [{ id: 'dev-users', name: 'users_live' }],
+                    createdAt: '2026-03-29T10:00:00.000Z',
+                    updatedAt: '2026-03-29T11:30:00.000Z',
+                },
+            },
+            actor
+        );
+
+        const changelogEntry = changelogService.captureEntry(
+            'diagram-1',
+            {
+                eventType: 'save',
+                sourceDocumentVersion: 2,
+                sourceLabel: 'Before risky refactor',
+                canonicalSchema: createCanonicalSchema(
+                    'users_v1',
+                    'historical-fingerprint'
+                ),
+                diagramDocument: {
+                    id: 'diagram-1',
+                    name: 'Historical Development',
+                    databaseType: 'postgresql',
+                    tables: [{ id: 'dev-users', name: 'users_v1' }],
+                    relationships: [],
+                    dependencies: [],
+                    areas: [],
+                    customTypes: [],
+                    notes: [],
+                    createdAt: '2026-03-29T10:00:00.000Z',
+                    updatedAt: '2026-03-29T10:30:00.000Z',
+                },
+            },
+            actor
+        ).entry;
+
+        const reverted = restoreService.restoreChangelogEntryToDevelopment(
+            'diagram-1',
+            changelogEntry.id,
+            {
+                baseVersion: 2,
+                currentDevelopmentCanonicalSchema: createCanonicalSchema(
+                    'users_live',
+                    'current-fingerprint'
+                ),
+            },
+            actor
+        );
+
+        expect(reverted.revertedEntry.id).toBe(changelogEntry.id);
+        expect(reverted.createdEntry.eventType).toBe('revert');
+        expect(reverted.safetySnapshotVersion.origin).toBe('before_restore');
+        expect(reverted.changelog[0]?.eventType).toBe('revert');
+        expect(appRepository.getDiagram('diagram-1')?.document).toEqual(
+            expect.objectContaining({
+                name: 'Historical Development',
+                tables: [{ id: 'dev-users', name: 'users_v1' }],
+            })
         );
     });
 
