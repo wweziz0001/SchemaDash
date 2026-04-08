@@ -26,6 +26,7 @@ import { DiffProvider } from '@/context/diff-context/diff-provider';
 import { TopNavbarMock } from './top-navbar/top-navbar-mock';
 import { DiagramFilterProvider } from '@/context/diagram-filter-context/diagram-filter-provider';
 import type { Diagram } from '@/lib/domain/diagram';
+import { WorkflowDevelopmentChangelogSync } from './workflow/workflow-development-changelog-sync';
 import { WorkflowDevelopmentDiagramSync } from './workflow/workflow-development-diagram-sync';
 import { MapLoadingCanvasPlaceholder } from './canvas/workflow/map-loading-strip';
 
@@ -81,6 +82,7 @@ const EditorPageComponent: React.FC<{
     return (
         <>
             <WorkflowDevelopmentDiagramSync />
+            <WorkflowDevelopmentChangelogSync />
             <Helmet>
                 <title>
                     {diagramName
