@@ -29,6 +29,7 @@ export type DiagramWorkflowChangelogEventType =
     | 'version_created'
     | 'version_deleted'
     | 'version_viewed'
+    | 'diagram_renamed'
     | 'live_connected'
     | 'live_synced';
 

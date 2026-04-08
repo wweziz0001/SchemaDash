@@ -60,6 +60,7 @@ export const diagramWorkflowChangelogEventTypeSchema = z.enum([
     'version_created',
     'version_deleted',
     'version_viewed',
+    'diagram_renamed',
     'live_connected',
     'live_synced',
 ]);

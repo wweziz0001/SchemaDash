@@ -107,6 +107,12 @@ const buildFallbackSummary = (
             : 'Viewed a historical version.';
     }
 
+    if (eventType === 'diagram_renamed') {
+        return sourceLabel
+            ? `Renamed Development to ${sourceLabel}.`
+            : 'Renamed the Development diagram.';
+    }
+
     if (eventType === 'live_connected') {
         return sourceLabel
             ? `Linked Development to live database ${sourceLabel}.`
@@ -323,6 +329,7 @@ export class DiagramChangelogService {
             eventType === 'version_created' ||
             eventType === 'version_deleted' ||
             eventType === 'version_viewed' ||
+            eventType === 'diagram_renamed' ||
             eventType === 'live_connected' ||
             eventType === 'live_synced'
         ) {

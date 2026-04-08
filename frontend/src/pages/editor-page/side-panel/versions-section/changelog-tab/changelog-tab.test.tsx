@@ -101,13 +101,11 @@ describe('changelog tab', () => {
         expect(
             screen.getByText('Current Development Version')
         ).toBeInTheDocument();
-        expect(screen.getAllByText('Saved Development changes.')).toHaveLength(
-            2
-        );
-        expect(
-            screen.getAllByText('Captured an automatic Development checkpoint.')
-        ).toHaveLength(2);
+        expect(screen.getByText('+ 1 table')).toBeInTheDocument();
+        expect(screen.getByText('1 save')).toBeInTheDocument();
+        expect(screen.getByText('Only visual changes')).toBeInTheDocument();
+        expect(screen.getByText('5 min checkpoint')).toBeInTheDocument();
         expect(screen.getAllByText('Viewing').length).toBeGreaterThan(0);
-        expect(screen.getByText('Diff baseline')).toBeInTheDocument();
+        expect(screen.getByText('Diff')).toBeInTheDocument();
     });
 });
