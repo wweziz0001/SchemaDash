@@ -90,4 +90,19 @@ export const registerDiagramWorkflowRoutes = (
             ),
         };
     });
+
+    app.delete(
+        '/api/diagrams/:id/workflow/versions/:versionId',
+        async (request) => {
+            const params = request.params as { id: string; versionId: string };
+
+            return {
+                result: context.diagramWorkflowService.deleteVersion(
+                    params.id,
+                    params.versionId,
+                    request.auth.user
+                ),
+            };
+        }
+    );
 };

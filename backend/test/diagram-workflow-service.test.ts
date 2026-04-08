@@ -277,4 +277,51 @@ describe('diagram workflow service', () => {
             'Renamed Development Diagram'
         );
     });
+
+    it('deletes a saved version and removes its snapshot from history', () => {
+        const { actor, appRepository, workflowRepository, workflowService } =
+            createHarness();
+        const developmentDocument =
+            appRepository.getDiagram('diagram-1')?.document ?? null;
+
+        const versionOne = workflowService.createVersion(
+            'diagram-1',
+            {
+                name: 'Version One',
+                description: null,
+                origin: 'manual',
+                canonicalSchema: createCanonicalSchema(),
+                diagramDocument: developmentDocument,
+            },
+            actor
+        );
+        const versionTwo = workflowService.createVersion(
+            'diagram-1',
+            {
+                name: 'Version Two',
+                description: null,
+                origin: 'manual',
+                canonicalSchema: createCanonicalSchema(),
+                diagramDocument: developmentDocument,
+            },
+            actor
+        );
+
+        const result = workflowService.deleteVersion(
+            'diagram-1',
+            versionOne.id,
+            actor
+        );
+
+        expect(result.deletedVersionId).toBe(versionOne.id);
+        expect(result.versions).toHaveLength(1);
+        expect(result.versions[0]?.id).toBe(versionTwo.id);
+        expect(workflowRepository.getVersion(versionOne.id)).toBeUndefined();
+        expect(
+            workflowRepository.getSnapshot(versionOne.snapshotId)
+        ).toBeUndefined();
+        expect(workflowService.listVersions('diagram-1', actor)).toHaveLength(
+            1
+        );
+    });
 });

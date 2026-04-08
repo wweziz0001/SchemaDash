@@ -93,6 +93,12 @@ export interface DiagramWorkflowVersionView extends DiagramWorkflowVersionSummar
     };
 }
 
+export interface DiagramWorkflowVersionDeleteResultView {
+    diagramId: string;
+    deletedVersionId: string;
+    versions: DiagramWorkflowVersionSummaryView[];
+}
+
 export class DiagramWorkflowService {
     constructor(
         private readonly repository: DiagramWorkflowRepository,
@@ -210,6 +216,58 @@ export class DiagramWorkflowService {
         });
 
         return this.toVersionView(version, snapshot);
+    }
+
+    deleteVersion(
+        diagramId: string,
+        versionId: string,
+        actor?: AppUserRecord | null
+    ): DiagramWorkflowVersionDeleteResultView {
+        this.requireEditableDiagram(diagramId, actor);
+
+        const version = this.repository.getVersion(versionId);
+        if (!version || version.diagramId !== diagramId) {
+            throw new AppError(
+                'Version not found.',
+                404,
+                'DIAGRAM_VERSION_NOT_FOUND'
+            );
+        }
+
+        const state = this.repository.getState(diagramId);
+        const updatedAt = new Date().toISOString();
+
+        this.repository.transaction(() => {
+            this.repository.deleteVersion(versionId);
+
+            if (
+                this.repository.countVersionsBySnapshot(version.snapshotId) ===
+                0
+            ) {
+                this.repository.deleteSnapshot(version.snapshotId);
+            }
+
+            if (
+                state &&
+                state.defaultCompareSourceKind === 'version' &&
+                state.defaultCompareSourceId === versionId
+            ) {
+                this.repository.putState({
+                    ...state,
+                    defaultCompareSourceKind: null,
+                    defaultCompareSourceId: null,
+                    updatedAt,
+                });
+            }
+        });
+
+        return {
+            diagramId,
+            deletedVersionId: versionId,
+            versions: this.repository
+                .listVersions(diagramId)
+                .map((item) => this.toVersionSummaryView(item)),
+        };
     }
 
     bindConnection(

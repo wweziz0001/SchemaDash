@@ -6,6 +6,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/dropdown-menu/dropdown-menu';
+import { DeleteVersionDialog } from '@/dialogs/delete-version-dialog/delete-version-dialog';
 import { RestoreVersionDialog } from '@/dialogs/restore-version-dialog/restore-version-dialog';
 import { ReviewChangesDialog } from '@/dialogs/review-changes-dialog/review-changes-dialog';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,7 @@ import {
     GitCompareArrows,
     RotateCcw,
     Tag,
+    Trash2,
 } from 'lucide-react';
 import { useOptionalDiagramWorkflow } from '@/context/diagram-workflow-context/diagram-workflow-context';
 import { WorkflowActionsMenu } from './workflow-actions-menu';
@@ -28,6 +30,7 @@ export const WorkflowModeSwitcher: React.FC = () => {
     const workflow = useOptionalDiagramWorkflow();
     const [reviewOpen, setReviewOpen] = useState(false);
     const [restoreOpen, setRestoreOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
     const hasWorkflowChrome = !!workflow?.diagramId;
 
     const versionSource =
@@ -39,6 +42,7 @@ export const WorkflowModeSwitcher: React.FC = () => {
         !!workflow?.compareVersion &&
         (workflow?.workflow?.diagramAccess === 'edit' ||
             workflow?.workflow?.diagramAccess === 'owner');
+    const canDeleteVersion = canRestoreVersion;
     const showSnapshotWorkflow = !!versionSource;
     const selectedVersionLabel = versionSource
         ? getVersionDisplayLabel(versionSource)
@@ -234,6 +238,16 @@ export const WorkflowModeSwitcher: React.FC = () => {
                                                 <RotateCcw className="mr-2 size-4" />
                                                 Revert
                                             </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                disabled={!canDeleteVersion}
+                                                onSelect={() =>
+                                                    setDeleteOpen(true)
+                                                }
+                                                className="text-rose-600 focus:text-rose-700 dark:text-rose-300 dark:focus:text-rose-200"
+                                            >
+                                                <Trash2 className="mr-2 size-4" />
+                                                Delete Version
+                                            </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                     <Button
@@ -365,11 +379,18 @@ export const WorkflowModeSwitcher: React.FC = () => {
             </div>
 
             {versionSource ? (
-                <RestoreVersionDialog
-                    open={restoreOpen}
-                    version={versionSource}
-                    onOpenChange={setRestoreOpen}
-                />
+                <>
+                    <RestoreVersionDialog
+                        open={restoreOpen}
+                        version={versionSource}
+                        onOpenChange={setRestoreOpen}
+                    />
+                    <DeleteVersionDialog
+                        open={deleteOpen}
+                        version={versionSource}
+                        onOpenChange={setDeleteOpen}
+                    />
+                </>
             ) : null}
         </>
     );

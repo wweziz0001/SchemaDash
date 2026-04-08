@@ -95,6 +95,7 @@ What was implemented:
   - clearer Development / View Diffs / Hide Diffs controls
   - compare-mode Review action
   - snapshot Options dropdown with revert entry point
+  - a later follow-up adds `Delete Version` directly beneath `Revert` in the historical compare review menu, backed by a real delete API and confirmation dialog
   - a follow-up layout split that keeps workflow buttons on their own row and renders the snapshot ribbon beneath them so version-to-version compare mode does not collapse into a crowded single line
   - a follow-up versions-page control update that places the selected historical version directly beside `Development` so users can see both baselines before toggling `View Diffs`
   - a small style follow-up that restores the older button treatment for the versions header while keeping the selected-version control in place
@@ -159,7 +160,9 @@ Files modified:
 - `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.tsx`
   - Rebuilt as a workflow timeline surface.
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
-  - Refined top-level version/diff/revert controls, shows the selected version beside Development in the versions workflow, preserves the older button styling after the follow-up tweak, and now derives version-mode compare counts from the selected historical snapshot.
+  - Refined top-level version/diff/revert controls, shows the selected version beside Development in the versions workflow, preserves the older button styling after the follow-up tweak, derives version-mode compare counts from the selected historical snapshot, and now exposes `Delete Version` under `Revert` in compare mode.
+- `frontend/src/dialogs/delete-version-dialog/delete-version-dialog.tsx`
+  - Confirmation dialog for permanently deleting a saved snapshot from the versions history.
 - `frontend/src/lib/diagram-workflow/compare-summary.ts`
   - Shared diff-count helper now returns only changed entities, which keeps Compare and Review badges aligned with the visible diff summary chips.
 - `frontend/src/pages/editor-page/top-navbar/top-navbar.tsx`
@@ -184,8 +187,14 @@ Files modified:
   - `updateDiagramData(...)` no longer uses the dangerous `delete + add` sequence against authoritative storage. It now writes through `addDiagram(...)` directly, which preserves the existing remote diagram row and prevents `ON DELETE CASCADE` from wiping workflow versions and snapshots.
 - `backend/src/services/diagram-version-restore-service.ts`
   - Restore-to-development now returns the full authoritative versions list immediately after the restore transaction so the frontend can repopulate all historical versions without waiting for a follow-up refresh.
+- `backend/src/services/diagram-workflow-service.ts`
+  - Added immutable version deletion support. Deleting a version now removes the version record, deletes its now-orphaned snapshot, and clears stale default compare state if that version had been remembered there.
+- `backend/src/repositories/diagram-workflow-repository.ts`
+  - Added low-level delete/count helpers for versions and snapshots.
+- `backend/src/routes/diagram-workflow-routes.ts`
+  - Added `DELETE /api/diagrams/:id/workflow/versions/:versionId`.
 - `frontend/src/lib/api/diagram-workflow-client.ts`
-  - Restore result type now includes the full versions list returned by the backend.
+  - Restore result type now includes the full versions list returned by the backend, and the client now exposes `deleteVersion(...)`.
 - `frontend/src/context/layout-context/layout-provider.tsx`
   - Sidebar layout state now persists the last selected section/tab per diagram in session storage, which keeps the Versions panel open across workflow remounts such as restore-to-development.
 - `frontend/src/pages/editor-page/canvas/workflow/compare-summary-chip.tsx`
@@ -204,6 +213,7 @@ Files modified:
   - The global editor loading overlay now renders the map-top loading strip instead of the old square spinner dialog.
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-actions-menu.test.tsx`
 - `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.test.tsx`
+- `frontend/src/dialogs/delete-version-dialog/delete-version-dialog.test.tsx`
 - `frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.test.tsx`
 - `frontend/src/dialogs/review-changes-dialog/review-changes-dialog.test.tsx`
 - `frontend/src/dialogs/restore-version-dialog/restore-version-dialog.test.tsx`
@@ -231,6 +241,7 @@ Workflow/UI changes:
   - View Diffs / Hide Diffs
   - Review
   - snapshot Options with revert entry point
+  - Delete Version under Revert while comparing a historical snapshot to Development
 - The Review dialog now supports:
   - live baseline to development
   - version baseline to development
@@ -238,6 +249,11 @@ Workflow/UI changes:
 - After a successful revert, the frontend now immediately merges the restored snapshot and the newly created safety snapshot into the local versions list before issuing the background workflow refresh.
 - Workflow refresh now merges incoming version summaries with existing ones, which prevents post-restore refreshes from clearing the visible versions list if the server temporarily returns an empty or partial set.
 - Restore-to-development now returns the full list of versions from the backend response itself, so the frontend can restore the complete historical list immediately instead of reconstructing it from partial local state.
+- Version deletion is now a first-class workflow operation:
+  - the backend deletes the immutable version record
+  - removes its orphaned snapshot
+  - returns the updated versions list
+  - and the frontend immediately updates the sidebar/history and exits compare mode back to Development
 - The editor sidebar now remembers that the user was in `Versions`, so restoring back to `Development` no longer makes the UI jump back to `Tables` and appear as if all versions disappeared.
 - Root cause note: the disappearing-history bug was ultimately tied to the frontend calling `updateDiagramData(..., { forceUpdateStorage: true })` after restore. That path used `deleteDiagram()` followed by `addDiagram()`. Because authoritative storage propagates `deleteDiagram()` to the backend, it could delete the diagram row and trigger `ON DELETE CASCADE`, which also removed workflow versions/snapshots. The fix was to stop deleting the diagram during replacement updates and to make the restore flow reload local editor state without issuing a second authoritative rewrite.
 - The Changelog tab now behaves like a workflow timeline instead of a set of static info cards.

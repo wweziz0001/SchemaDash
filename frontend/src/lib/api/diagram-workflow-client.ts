@@ -99,6 +99,12 @@ export interface DiagramWorkflowVersionRestoreResult {
     };
 }
 
+export interface DiagramWorkflowVersionDeleteResult {
+    diagramId: string;
+    deletedVersionId: string;
+    versions: DiagramWorkflowVersionSummary[];
+}
+
 export const diagramWorkflowClient = {
     getWorkflow: async (diagramId: string) =>
         requestJson<{ workflow: DiagramWorkflowRecord }>(
@@ -165,6 +171,13 @@ export const diagramWorkflowClient = {
             {
                 method: 'POST',
                 body: JSON.stringify(payload),
+            }
+        ),
+    deleteVersion: async (diagramId: string, versionId: string) =>
+        requestJson<{ result: DiagramWorkflowVersionDeleteResult }>(
+            `/api/diagrams/${diagramId}/workflow/versions/${versionId}`,
+            {
+                method: 'DELETE',
             }
         ),
 };
