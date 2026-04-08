@@ -59,7 +59,7 @@ High-risk files and boundaries:
 - `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
   - Avoid casual changes here. It controls URL-driven workflow mode resolution.
 - `frontend/src/pages/editor-page/canvas/canvas.tsx`
-  - High-risk canvas composition surface. This session now adds only a thin loading strip near the top edge while loading; no node/edge logic was changed.
+  - High-risk canvas composition surface. This session adds the thin loading strip and a targeted readonly drag exception: in workflow `live`, `version`, and `compare` modes, tables can still be repositioned while all other editing remains locked.
 - `frontend/src/pages/editor-page/editor-page.tsx`
   - High-risk editor shell. This session now replaces the Suspense spinner fallback with the same lightweight map loading strip used in workflow transitions.
 - `frontend/src/context/full-screen-spinner-context/full-screen-spinner-provider.tsx`
@@ -120,6 +120,7 @@ What was implemented:
   - clearer relationship between Development and immutable versions
   - better diff/viewing communication on canvas
 - Replaced the disruptive full-screen/spinner loading states shown while switching between workflow surfaces with a thin animated strip at the top of the map area, including the return path from Versions back to Development.
+- Added a focused readonly-canvas behavior update so compare/live/version surfaces still block schema edits, deletions, resizing, and note/area movement, but allow table repositioning for layout cleanup.
 
 Key decisions:
 
@@ -133,7 +134,7 @@ Approach intentionally avoided:
 - No backend/API changes.
 - No editor core rewrite.
 - No redesign of unrelated pages or global design system.
-- No modifications to `frontend/src/pages/editor-page/canvas/canvas.tsx`.
+- No broad rewrite of `frontend/src/pages/editor-page/canvas/canvas.tsx`; only the loader refinement and the narrow readonly table-drag exception were added.
 
 ## 4. Files Changed
 
@@ -203,7 +204,7 @@ Files modified:
 - `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.tsx`
   - Clearer surface/view-state communication on canvas.
 - `frontend/src/pages/editor-page/canvas/canvas.tsx`
-  - Replaced the old in-canvas loading badge with the thin map-top loading strip.
+  - Replaced the old in-canvas loading badge with the thin map-top loading strip and now allows table dragging only in readonly workflow modes (`live`, `version`, `compare`) while keeping other edits blocked.
 - `frontend/src/pages/editor-page/editor-page.tsx`
   - Suspense fallback now uses the lightweight map loading shell instead of the centered spinner.
 - `frontend/src/pages/editor-page/workflow-editor-page.tsx`
