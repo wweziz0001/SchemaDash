@@ -7,7 +7,10 @@ import type {
     CanonicalSchema,
     ChangePlan,
 } from '@schemadash/schema-sync-core';
-import { hashCanonicalSchema } from '@schemadash/schema-sync-core';
+import {
+    createChangePlan,
+    hashCanonicalSchema,
+} from '@schemadash/schema-sync-core';
 import { MetadataRepository } from '../src/repositories/metadata-repository.js';
 
 const introspectPostgresSchemaMock = vi.fn();
@@ -155,6 +158,132 @@ describe('apply service audit hardening', () => {
         );
         expect(audit?.logs).toEqual(
             expect.arrayContaining(['Preview generated', 'Apply requested'])
+        );
+
+        repository.close();
+    });
+
+    it('executes the persisted preview SQL statements during apply', async () => {
+        const dataDir = mkdtempSync(path.join(os.tmpdir(), 'chartdb-apply-'));
+        tempDirs.push(dataDir);
+
+        const repository = new MetadataRepository(
+            path.join(dataDir, 'schema-sync.sqlite')
+        );
+        const baselineSchema = createCanonicalSchema();
+        const baselineFingerprint = hashCanonicalSchema(baselineSchema);
+
+        repository.putSnapshot({
+            id: 'baseline-snapshot',
+            connectionId: 'connection-1',
+            kind: 'baseline',
+            fingerprint: baselineFingerprint,
+            importedSchemas: ['public'],
+            schema: baselineSchema,
+            createdAt: '2026-03-25T00:00:00.000Z',
+        });
+
+        const targetSchema: CanonicalSchema = {
+            ...baselineSchema,
+            customTypes: [
+                {
+                    id: 'public.account_status',
+                    schemaName: 'public',
+                    name: 'account_status',
+                    kind: 'enum',
+                    values: ['pending', 'active'],
+                },
+            ],
+            tables: [
+                {
+                    id: 'public.users',
+                    schemaName: 'public',
+                    name: 'users',
+                    kind: 'table',
+                    columns: [
+                        {
+                            id: 'public.users.id',
+                            name: 'id',
+                            dataType: 'integer',
+                            nullable: false,
+                            isIdentity: true,
+                        },
+                        {
+                            id: 'public.users.email',
+                            name: 'email',
+                            dataType: 'text',
+                            nullable: false,
+                        },
+                    ],
+                    primaryKey: {
+                        id: 'public.users.users_pkey',
+                        name: 'users_pkey',
+                        columnIds: ['public.users.id'],
+                    },
+                    uniqueConstraints: [
+                        {
+                            id: 'public.users.users_email_key',
+                            name: 'users_email_key',
+                            columnIds: ['public.users.email'],
+                        },
+                    ],
+                    indexes: [],
+                    foreignKeys: [],
+                    checkConstraints: [],
+                },
+            ],
+        };
+
+        const plan = createChangePlan({
+            id: 'plan-apply-preview-alignment',
+            baselineSnapshotId: 'baseline-snapshot',
+            connectionId: 'connection-1',
+            baseline: baselineSchema,
+            target: targetSchema,
+        });
+
+        introspectPostgresSchemaMock
+            .mockResolvedValueOnce(baselineSchema)
+            .mockResolvedValueOnce(targetSchema);
+        connectMock.mockResolvedValue(undefined);
+        queryMock.mockResolvedValue({ rows: [] });
+        endMock.mockResolvedValue(undefined);
+
+        const service = new ApplyService(
+            repository,
+            {
+                getDecryptedSecret: vi.fn().mockReturnValue({
+                    host: 'localhost',
+                    port: 5432,
+                    database: 'warehouse',
+                    username: 'postgres',
+                    password: 'postgres',
+                    sslMode: 'disable',
+                }),
+            } as never,
+            {
+                getChangePlan: vi.fn().mockReturnValue(plan),
+            } as never
+        );
+
+        const result = await service.applyPlan({
+            planId: plan.id,
+            actor: 'admin:owner@example.com',
+            destructiveApproval: {
+                confirmed: true,
+                confirmationText: '',
+            },
+        });
+
+        expect(result.executedStatements).toEqual(plan.sqlStatements);
+        expect(
+            queryMock.mock.calls.flatMap(([statement]) => statement)
+        ).toEqual(expect.arrayContaining(plan.sqlStatements));
+        expect(repository.getLatestAuditForChangePlan(plan.id)).toEqual(
+            expect.objectContaining({
+                sqlStatements: plan.sqlStatements,
+                status: 'succeeded',
+            })
         );
 
         repository.close();

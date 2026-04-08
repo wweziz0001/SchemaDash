@@ -5,6 +5,7 @@ import {
 } from './canonical-adapters';
 import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 import { DatabaseType } from '@/lib/domain/database-type';
+import { DBCustomTypeKind, type Diagram } from '@/lib/domain';
 
 describe('canonical adapters', () => {
     it('preserves sync metadata during import to diagram', () => {
@@ -364,5 +365,202 @@ describe('canonical adapters', () => {
             'surahs'
         );
         expect(surahsCanonical?.foreignKeys).toHaveLength(0);
+    });
+
+    it('preserves live migration metadata for new development tables', () => {
+        const diagram: Diagram = {
+            id: 'diagram-live-sync',
+            name: 'Development',
+            databaseType: DatabaseType.POSTGRESQL,
+            tables: [
+                {
+                    id: 'users-table',
+                    name: 'users',
+                    schema: 'public',
+                    x: 0,
+                    y: 0,
+                    fields: [
+                        {
+                            id: 'users-id',
+                            name: 'id',
+                            type: { id: 'integer', name: 'integer' },
+                            primaryKey: true,
+                            unique: false,
+                            nullable: false,
+                            increment: true,
+                            createdAt: 1,
+                        },
+                        {
+                            id: 'users-email',
+                            name: 'email',
+                            type: { id: 'text', name: 'text' },
+                            primaryKey: false,
+                            unique: true,
+                            nullable: false,
+                            createdAt: 2,
+                        },
+                        {
+                            id: 'users-status',
+                            name: 'status',
+                            type: {
+                                id: 'account_status',
+                                name: 'account_status',
+                            },
+                            primaryKey: false,
+                            unique: false,
+                            nullable: false,
+                            default: `'pending'::public.account_status`,
+                            createdAt: 3,
+                        },
+                        {
+                            id: 'users-created-at',
+                            name: 'created_at',
+                            type: {
+                                id: 'timestamptz',
+                                name: 'timestamp with time zone',
+                            },
+                            primaryKey: false,
+                            unique: false,
+                            nullable: false,
+                            default: 'now()',
+                            createdAt: 4,
+                        },
+                    ],
+                    indexes: [
+                        {
+                            id: 'users-created-at-idx',
+                            name: 'users_created_at_idx',
+                            unique: false,
+                            fieldIds: ['users-created-at'],
+                            type: 'btree',
+                            createdAt: 5,
+                        },
+                    ],
+                    color: '#84cc16',
+                    isView: false,
+                    createdAt: 1,
+                },
+                {
+                    id: 'profiles-table',
+                    name: 'profiles',
+                    schema: 'public',
+                    x: 400,
+                    y: 0,
+                    fields: [
+                        {
+                            id: 'profiles-id',
+                            name: 'id',
+                            type: { id: 'uuid', name: 'uuid' },
+                            primaryKey: true,
+                            unique: false,
+                            nullable: false,
+                            createdAt: 6,
+                        },
+                        {
+                            id: 'profiles-user-id',
+                            name: 'user_id',
+                            type: { id: 'integer', name: 'integer' },
+                            primaryKey: false,
+                            unique: false,
+                            nullable: false,
+                            createdAt: 7,
+                        },
+                    ],
+                    indexes: [],
+                    color: '#84cc16',
+                    isView: false,
+                    createdAt: 2,
+                },
+            ],
+            relationships: [
+                {
+                    id: 'profiles-user-fk',
+                    name: 'profiles_user_id_fkey',
+                    sourceSchema: 'public',
+                    sourceTableId: 'users-table',
+                    targetSchema: 'public',
+                    targetTableId: 'profiles-table',
+                    sourceFieldId: 'users-id',
+                    targetFieldId: 'profiles-user-id',
+                    sourceCardinality: 'one',
+                    targetCardinality: 'many',
+                    createdAt: 8,
+                },
+            ],
+            dependencies: [],
+            areas: [],
+            customTypes: [
+                {
+                    id: 'account-status',
+                    schema: 'public',
+                    name: 'account_status',
+                    kind: DBCustomTypeKind.enum,
+                    values: ['pending', 'active'],
+                    order: 0,
+                },
+            ],
+            notes: [],
+            createdAt: new Date('2026-04-08T00:00:00.000Z'),
+            updatedAt: new Date('2026-04-08T00:00:00.000Z'),
+        };
+
+        const canonical = diagramToCanonicalSchema(diagram);
+        const usersTable = canonical.tables.find(
+            (table) => table.name === 'users'
+        );
+        const profilesTable = canonical.tables.find(
+            (table) => table.name === 'profiles'
+        );
+        const statusColumn = usersTable?.columns.find(
+            (column) => column.name === 'status'
+        );
+
+        expect(canonical.customTypes).toEqual([
+            expect.objectContaining({
+                schemaName: 'public',
+                name: 'account_status',
+                kind: 'enum',
+                values: ['pending', 'active'],
+            }),
+        ]);
+        expect(usersTable?.primaryKey?.columnIds).toEqual(['public.users.id']);
+        expect(usersTable?.uniqueConstraints).toEqual([
+            expect.objectContaining({
+                name: 'users_email_key',
+                columnIds: ['public.users.email'],
+            }),
+        ]);
+        expect(usersTable?.indexes).toEqual([
+            expect.objectContaining({
+                name: 'users_created_at_idx',
+                columnIds: ['public.users.created_at'],
+                unique: false,
+                type: 'btree',
+            }),
+        ]);
+        expect(
+            usersTable?.columns.find((column) => column.name === 'id')
+        ).toEqual(
+            expect.objectContaining({
+                isIdentity: true,
+                nullable: false,
+            })
+        );
+        expect(statusColumn).toEqual(
+            expect.objectContaining({
+                customTypeId: 'account-status',
+                nullable: false,
+                defaultValue: `'pending'::public.account_status`,
+            })
+        );
+        expect(profilesTable?.foreignKeys).toEqual([
+            expect.objectContaining({
+                name: 'profiles_user_id_fkey',
+                columnIds: ['public.profiles.user_id'],
+                referencedSchemaName: 'public',
+                referencedTableName: 'users',
+                referencedColumnNames: ['id'],
+            }),
+        ]);
     });
 });

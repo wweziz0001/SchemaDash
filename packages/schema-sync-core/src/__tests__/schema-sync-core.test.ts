@@ -799,4 +799,200 @@ describe('schema sync core', () => {
             )
         ).toBe(false);
     });
+
+    it('preserves supported metadata for new live-sync tables through plan and SQL generation', () => {
+        const emptyBaseline: CanonicalSchema = {
+            engine: 'postgresql',
+            databaseName: 'app',
+            defaultSchemaName: 'public',
+            schemaNames: ['public'],
+            customTypes: [],
+            tables: [],
+        };
+
+        const target: CanonicalSchema = {
+            ...emptyBaseline,
+            customTypes: [
+                {
+                    id: 'public.account_status',
+                    schemaName: 'public',
+                    name: 'account_status',
+                    kind: 'enum',
+                    values: ['pending', 'active'],
+                },
+            ],
+            tables: [
+                {
+                    id: 'public.users',
+                    schemaName: 'public',
+                    name: 'users',
+                    kind: 'table',
+                    columns: [
+                        {
+                            id: 'public.users.id',
+                            name: 'id',
+                            dataType: 'integer',
+                            nullable: false,
+                            isIdentity: true,
+                        },
+                        {
+                            id: 'public.users.email',
+                            name: 'email',
+                            dataType: 'text',
+                            nullable: false,
+                        },
+                        {
+                            id: 'public.users.status',
+                            name: 'status',
+                            dataType: 'account_status',
+                            dataTypeDisplay: 'account_status',
+                            customTypeId: 'public.account_status',
+                            nullable: false,
+                            defaultValue: `'pending'::public.account_status`,
+                        },
+                        {
+                            id: 'public.users.created_at',
+                            name: 'created_at',
+                            dataType: 'timestamp with time zone',
+                            nullable: false,
+                            defaultValue: 'now()',
+                        },
+                    ],
+                    primaryKey: {
+                        id: 'public.users.users_pkey',
+                        name: 'users_pkey',
+                        columnIds: ['public.users.id'],
+                    },
+                    uniqueConstraints: [
+                        {
+                            id: 'public.users.users_email_key',
+                            name: 'users_email_key',
+                            columnIds: ['public.users.email'],
+                        },
+                    ],
+                    indexes: [
+                        {
+                            id: 'public.users.users_created_at_idx',
+                            name: 'users_created_at_idx',
+                            columnIds: ['public.users.created_at'],
+                            unique: false,
+                            type: 'btree',
+                        },
+                    ],
+                    foreignKeys: [],
+                    checkConstraints: [],
+                },
+                {
+                    id: 'public.profiles',
+                    schemaName: 'public',
+                    name: 'profiles',
+                    kind: 'table',
+                    columns: [
+                        {
+                            id: 'public.profiles.id',
+                            name: 'id',
+                            dataType: 'uuid',
+                            nullable: false,
+                        },
+                        {
+                            id: 'public.profiles.user_id',
+                            name: 'user_id',
+                            dataType: 'integer',
+                            nullable: false,
+                        },
+                    ],
+                    primaryKey: {
+                        id: 'public.profiles.profiles_pkey',
+                        name: 'profiles_pkey',
+                        columnIds: ['public.profiles.id'],
+                    },
+                    uniqueConstraints: [],
+                    indexes: [],
+                    foreignKeys: [
+                        {
+                            id: 'public.profiles.profiles_user_id_fkey',
+                            name: 'profiles_user_id_fkey',
+                            columnIds: ['public.profiles.user_id'],
+                            referencedSchemaName: 'public',
+                            referencedTableName: 'users',
+                            referencedColumnNames: ['id'],
+                            onDelete: 'CASCADE',
+                        },
+                    ],
+                    checkConstraints: [],
+                },
+            ],
+        };
+
+        const plan = createChangePlan({
+            id: 'plan-live-sync-fidelity',
+            baselineSnapshotId: 'snapshot-1',
+            connectionId: 'conn-1',
+            baseline: emptyBaseline,
+            target,
+        });
+
+        expect(plan.blocked).toBe(false);
+        expect(plan.changes.map((change) => change.kind)).toEqual(
+            expect.arrayContaining([
+                'create_enum_type',
+                'create_table',
+                'add_index',
+                'add_foreign_key',
+            ])
+        );
+
+        expect(plan.sqlStatements).toEqual(
+            expect.arrayContaining([
+                `CREATE TYPE "public"."account_status" AS ENUM ('pending', 'active');`,
+                expect.stringContaining('CREATE TABLE "public"."users"'),
+                expect.stringContaining(
+                    'CREATE INDEX "users_created_at_idx" ON "public"."users" USING btree ("created_at");'
+                ),
+                expect.stringContaining(
+                    'ALTER TABLE "public"."profiles" ADD CONSTRAINT "profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id") ON DELETE CASCADE;'
+                ),
+            ])
+        );
+        expect(
+            plan.sqlStatements.some((statement) =>
+                statement.includes(
+                    'CONSTRAINT "users_email_key" UNIQUE ("email")'
+                )
+            )
+        ).toBe(true);
+        expect(
+            plan.sqlStatements.some((statement) =>
+                statement.includes('"status" "public"."account_status"')
+            )
+        ).toBe(true);
+        expect(
+            plan.sqlStatements.some((statement) =>
+                statement.includes(
+                    '"id" integer NOT NULL GENERATED BY DEFAULT AS IDENTITY'
+                )
+            )
+        ).toBe(true);
+        expect(
+            plan.sqlStatements.some((statement) =>
+                statement.includes(
+                    `"status" "public"."account_status" NOT NULL DEFAULT 'pending'::public.account_status`
+                )
+            )
+        ).toBe(true);
+
+        const createTableIndex = plan.sqlStatements.findIndex((statement) =>
+            statement.startsWith('CREATE TABLE "public"."users"')
+        );
+        const addIndexIndex = plan.sqlStatements.findIndex((statement) =>
+            statement.startsWith('CREATE INDEX "users_created_at_idx"')
+        );
+        const addForeignKeyIndex = plan.sqlStatements.findIndex((statement) =>
+            statement.includes('ADD CONSTRAINT "profiles_user_id_fkey"')
+        );
+
+        expect(createTableIndex).toBeGreaterThanOrEqual(0);
+        expect(addIndexIndex).toBeGreaterThan(createTableIndex);
+        expect(addForeignKeyIndex).toBeGreaterThan(createTableIndex);
+    });
 });
