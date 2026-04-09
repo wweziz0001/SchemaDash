@@ -14,9 +14,11 @@ pnpm-debug.log*
 .env.local
 .env.*.local
 .schemadash-data
+.schemadash-schema-sync-service
 .chartdb-data
 server/.schemadash-data
 server/.chartdb-data
+services/schema-sync-service/.schemadash-schema-sync-service
 
 # Ignore git files
 .git
