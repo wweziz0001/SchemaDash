@@ -2,381 +2,306 @@
 
 ## 1. Project Overview
 
-SchemaDash is a diagram-first database design tool with optional live schema
-sync. The core product still centers on diagram editing, persistence, sharing,
-auth, versions, and changelog workflows, but this task focused on the live
-schema sync subsystem and its runtime boundary.
+SchemaDash is a self-hostable database diagramming application with optional
+live PostgreSQL schema sync. The product still revolves around the frontend
+editor, saved projects, sharing, authentication, versions, and collaboration.
+This task only operationalized the already-extracted standalone schema sync
+service.
 
-Relevant concepts for this task:
+The key runtime model for this area is now:
 
-- `CanonicalSchema` in `packages/schema-sync-core/` is the shared schema format
-  used for import, diff, workflow compare, and apply planning.
-- the main app is the Fastify server under `backend/`
-- the standalone schema sync runtime now lives under
-  `services/schema-sync-service/`
-- PostgreSQL remains the only implemented live schema sync engine
-- the main app now supports only two schema sync runtime states:
-    - disabled
-    - enabled through the external standalone schema sync service
+- `SCHEMADASH_SCHEMA_SYNC_ENABLED=false`: schema sync is disabled and the rest
+  of SchemaDash should keep working normally
+- `SCHEMADASH_SCHEMA_SYNC_ENABLED=true`: the main app calls the standalone
+  schema sync service over HTTP
+- there is no supported embedded/in-process schema sync mode in the main app
 
-This task intentionally removed supported embedded/in-process schema sync mode
-from the main app architecture.
+Important concepts:
+
+- `backend/` is the main Fastify API used by the frontend
+- `services/schema-sync-service/` is the standalone schema sync runtime
+- `shared/schema-sync-core/` contains the shared canonical schema contracts and
+  PostgreSQL diff/apply primitives
+- PostgreSQL is still the only live schema sync engine implemented
 
 ## 2. Current Architectural Context
 
-Read these first in this order:
+Read these first for future work:
 
-1. [docs/schema-sync-service-architecture.md](/root/data/SchemaDash/docs/schema-sync-service-architecture.md)
-2. [docs/audits/schema-sync-standalone-service-conversion-audit.md](/root/data/SchemaDash/docs/audits/schema-sync-standalone-service-conversion-audit.md)
-3. [backend/src/schema-sync/client.ts](/root/data/SchemaDash/backend/src/schema-sync/client.ts)
-4. [services/schema-sync-service/src/app.ts](/root/data/SchemaDash/services/schema-sync-service/src/app.ts)
-5. [services/schema-sync-service/src/context/service-context.ts](/root/data/SchemaDash/services/schema-sync-service/src/context/service-context.ts)
-6. [services/schema-sync-service/src/routes/schema-sync-routes.ts](/root/data/SchemaDash/services/schema-sync-service/src/routes/schema-sync-routes.ts)
-7. [backend/src/services/diagram-workflow-service.ts](/root/data/SchemaDash/backend/src/services/diagram-workflow-service.ts)
-8. [backend/src/services/diagram-migration-service.ts](/root/data/SchemaDash/backend/src/services/diagram-migration-service.ts)
+1. [docs/codex-handoff.md](/root/data/SchemaDash/docs/codex-handoff.md)
+2. [docs/schema-sync-service-architecture.md](/root/data/SchemaDash/docs/schema-sync-service-architecture.md)
+3. [docs/operations/self-hosting.md](/root/data/SchemaDash/docs/operations/self-hosting.md)
+4. [services/schema-sync-service/README.md](/root/data/SchemaDash/services/schema-sync-service/README.md)
+5. [docker-compose.yml](/root/data/SchemaDash/docker-compose.yml)
+6. [backend/src/schema-sync/client.ts](/root/data/SchemaDash/backend/src/schema-sync/client.ts)
+7. [backend/src/routes/health-routes.ts](/root/data/SchemaDash/backend/src/routes/health-routes.ts)
+8. [services/schema-sync-service/src/config/env.ts](/root/data/SchemaDash/services/schema-sync-service/src/config/env.ts)
+9. [services/schema-sync-service/src/routes/health-routes.ts](/root/data/SchemaDash/services/schema-sync-service/src/routes/health-routes.ts)
+10. [services/schema-sync-service/Dockerfile](/root/data/SchemaDash/services/schema-sync-service/Dockerfile)
 
-Important boundaries now:
+Important boundaries:
 
-- main app boundary:
-    - [backend/src/config/env.ts](/root/data/SchemaDash/backend/src/config/env.ts)
-    - [backend/src/context/app-context.ts](/root/data/SchemaDash/backend/src/context/app-context.ts)
-    - [backend/src/routes/schema-sync-routes.ts](/root/data/SchemaDash/backend/src/routes/schema-sync-routes.ts)
-    - [backend/src/routes/health-routes.ts](/root/data/SchemaDash/backend/src/routes/health-routes.ts)
-- standalone service runtime:
-    - [services/schema-sync-service/src/services/connections-service.ts](/root/data/SchemaDash/services/schema-sync-service/src/services/connections-service.ts)
-    - [services/schema-sync-service/src/services/schema-sync-service.ts](/root/data/SchemaDash/services/schema-sync-service/src/services/schema-sync-service.ts)
-    - [services/schema-sync-service/src/services/apply-service.ts](/root/data/SchemaDash/services/schema-sync-service/src/services/apply-service.ts)
-    - [services/schema-sync-service/src/repositories/metadata-repository.ts](/root/data/SchemaDash/services/schema-sync-service/src/repositories/metadata-repository.ts)
-    - [services/schema-sync-service/src/engines/postgresql/adapter.ts](/root/data/SchemaDash/services/schema-sync-service/src/engines/postgresql/adapter.ts)
-- shared/core contracts:
-    - [packages/schema-sync-core/src/api.ts](/root/data/SchemaDash/packages/schema-sync-core/src/api.ts)
-    - [packages/schema-sync-core/src/types.ts](/root/data/SchemaDash/packages/schema-sync-core/src/types.ts)
-    - [packages/schema-sync-core/src/diff.ts](/root/data/SchemaDash/packages/schema-sync-core/src/diff.ts)
-    - [packages/schema-sync-core/src/sql.ts](/root/data/SchemaDash/packages/schema-sync-core/src/sql.ts)
-    - [packages/schema-sync-core/src/type-normalization.ts](/root/data/SchemaDash/packages/schema-sync-core/src/type-normalization.ts)
+- Main app runtime:
+  [backend/src/config/env.ts](/root/data/SchemaDash/backend/src/config/env.ts),
+  [backend/src/schema-sync/client.ts](/root/data/SchemaDash/backend/src/schema-sync/client.ts),
+  [backend/src/routes/schema-sync-routes.ts](/root/data/SchemaDash/backend/src/routes/schema-sync-routes.ts),
+  [backend/src/routes/health-routes.ts](/root/data/SchemaDash/backend/src/routes/health-routes.ts)
+- Standalone service runtime:
+  [services/schema-sync-service/src/app.ts](/root/data/SchemaDash/services/schema-sync-service/src/app.ts),
+  [services/schema-sync-service/src/context/service-context.ts](/root/data/SchemaDash/services/schema-sync-service/src/context/service-context.ts),
+  [services/schema-sync-service/src/routes/schema-sync-routes.ts](/root/data/SchemaDash/services/schema-sync-service/src/routes/schema-sync-routes.ts),
+  [services/schema-sync-service/src/routes/health-routes.ts](/root/data/SchemaDash/services/schema-sync-service/src/routes/health-routes.ts)
+- Deployment/runtime files:
+  [services/schema-sync-service/Dockerfile](/root/data/SchemaDash/services/schema-sync-service/Dockerfile),
+  [backend/Dockerfile](/root/data/SchemaDash/backend/Dockerfile),
+  [docker-compose.yml](/root/data/SchemaDash/docker-compose.yml),
+  [.env.example](/root/data/SchemaDash/.env.example)
 
-High-risk files for future work:
+High-risk files:
 
-- [backend/src/services/diagram-migration-service.ts](/root/data/SchemaDash/backend/src/services/diagram-migration-service.ts)
-  because it now bridges workflow state with the external service plan/apply
-  boundary.
 - [backend/src/schema-sync/client.ts](/root/data/SchemaDash/backend/src/schema-sync/client.ts)
-  because every main-app schema-sync operation now depends on this client.
-- [services/schema-sync-service/src/routes/schema-sync-routes.ts](/root/data/SchemaDash/services/schema-sync-service/src/routes/schema-sync-routes.ts)
-  because the main app depends on both public and internal support routes here.
-- [packages/schema-sync-core/src/sql.ts](/root/data/SchemaDash/packages/schema-sync-core/src/sql.ts)
-  because SQL rendering is still PostgreSQL-only even though it is now more
-  honest about that fact.
-
-Frontend/backend/shared relationships that matter:
-
-- frontend still talks to the main app, not directly to the standalone service
-- the main app proxies direct schema-sync routes and uses the same remote client
-  for workflow refresh and migration validation/apply
-- the standalone service owns connections, snapshots, plans, jobs, and audits
-- workflow live snapshots and version/changelog state remain in the main app
+  because every enabled schema-sync call flows through this client
+- [backend/src/routes/health-routes.ts](/root/data/SchemaDash/backend/src/routes/health-routes.ts)
+  because deployment readiness and degraded-state reporting live here
+- [services/schema-sync-service/src/config/env.ts](/root/data/SchemaDash/services/schema-sync-service/src/config/env.ts)
+  because compose/runtime secret behavior depends on it
+- [docker-compose.yml](/root/data/SchemaDash/docker-compose.yml)
+  because disabled-mode safety depends on not hard-coupling the main app to the
+  optional standalone service profile
 
 ## 3. Task Completed
 
-Goal of this task:
-
-- keep the extracted PostgreSQL adapter seam
-- stop treating schema sync as an in-process subsystem of the main app
-- support only disabled mode or external-service-enabled mode
-- move the runtime into a dedicated standalone-service-ready workspace
+This task was meant to make the standalone schema sync service deployment-ready
+without changing the already-extracted runtime model or adding new engines.
 
 What was implemented:
 
-- preserved the existing PostgreSQL adapter extraction and documented why it
-  stays
-- added the standalone-service architecture doc and conversion audit
-- removed misleading hardcoded PostgreSQL leakage in shared/core and storage
-  boundaries
-- added main-app env parsing for:
-    - `SCHEMADASH_SCHEMA_SYNC_ENABLED`
-    - `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL`
-- added the main-app remote client boundary in
-  [backend/src/schema-sync/client.ts](/root/data/SchemaDash/backend/src/schema-sync/client.ts)
-- changed the main app context to stop assembling local schema sync runtime
-- changed schema-sync routes in the main app to proxy through the client
-- changed workflow refresh and migration validation/apply to use the remote
-  client instead of local runtime services
-- moved the runtime into
-  [services/schema-sync-service/](/root/data/SchemaDash/services/schema-sync-service)
-- added a standalone service app, env parser, context, health routes, and
-  schema sync transport routes
-- moved runtime-specific tests into the service workspace
-- updated focused backend tests to validate disabled mode, route proxying,
-  workflow refresh, and migration preview/apply through the service boundary
-
-Key decisions made:
-
-- no embedded runtime fallback in the main app
-- the standalone service owns schema-sync metadata persistence
-- the main app keeps workflow-local live snapshot copies for compare/version UX
-- direct main-app schema sync routes retain their external API shape where
-  practical
+- added a dedicated standalone image build at
+  [services/schema-sync-service/Dockerfile](/root/data/SchemaDash/services/schema-sync-service/Dockerfile)
+- added container healthcheck support for the standalone service
+- added simple root health aliases on the standalone service:
+  `/livez`, `/readyz`, `/healthz`
+- kept the existing `/api/livez`, `/api/readyz`, and `/api/health` routes for
+  compatibility
+- changed the API container healthcheck to probe `/api/livez` instead of
+  `/api/readyz` so unrelated app features are not marked dead just because the
+  schema sync dependency is degraded
+- integrated `schema-sync-adapter` into
+  [docker-compose.yml](/root/data/SchemaDash/docker-compose.yml) behind the
+  optional `schema-sync` profile
+- wired compose-time API env defaults for:
+  `SCHEMADASH_SCHEMA_SYNC_ENABLED` and
+  `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL=http://schema-sync-adapter:4020`
+- intentionally avoided hard `depends_on` coupling from `api` to
+  `schema-sync-adapter` so disabled mode stays safe and enabled-but-unavailable
+  mode stays degraded instead of crashing
+- allowed the standalone service to reuse `SCHEMADASH_SECRET_KEY` as a fallback
+  secret source when a dedicated `SCHEMADASH_SCHEMA_SYNC_SECRET_KEY` is not set
+- documented local runs, direct Docker runs, compose profile usage, health
+  semantics, and troubleshooting
+- added targeted validation for service env parsing, service health endpoints,
+  and deployment-file wiring
 
 Approach intentionally avoided:
 
-- no revert to pre-extraction architecture
-- no fake multi-engine implementation beyond PostgreSQL
-- no broad redesign of versions, changelog, or compare workflows
-- no direct frontend-to-service communication bypassing the main app
+- no new database engines
+- no reintroduction of embedded schema sync mode
+- no broad refactor of existing PostgreSQL schema-sync services
+- no change to frontend-to-main-app routing
 
 ## 4. Files Changed
 
-Files created:
+Files created in this task:
 
-- [docs/audits/schema-sync-standalone-service-conversion-audit.md](/root/data/SchemaDash/docs/audits/schema-sync-standalone-service-conversion-audit.md)
-  audit of the current seam and conversion scope
-- [docs/schema-sync-service-architecture.md](/root/data/SchemaDash/docs/schema-sync-service-architecture.md)
-  target architecture and rollout plan
-- [backend/src/schema-sync/client.ts](/root/data/SchemaDash/backend/src/schema-sync/client.ts)
-  main-app remote/disabled schema sync boundary
-- [services/schema-sync-service/package.json](/root/data/SchemaDash/services/schema-sync-service/package.json)
-  standalone service workspace package
-- [services/schema-sync-service/tsconfig.json](/root/data/SchemaDash/services/schema-sync-service/tsconfig.json)
-- [services/schema-sync-service/src/app.ts](/root/data/SchemaDash/services/schema-sync-service/src/app.ts)
-- [services/schema-sync-service/src/index.ts](/root/data/SchemaDash/services/schema-sync-service/src/index.ts)
+- [services/schema-sync-service/Dockerfile](/root/data/SchemaDash/services/schema-sync-service/Dockerfile)
+  standalone service container build
+- [services/schema-sync-service/test/env.test.ts](/root/data/SchemaDash/services/schema-sync-service/test/env.test.ts)
+  env parsing validation for shared-secret fallback and production safety
+- [services/schema-sync-service/test/health-routes.test.ts](/root/data/SchemaDash/services/schema-sync-service/test/health-routes.test.ts)
+  standalone service liveness/readiness validation
+- [tests/validate-schema-sync-deployment.mjs](/root/data/SchemaDash/tests/validate-schema-sync-deployment.mjs)
+  static deployment validation plus optional Docker/Compose smoke hooks
+
+Files modified in this task:
+
+- [.gitignore](/root/data/SchemaDash/.gitignore)
+  ignores local standalone service SQLite state from git status
+- [.dockerignore](/root/data/SchemaDash/.dockerignore)
+  excludes local schema-sync SQLite state from Docker build context
+- [backend/Dockerfile](/root/data/SchemaDash/backend/Dockerfile)
+  main API image healthcheck now uses `/api/livez`
+- [docker-compose.yml](/root/data/SchemaDash/docker-compose.yml)
+  adds `schema-sync-adapter`, healthchecks, volume wiring, and compose env
+  defaults
+- [.env.example](/root/data/SchemaDash/.env.example)
+  compose-friendly schema sync URL and operator notes
 - [services/schema-sync-service/src/config/env.ts](/root/data/SchemaDash/services/schema-sync-service/src/config/env.ts)
-- [services/schema-sync-service/src/context/service-context.ts](/root/data/SchemaDash/services/schema-sync-service/src/context/service-context.ts)
-- [services/schema-sync-service/src/routes/schema-sync-routes.ts](/root/data/SchemaDash/services/schema-sync-service/src/routes/schema-sync-routes.ts)
+  shared-secret fallback and production placeholder rejection
 - [services/schema-sync-service/src/routes/health-routes.ts](/root/data/SchemaDash/services/schema-sync-service/src/routes/health-routes.ts)
-- [services/schema-sync-service/src/security/encryption.ts](/root/data/SchemaDash/services/schema-sync-service/src/security/encryption.ts)
+  root health aliases plus existing API health routes
 - [services/schema-sync-service/README.md](/root/data/SchemaDash/services/schema-sync-service/README.md)
-- [services/schema-sync-service/.env.example](/root/data/SchemaDash/services/schema-sync-service/.env.example)
-- [services/schema-sync-service/test/apply-service-audit.test.ts](/root/data/SchemaDash/services/schema-sync-service/test/apply-service-audit.test.ts)
-- [services/schema-sync-service/test/schema-sync-adapter-registry.test.ts](/root/data/SchemaDash/services/schema-sync-service/test/schema-sync-adapter-registry.test.ts)
-- [services/schema-sync-service/test/postgresql-introspection.test.ts](/root/data/SchemaDash/services/schema-sync-service/test/postgresql-introspection.test.ts)
-
-Important files modified:
-
-- [packages/schema-sync-core/src/api.ts](/root/data/SchemaDash/packages/schema-sync-core/src/api.ts)
-  engine-aware defaults and snapshot contract
-- [packages/schema-sync-core/src/types.ts](/root/data/SchemaDash/packages/schema-sync-core/src/types.ts)
-  engine-derived default schema handling
-- [packages/schema-sync-core/src/diff.ts](/root/data/SchemaDash/packages/schema-sync-core/src/diff.ts)
-  engine-aware builtin-type handling
-- [packages/schema-sync-core/src/sql.ts](/root/data/SchemaDash/packages/schema-sync-core/src/sql.ts)
-  explicit engine-gated SQL generation
-- [packages/schema-sync-core/src/type-normalization.ts](/root/data/SchemaDash/packages/schema-sync-core/src/type-normalization.ts)
-  explicit engine-aware normalization
-- [packages/schema-sync-core/src/engines.ts](/root/data/SchemaDash/packages/schema-sync-core/src/engines.ts)
-  default namespace helper
-- [frontend/src/lib/schema-sync/canonical-adapters.ts](/root/data/SchemaDash/frontend/src/lib/schema-sync/canonical-adapters.ts)
-  more honest engine/default-schema resolution
-- [frontend/src/lib/admin/admin-overview.ts](/root/data/SchemaDash/frontend/src/lib/admin/admin-overview.ts)
-  admin display now understands `disabled` vs `external-service`
-- [backend/src/config/env.ts](/root/data/SchemaDash/backend/src/config/env.ts)
-  standalone service env contract
-- [backend/src/context/app-context.ts](/root/data/SchemaDash/backend/src/context/app-context.ts)
-  removed local runtime assembly
-- [backend/src/routes/schema-sync-routes.ts](/root/data/SchemaDash/backend/src/routes/schema-sync-routes.ts)
-  proxy boundary
-- [backend/src/routes/health-routes.ts](/root/data/SchemaDash/backend/src/routes/health-routes.ts)
-  readiness now includes external service status
-- [backend/src/services/diagram-workflow-service.ts](/root/data/SchemaDash/backend/src/services/diagram-workflow-service.ts)
-  remote connection/import flow
-- [backend/src/services/diagram-migration-service.ts](/root/data/SchemaDash/backend/src/services/diagram-migration-service.ts)
-  remote diff/test/import/apply/audit/snapshot flow
-- [backend/test/env.test.ts](/root/data/SchemaDash/backend/test/env.test.ts)
-- [backend/test/health-routes.test.ts](/root/data/SchemaDash/backend/test/health-routes.test.ts)
-- [backend/test/schema-sync-routes.test.ts](/root/data/SchemaDash/backend/test/schema-sync-routes.test.ts)
-- [backend/test/diagram-workflow-service.test.ts](/root/data/SchemaDash/backend/test/diagram-workflow-service.test.ts)
-- [backend/test/diagram-migration-service.test.ts](/root/data/SchemaDash/backend/test/diagram-migration-service.test.ts)
-- [backend/test/diagram-version-restore-service.test.ts](/root/data/SchemaDash/backend/test/diagram-version-restore-service.test.ts)
+  standalone service runtime, Docker, Compose, and troubleshooting docs
+- [docs/operations/self-hosting.md](/root/data/SchemaDash/docs/operations/self-hosting.md)
+  self-hosted deployment instructions for disabled/enabled schema sync
+- [README.md](/root/data/SchemaDash/README.md)
+  top-level Docker usage notes for optional schema sync profile
 - [package.json](/root/data/SchemaDash/package.json)
-  workspace/scripts now include the service package
+  adds `npm run test:deployment`
 
 Important files intentionally not changed:
 
-- [frontend/src/dialogs/schema-sync-dialog/schema-sync-dialog.tsx](/root/data/SchemaDash/frontend/src/dialogs/schema-sync-dialog/schema-sync-dialog.tsx)
-  UI behavior was left mostly intact; the backend now degrades safely when
-  schema sync is disabled.
-- [frontend/src/lib/api/schema-sync-client.ts](/root/data/SchemaDash/frontend/src/lib/api/schema-sync-client.ts)
-  frontend still talks to the main app routes.
-- [docs/multi-engine-schema-sync-architecture.md](/root/data/SchemaDash/docs/multi-engine-schema-sync-architecture.md)
-  preserved as the broader multi-engine strategy doc.
-- no Dockerfile was added for the service in this task
-  because the folder, env example, and startup notes were enough to make future
-  containerization straightforward without expanding scope further.
+- [backend/src/schema-sync/client.ts](/root/data/SchemaDash/backend/src/schema-sync/client.ts)
+  the external-service boundary already matched the required runtime model
+- [backend/src/routes/schema-sync-routes.ts](/root/data/SchemaDash/backend/src/routes/schema-sync-routes.ts)
+  no behavior change was needed beyond preserving disabled and enabled paths
+- [services/schema-sync-service/src/services/schema-sync-service.ts](/root/data/SchemaDash/services/schema-sync-service/src/services/schema-sync-service.ts)
+  PostgreSQL import/diff/apply behavior was intentionally preserved
+- [services/schema-sync-service/src/engines/postgresql/](/root/data/SchemaDash/services/schema-sync-service/src/engines/postgresql)
+  engine behavior was left alone to avoid breaking migration fidelity
 
 ## 5. Data / API / Workflow Changes
 
-New env/config behavior:
+Runtime/deployment changes:
 
-- main app:
-    - `SCHEMADASH_SCHEMA_SYNC_ENABLED`
-    - `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL`
-- standalone service:
-    - `SCHEMADASH_SCHEMA_SYNC_SERVICE_HOST`
-    - `SCHEMADASH_SCHEMA_SYNC_SERVICE_PORT`
-    - `SCHEMADASH_SCHEMA_SYNC_SERVICE_DATA_DIR`
-    - `SCHEMADASH_SCHEMA_SYNC_METADATA_DB_PATH`
-    - `SCHEMADASH_SCHEMA_SYNC_SECRET_KEY`
-    - `SCHEMADASH_SCHEMA_SYNC_LOG_LEVEL`
+- main app compose env now supports:
+  `SCHEMADASH_SCHEMA_SYNC_ENABLED` and
+  `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL`
+- standalone service accepts either:
+  `SCHEMADASH_SCHEMA_SYNC_SECRET_KEY` or `SCHEMADASH_SECRET_KEY`
+- compose adds the optional `schema-sync-adapter` service profile
+- compose adds the persistent named volume `schemadash-schema-sync-data`
+
+Health/API changes:
+
+- standalone service now exposes both root and API-prefixed health routes
+- standalone service readiness is still tied to its SQLite metadata repository
+- API `/api/readyz` still reports schema-sync dependency status when schema sync
+  is enabled
+- API container liveness now intentionally ignores schema-sync dependency state
 
 Behavior changes:
 
-- disabled mode:
-    - main app returns `503` with `code: schema_sync_disabled` for schema-sync
-      routes
-    - health/readiness report schema sync as `disabled` instead of pretending
-      local SQLite runtime is active
-- enabled mode:
-    - main app expects the external service URL
-    - main app proxies direct schema-sync routes through the client
-    - workflow refresh and migration validation/apply use the same client
-- standalone service owns:
-    - connections
-    - snapshots
-    - change plans
-    - apply jobs
-    - audits
-- main app still owns:
-    - workflow live snapshot copies
-    - diagram version/changelog state
-    - product auth/access control
-
-API additions for the service boundary:
-
-- `GET /api/connections/:id`
-- `GET /api/schema/snapshots/:id`
-- `GET /api/schema/plans/:id/latest-audit`
-
-Compatibility notes:
-
-- main app frontend route surface remains largely unchanged
-- PostgreSQL remains the only implemented engine
-- SQL rendering and type normalization are still PostgreSQL-only, but that is
-  now explicit instead of looking generic
+- disabled mode remains healthy and does not require the standalone service
+- enabled mode uses the standalone service URL
+- enabled-but-unavailable mode degrades via readiness/reporting and route
+  errors instead of crashing unrelated features
+- current PostgreSQL remote schema sync behavior was intentionally preserved
 
 ## 6. Validation Performed
 
-Validated during this session:
+Validated in this session:
 
 - `npm run build -w @schemadash/schema-sync-core`
 - `npm run build -w @schemadash/backend`
 - `npm run build -w @schemadash/schema-sync-service`
-- `npx vitest run --config frontend/vitest.config.ts frontend/src/lib/schema-sync/canonical-adapters.test.ts`
-- `npm run test -w @schemadash/backend -- env.test.ts health-routes.test.ts schema-sync-routes.test.ts diagram-workflow-service.test.ts diagram-migration-service.test.ts diagram-version-restore-service.test.ts`
-- `npm run test -w @schemadash/schema-sync-service -- schema-sync-adapter-registry.test.ts apply-service-audit.test.ts postgresql-introspection.test.ts`
+- `npm run test -w @schemadash/schema-sync-service -- env.test.ts health-routes.test.ts schema-sync-adapter-registry.test.ts postgresql-introspection.test.ts apply-service-audit.test.ts`
+- `npm run test -w @schemadash/backend -- env.test.ts health-routes.test.ts schema-sync-routes.test.ts`
+- `npm run test:deployment`
 
-What was verified:
+What those checks verified:
 
-- env parsing supports disabled vs external-service-enabled behavior
-- main-app health/readiness reflects disabled and external-service-down states
-- direct schema-sync routes proxy through the client and reject spoofed actors
-- workflow connection binding and refresh now use the remote client boundary
-- migration preview/apply uses remote diff/test/import/apply/audit/snapshot
-  calls and still updates workflow live snapshots correctly
-- service-side PostgreSQL registry routing, apply audit reuse, and array
-  normalization still work
+- service env parsing still supports development and production safely
+- service health and readiness endpoints behave correctly
+- backend disabled mode still returns the expected schema-sync-disabled behavior
+- backend health endpoints still represent disabled and degraded dependency
+  states
+- compose wiring, internal service URL defaults, and service Dockerfile shape
+  are consistent
 
-Unverified / known limitations:
+What remains unverified here:
 
-- no manual end-to-end run with both processes live against a real PostgreSQL
-  database was executed in this session
-- full repository-wide frontend/backend test suites were not run after this
-  refactor; focused schema-sync-related slices were run instead
-- the service package is ready for Dockerization, but no Dockerfile was added
+- real `docker build` and `docker compose config/up` execution
+- live container-to-container startup behavior under Docker
+- full end-to-end PostgreSQL schema sync smoke run in containers
+
+Known limitation of this session:
+
+- Docker was not installed in the execution environment, so
+  [tests/validate-schema-sync-deployment.mjs](/root/data/SchemaDash/tests/validate-schema-sync-deployment.mjs)
+  only ran static assertions and skipped the optional dynamic Docker checks
 
 ## 7. Outstanding Work
 
 Not done yet:
 
-- add a real Dockerfile / compose wiring for `services/schema-sync-service`
-- decide whether the frontend should proactively hide the schema-sync button
-  when disabled instead of relying on backend-safe degradation
-- broaden CI coverage so the service workspace is exercised in the normal
-  repository pipeline everywhere
-- continue reducing PostgreSQL-specific logic inside
-  [packages/schema-sync-core/src/sql.ts](/root/data/SchemaDash/packages/schema-sync-core/src/sql.ts)
-  and
-  [packages/schema-sync-core/src/type-normalization.ts](/root/data/SchemaDash/packages/schema-sync-core/src/type-normalization.ts)
+- run the new deployment validation with Docker available so the dynamic
+  `docker build` and `docker compose config` paths execute for real
+- add CI coverage for the standalone service container build and compose smoke
+  path
+- decide whether the frontend should hide schema-sync entry points when the
+  feature is disabled rather than relying only on backend-safe degradation
 
 Recommended next phase:
 
-1. Add container/runtime packaging for the standalone service.
-2. Run a true two-process integration test against PostgreSQL.
-3. Decide whether the service’s internal support routes should remain internal
-   only or be formalized further in shared contracts.
-4. Continue splitting PostgreSQL-only planner/renderer behavior away from the
-   generic-looking shared core.
+1. Add CI or local runner coverage for the Docker build and compose profile.
+2. Perform a real compose smoke test with `COMPOSE_PROFILES=schema-sync`.
+3. If desired, tighten operator UX around disabled mode in the frontend.
 
-Risks / dependencies:
+Blockers / risks:
 
-- migration correctness still depends on the PostgreSQL-only planner and SQL
-  renderer staying aligned
-- the main app now depends operationally on the service being reachable when
-  schema sync is enabled
+- deployment confidence is still strongest in code-level validation, not in a
+  live Docker runtime, because Docker was unavailable in this session
+- changing API readiness semantics or adding hard compose dependencies can
+  easily break the disabled-mode safety requirement
 
 ## 8. Instructions for the Next Codex Session
 
-Read in this order:
+Read in this exact order:
 
 1. [docs/codex-handoff.md](/root/data/SchemaDash/docs/codex-handoff.md)
-2. [docs/schema-sync-service-architecture.md](/root/data/SchemaDash/docs/schema-sync-service-architecture.md)
+2. [docs/operations/self-hosting.md](/root/data/SchemaDash/docs/operations/self-hosting.md)
 3. [services/schema-sync-service/README.md](/root/data/SchemaDash/services/schema-sync-service/README.md)
-4. [backend/src/schema-sync/client.ts](/root/data/SchemaDash/backend/src/schema-sync/client.ts)
-5. [services/schema-sync-service/src/routes/schema-sync-routes.ts](/root/data/SchemaDash/services/schema-sync-service/src/routes/schema-sync-routes.ts)
-6. [backend/src/services/diagram-migration-service.ts](/root/data/SchemaDash/backend/src/services/diagram-migration-service.ts)
+4. [docker-compose.yml](/root/data/SchemaDash/docker-compose.yml)
+5. [services/schema-sync-service/Dockerfile](/root/data/SchemaDash/services/schema-sync-service/Dockerfile)
+6. [services/schema-sync-service/src/config/env.ts](/root/data/SchemaDash/services/schema-sync-service/src/config/env.ts)
+7. [backend/src/routes/health-routes.ts](/root/data/SchemaDash/backend/src/routes/health-routes.ts)
+8. [tests/validate-schema-sync-deployment.mjs](/root/data/SchemaDash/tests/validate-schema-sync-deployment.mjs)
 
 Avoid breaking:
 
-- the disabled-vs-external-service-only contract
-- actor rewriting on main-app diff/apply routes
-- workflow live snapshot updates after migration apply
-- service support routes required by the main-app client:
-    - `/api/connections/:id`
-    - `/api/schema/snapshots/:id`
-    - `/api/schema/plans/:id/latest-audit`
+- disabled mode safety
+- the `SCHEMADASH_SCHEMA_SYNC_ENABLED` external-service-only contract
+- the compose internal hostname `http://schema-sync-adapter:4020`
+- API liveness being independent from schema-sync dependency health
+- PostgreSQL diff/apply/import behavior in the standalone service
 
 Where to continue:
 
-- service packaging and deployment work:
+- deployment validation and CI:
+  [tests/validate-schema-sync-deployment.mjs](/root/data/SchemaDash/tests/validate-schema-sync-deployment.mjs)
+- standalone service runtime docs and operator flow:
   [services/schema-sync-service/README.md](/root/data/SchemaDash/services/schema-sync-service/README.md)
-- client and health integration:
-  [backend/src/schema-sync/client.ts](/root/data/SchemaDash/backend/src/schema-sync/client.ts)
-  and
-  [backend/src/routes/health-routes.ts](/root/data/SchemaDash/backend/src/routes/health-routes.ts)
-- remaining shared-core cleanup:
-  [packages/schema-sync-core/src/sql.ts](/root/data/SchemaDash/packages/schema-sync-core/src/sql.ts)
-  and
-  [packages/schema-sync-core/src/type-normalization.ts](/root/data/SchemaDash/packages/schema-sync-core/src/type-normalization.ts)
+- compose/runtime integration:
+  [docker-compose.yml](/root/data/SchemaDash/docker-compose.yml)
+- dependency health semantics:
+  [backend/src/routes/health-routes.ts](/root/data/SchemaDash/backend/src/routes/health-routes.ts),
+  [services/schema-sync-service/src/routes/health-routes.ts](/root/data/SchemaDash/services/schema-sync-service/src/routes/health-routes.ts)
 
 ## 9. Git Summary
 
 Working branch:
 
-- `sync/02-schema-sync-standalone-service-only-on-top-of-postgres-extraction`
+- `sync/03-dockerize-schema-sync-standalone-service`
 
 Pull request title:
 
-- `Convert extracted postgres schema sync adapter into standalone-service-only architecture`
+- `Dockerize standalone schema sync service with compose integration and health checks`
 
 Commit list created for this task:
 
-1. `3a276b63` `chore: audit current extracted postgres seam for standalone-service-only conversion`
-2. `df01f4fe` `docs: add standalone schema sync service architecture design from current branch state`
-3. `8f0cc068` `fix: remove hardcoded postgres engine leakage in shared/core boundaries`
-4. `f0ec362c` `refactor: introduce standalone schema sync service client and enablement boundary`
-5. `fd0fcfc2` `refactor: move schema sync into dedicated standalone-service-ready folder`
-6. `ce76f1f3` `fix: preserve postgres live schema sync behavior through service-oriented boundary`
-7. `acf9e3ac` `docs: add env configuration and standalone service deployment notes`
-8. `pending current commit` `test: validate disabled and standalone-service-enabled schema sync behavior`
+1. `b1673cb5` `feat: add docker build for standalone schema sync service`
+2. `459ac610` `feat: add health endpoint and container healthcheck support`
+3. `39615594` `feat: integrate standalone schema sync service into compose configuration`
+4. `5aa7eb9d` `docs: add standalone schema sync docker and env usage notes`
+5. `test: validate dockerized schema sync service and compose integration` in
+   this final validation commit
 
 What each commit did:
 
-1. recorded the conversion audit and preserved-seam rationale
-2. defined the standalone-service-only target architecture
-3. removed the most misleading hardcoded PostgreSQL leakage in shared/core and
-   repository boundaries
-4. introduced the main-app disabled/remote client boundary and removed local
-   runtime assembly from app context
-5. moved the runtime into the new `services/schema-sync-service/` workspace
-6. tightened service-oriented behavior with service-aware readiness and
-   repository scripts
-7. added service README, env example, and deployment notes
-8. updates tests and final handoff for the completed branch state
+1. added the standalone service Dockerfile and Docker build-context ignores
+2. added root health aliases and image/container healthcheck behavior
+3. wired the standalone service into compose and simplified env/secret
+   integration
+4. documented local, Docker, Compose, health, and troubleshooting flows
+5. added focused validation coverage and refreshed this handoff for the final
+   branch state

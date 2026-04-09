@@ -176,12 +176,31 @@ This starts:
 - `api` on `http://localhost:4010`
 - `postgres` on `localhost:5432`
 
+Schema sync stays disabled by default in the compose stack. To enable the
+standalone schema sync service, start the optional profile and turn on the main
+app flag:
+
+```bash
+COMPOSE_PROFILES=schema-sync \
+SCHEMADASH_SCHEMA_SYNC_ENABLED=true \
+docker compose up --build -d
+```
+
+That adds:
+
+- `schema-sync-adapter` on `http://localhost:4020`
+
+Disabled mode remains safe by design. If `SCHEMADASH_SCHEMA_SYNC_ENABLED=false`,
+the main app keeps serving unrelated SchemaDash features normally even when the
+standalone service is not running.
+
 Useful operational endpoints:
 
 - `GET /healthz`
 - `GET /api/livez`
 - `GET /api/readyz`
 - `GET /api/health`
+- `GET /readyz` on `schema-sync-adapter` when the profile is enabled
 
 See [Self-Hosting SchemaDash](./docs/operations/self-hosting.md) for reverse-proxy notes, deployment basics, and environment variable details.
 
@@ -271,6 +290,8 @@ Key variables:
 - `SCHEMADASH_DEFAULT_PROJECT_NAME`: initial self-hosted project name
 - `SCHEMADASH_DEFAULT_OWNER_NAME`: initial placeholder owner name
 - `SCHEMADASH_CORS_ORIGIN`: backend CORS policy
+- `SCHEMADASH_SCHEMA_SYNC_ENABLED`: enables or disables the standalone schema sync dependency
+- `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL`: URL the main app uses to reach the standalone schema sync service
 
 Current schema-sync limitations:
 
