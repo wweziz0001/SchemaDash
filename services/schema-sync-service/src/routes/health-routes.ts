@@ -11,17 +11,16 @@ export const registerHealthRoutes = (
     app: FastifyInstance,
     context: SchemaSyncServiceContext
 ) => {
-    app.get('/api/livez', async (_, reply) => {
-        return sendWithStatus(reply, 200, {
+    const sendLivez = async (_: unknown, reply: FastifyReply) =>
+        sendWithStatus(reply, 200, {
             ok: true,
             service: 'schemadash-schema-sync-service',
             environment: context.env.nodeEnv,
             timestamp: new Date().toISOString(),
             uptimeSeconds: Math.round(process.uptime()),
         });
-    });
 
-    app.get('/api/readyz', async (_, reply) => {
+    const sendReadyz = async (_: unknown, reply: FastifyReply) => {
         const metadataUp = context.metadataRepository.ping();
 
         return sendWithStatus(reply, metadataUp ? 200 : 503, {
@@ -35,9 +34,9 @@ export const registerHealthRoutes = (
             },
             timestamp: new Date().toISOString(),
         });
-    });
+    };
 
-    app.get('/api/health', async (_, reply) => {
+    const sendHealth = async (_: unknown, reply: FastifyReply) => {
         const metadataUp = context.metadataRepository.ping();
 
         return sendWithStatus(reply, metadataUp ? 200 : 503, {
@@ -54,5 +53,12 @@ export const registerHealthRoutes = (
             uptimeSeconds: Math.round(process.uptime()),
             timestamp: new Date().toISOString(),
         });
-    });
+    };
+
+    app.get('/livez', sendLivez);
+    app.get('/readyz', sendReadyz);
+    app.get('/healthz', sendHealth);
+    app.get('/api/livez', sendLivez);
+    app.get('/api/readyz', sendReadyz);
+    app.get('/api/health', sendHealth);
 };
