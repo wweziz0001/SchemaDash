@@ -13,7 +13,8 @@ export interface SchemaSyncQueryResult<Row = Record<string, unknown>> {
 
 export interface SchemaSyncQueryClient {
     query<Row = Record<string, unknown>>(
-        sql: string
+        sql: string,
+        values?: readonly unknown[]
     ): Promise<SchemaSyncQueryResult<Row>>;
     end(): Promise<void>;
 }
