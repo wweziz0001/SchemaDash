@@ -5,6 +5,7 @@ import {
     changePlanSchema,
     riskWarningSchema,
 } from './types.js';
+import { databaseEngineSchema } from './engines.js';
 
 export const sslModeSchema = z.enum(['disable', 'prefer', 'require']);
 
@@ -39,7 +40,7 @@ export type ConnectionTestDraft = z.infer<typeof connectionTestDraftSchema>;
 export const connectionSummarySchema = z.object({
     id: z.string(),
     name: z.string(),
-    engine: z.literal('postgresql'),
+    engine: databaseEngineSchema,
     defaultSchemas: z.array(z.string()),
     host: z.string(),
     port: z.number(),

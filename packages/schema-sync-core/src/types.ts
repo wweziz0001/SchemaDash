@@ -1,7 +1,5 @@
 import { z } from 'zod';
-
-export const databaseEngineSchema = z.enum(['postgresql']);
-export type DatabaseEngine = z.infer<typeof databaseEngineSchema>;
+import { databaseEngineSchema } from './engines.js';
 
 export const syncRefSchema = z.object({
     sourceId: z.string().optional(),
