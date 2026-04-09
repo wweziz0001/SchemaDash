@@ -30,4 +30,5 @@ stats/
 backend/.schemadash-data/
 backend/.chartdb-data/
 images/
+.schemadash-schema-sync-service/
 services/schema-sync-service/.schemadash-schema-sync-service/
