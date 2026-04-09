@@ -36,6 +36,7 @@ const envSchema = z.object({
     SCHEMADASH_SCHEMA_SYNC_SERVICE_DATA_DIR: z.string().optional(),
     SCHEMADASH_SCHEMA_SYNC_METADATA_DB_PATH: z.string().optional(),
     SCHEMADASH_SCHEMA_SYNC_SECRET_KEY: z.string().optional(),
+    SCHEMADASH_SECRET_KEY: z.string().optional(),
     SCHEMADASH_SCHEMA_SYNC_LOG_LEVEL: z
         .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
         .optional()
@@ -46,7 +47,14 @@ const resolveSecretKey = (
     parsedEnv: z.infer<typeof envSchema>,
     nodeEnv: 'development' | 'test' | 'production'
 ) => {
-    const provided = parsedEnv.SCHEMADASH_SCHEMA_SYNC_SECRET_KEY?.trim();
+    const providedCandidates = [
+        parsedEnv.SCHEMADASH_SCHEMA_SYNC_SECRET_KEY?.trim(),
+        parsedEnv.SCHEMADASH_SECRET_KEY?.trim(),
+    ];
+    const provided = providedCandidates.find(
+        (value) => value && value !== 'change-me-before-production'
+    );
+
     if (provided) {
         return {
             value: provided,
@@ -56,7 +64,7 @@ const resolveSecretKey = (
 
     if (nodeEnv === 'production') {
         throw new Error(
-            'SCHEMADASH_SCHEMA_SYNC_SECRET_KEY must be set in production.'
+            'SCHEMADASH_SCHEMA_SYNC_SECRET_KEY or SCHEMADASH_SECRET_KEY must be set to a non-placeholder value in production.'
         );
     }
 

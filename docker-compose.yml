@@ -20,6 +20,36 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  schema-sync-adapter:
+    init: true
+    restart: unless-stopped
+    profiles:
+      - schema-sync
+    build:
+      context: .
+      dockerfile: services/schema-sync-service/Dockerfile
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      SCHEMADASH_SCHEMA_SYNC_SERVICE_HOST: 0.0.0.0
+      SCHEMADASH_SCHEMA_SYNC_SERVICE_PORT: 4020
+      SCHEMADASH_SCHEMA_SYNC_SERVICE_DATA_DIR: /app/data
+      SCHEMADASH_SECRET_KEY: ${SCHEMADASH_SECRET_KEY:?set SCHEMADASH_SECRET_KEY in .env}
+      SCHEMADASH_SCHEMA_SYNC_SECRET_KEY: ${SCHEMADASH_SCHEMA_SYNC_SECRET_KEY:-}
+      SCHEMADASH_SCHEMA_SYNC_LOG_LEVEL: ${SCHEMADASH_SCHEMA_SYNC_LOG_LEVEL:-info}
+    ports:
+      - '4020:4020'
+    volumes:
+      - schemadash-schema-sync-data:/app/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(`http://127.0.0.1:4020/readyz`).then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
   api:
     init: true
     restart: unless-stopped
@@ -50,6 +80,8 @@ services:
       SCHEMADASH_OIDC_SCOPES: ${SCHEMADASH_OIDC_SCOPES:-openid profile email}
       SCHEMADASH_DEFAULT_PROJECT_NAME: ${SCHEMADASH_DEFAULT_PROJECT_NAME:-My Diagrams}
       SCHEMADASH_DEFAULT_OWNER_NAME: ${SCHEMADASH_DEFAULT_OWNER_NAME:-Local Owner}
+      SCHEMADASH_SCHEMA_SYNC_ENABLED: ${SCHEMADASH_SCHEMA_SYNC_ENABLED:-false}
+      SCHEMADASH_SCHEMA_SYNC_SERVICE_URL: ${SCHEMADASH_SCHEMA_SYNC_SERVICE_URL:-http://schema-sync-adapter:4020}
     ports:
       - '${SCHEMADASH_API_PORT:-4010}:4010'
     depends_on:
@@ -61,7 +93,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          'node -e "fetch(`http://127.0.0.1:4010/api/readyz`).then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+          'node -e "fetch(`http://127.0.0.1:4010/api/livez`).then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
         ]
       interval: 15s
       timeout: 5s
@@ -99,3 +131,4 @@ services:
 volumes:
   postgres-data:
   schemadash-api-data:
+  schemadash-schema-sync-data:
