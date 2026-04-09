@@ -2,302 +2,285 @@
 
 ## 1. Project Overview
 
-SchemaDash is a full-stack schema design product with a browser-based diagram editor, collaboration-aware Development document persistence, immutable workflow snapshots, compare/review flows, and database-oriented migration tooling.
+SchemaDash is a full-stack schema design and schema-sync product. The relevant system area for this task is the live schema sync and migration workflow that connects:
 
-This task adds a true Development-history changelog timeline. The important product distinction is:
+- frontend Development diagram editing
+- shared canonical schema diff/compare logic
+- backend live database introspection and safe apply orchestration
 
-- `Development` is the mutable head and remains the only editable document.
-- `Versions` are explicit immutable milestone-style snapshots.
-- `Changelog` is not a renamed Versions list. It is an ongoing chronological history of Development activity generated from saves, restore/revert actions, and periodic automatic checkpoints.
+For the current MVP, PostgreSQL is the only supported live engine. The product already supports:
 
-Key concepts for this area:
+- saved live database connections
+- live schema import into the editor
+- canonical schema diff preview
+- generated migration SQL preview
+- destructive confirmation gating
+- safe apply with drift checks
+- audit trails and execution logs
+- workflow-aware migration preview/validate/apply routes
 
-- The persisted editor document in `backend/src/services/persistence-service.ts` is still the source of truth for the current Development head.
-- Workflow snapshots in `backend/src/repositories/diagram-workflow-repository.ts` remain immutable and are reused as durable state carriers for both Versions and Changelog history entries.
-- Compare and review remain baseline-vs-current-Development workflows. Changelog extends the set of valid compare baselines instead of introducing an editable branch model.
+Key concepts for understanding this area:
+
+- `Development` remains the editable schema design in the frontend editor.
+- `CanonicalSchema` is the shared schema representation used for compare, diff, preview, and audit snapshots.
+- `ChangePlan` is the persisted preview artifact that currently carries canonical changes, warnings, and SQL statements.
+- Migration fidelity means Development schema export, canonical planning, preview SQL, and apply execution must stay aligned.
 
 ## 2. Current Architectural Context
 
-Read these first for follow-up work in this area:
+### Parts of the system that matter most
 
-1. `docs/live-database-development-compare-versions-design.md`
-2. `docs/diagram-workflow-frontend-rebuild-plan.md`
-3. `docs/codex-handoff.md`
-4. `backend/src/repositories/diagram-workflow-repository.ts`
-5. `backend/src/services/diagram-workflow-service.ts`
-6. `backend/src/services/diagram-changelog-service.ts`
-7. `backend/src/services/diagram-version-restore-service.ts`
-8. `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
-9. `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
-10. `frontend/src/pages/editor-page/workflow/workflow-development-changelog-sync.tsx`
+Read these first for follow-up work:
 
-Important boundaries and responsibilities:
+1. `docs/audits/schema-sync-postgres-coupling-audit.md`
+2. `docs/multi-engine-schema-sync-architecture.md`
+3. `docs/architecture/schema-sync-architecture.md`
+4. `docs/live-workflow-release-readiness-checklist.md`
+5. `packages/schema-sync-core/src/types.ts`
+6. `packages/schema-sync-core/src/diff.ts`
+7. `packages/schema-sync-core/src/sql.ts`
+8. `frontend/src/lib/schema-sync/canonical-adapters.ts`
+9. `backend/src/services/schema-sync-service.ts`
+10. `backend/src/services/diagram-migration-service.ts`
+11. `backend/src/services/apply-service.ts`
+12. `backend/src/services/connections-service.ts`
+13. `backend/src/postgres/introspection.ts`
 
-- `backend/src/repositories/diagram-workflow-repository.ts`
-    - Owns workflow SQLite tables and snapshot/version/changelog persistence. This is a high-risk file because schema migrations and record mapping for workflow history all pass through it.
-- `backend/src/services/diagram-changelog-service.ts`
-    - Owns changelog entry capture, dedupe, event classification, summary generation, and changelog list/detail views. Changelog-specific behavior should be added here first instead of scattering history logic across routes.
-- `backend/src/services/diagram-version-restore-service.ts`
-    - Owns safe restore/revert semantics that mutate Development, create safety snapshots, and now emit changelog restore/revert entries.
-- `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
-    - Owns workflow mode state, selected version/changelog entry state, compare baseline resolution, and URL-backed workflow routing. This is the highest-risk frontend integration point.
-- `frontend/src/pages/editor-page/workflow/workflow-development-changelog-sync.tsx`
-    - Owns save-driven and timed auto-checkpoint capture from the live Development editor state.
-- `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/*`
-    - Own the left-side Changelog timeline UI. This is additive and should stay distinct from the Version list.
-- `frontend/src/pages/editor-page/top-navbar/workflow/*`
-    - Own read-only/viewing badges, compare toggles, Review entry, and Options actions while a changelog entry is selected.
+### Important service and module boundaries
 
-Frontend/backend/shared relationships:
+- `packages/schema-sync-core/`
+  - Shared canonical schema contracts, diffing, compare logic, risk classification, and API schemas.
+- `frontend/src/lib/schema-sync/canonical-adapters.ts`
+  - Converts canonical schemas to editor diagrams and editor diagrams back to canonical schemas.
+  - High risk because it currently hard-codes PostgreSQL semantics for Development export/import.
+- `backend/src/services/schema-sync-service.ts`
+  - Direct operational import and diff orchestration.
+- `backend/src/services/diagram-migration-service.ts`
+  - Workflow-aware migration preview, validate, and apply orchestration.
+- `backend/src/services/apply-service.ts`
+  - Drift recheck, preflight validation, SQL execution, and audit/job persistence.
+- `backend/src/postgres/introspection.ts`
+  - Current PostgreSQL-specific live adapter in all but name.
+- `backend/src/repositories/metadata-repository.ts`
+  - Persists connections, snapshots, change plans, apply jobs, and audits in SQLite.
 
-- Backend changelog entries are stored as immutable workflow snapshots with `snapshotKind: 'changelog'`.
-- Frontend changelog selection resolves the historical diagram snapshot for read-only viewing and the historical canonical schema for compare/review.
-- Shared canonical diffing still comes from `@schemadash/schema-sync-core`; changelog does not introduce a second compare engine.
+### High-risk files
 
-High-risk files:
+- `packages/schema-sync-core/src/types.ts`
+- `packages/schema-sync-core/src/diff.ts`
+- `packages/schema-sync-core/src/sql.ts`
+- `packages/schema-sync-core/src/type-normalization.ts`
+- `frontend/src/lib/schema-sync/canonical-adapters.ts`
+- `backend/src/services/apply-service.ts`
+- `backend/src/services/schema-sync-service.ts`
+- `backend/src/services/diagram-migration-service.ts`
+- `backend/src/services/connections-service.ts`
+- `backend/src/postgres/introspection.ts`
 
-- `backend/src/repositories/diagram-workflow-repository.ts`
-- `backend/src/services/diagram-version-restore-service.ts`
-- `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
-- `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
-- `frontend/src/pages/editor-page/workflow-editor-page.tsx`
+### Frontend/backend/shared relationships
+
+- The frontend exports Development diagram state into `CanonicalSchema`.
+- The backend imports live database structure into `CanonicalSchema`.
+- The shared core computes compare/diff behavior over canonical schema.
+- The backend persists plans and executes apply using the stored preview artifact.
+
+This cross-layer canonical boundary is the main strength to preserve in future work.
 
 ## 3. Task Completed
 
-Task objective:
+### Task goal
 
-- Implement a first-class Development changelog timeline that records actual Development history rather than reusing manual Versions as a thin proxy.
+Design a concrete, repository-aware multi-engine schema sync architecture for SchemaDash without rushing into full MySQL, MariaDB, or SQL Server implementation.
 
-What was implemented:
+### What was implemented
 
-- Added a persisted changelog entry model backed by immutable workflow snapshots dedicated to Development history.
-- Added backend routes and service logic for listing, loading, capturing, and reverting changelog entries.
-- Added a real Changelog tab in the left workflow panel with a Current Development card and chronological changelog item list.
-- Added changelog viewing mode so selecting an entry opens its stored historical diagram in read-only mode.
-- Extended compare/review infrastructure so a changelog entry can be used as a compare baseline against current Development.
-- Added a changelog-specific Options action that safely reverts Development to a selected historical changelog state.
-- Added automatic periodic Development checkpoints with deduplication safeguards so recent work is captured even without creating manual Versions.
+- Added a focused audit document:
+  - `docs/audits/schema-sync-postgres-coupling-audit.md`
+- Added the main design document:
+  - `docs/multi-engine-schema-sync-architecture.md`
+- Replaced this handoff with a task-specific handoff for future sessions.
 
-Key decisions:
+### Decisions made
 
-- Changelog entries reuse snapshot persistence primitives, but they are classified separately from Versions through their own entry records and `snapshotKind: 'changelog'`.
-- Revert keeps historical changelog entries immutable. Reverting copies a historical state into Development and records a new `revert` changelog event plus a safety Version snapshot.
-- Manual save tracking is driven from actual Development save activity in the editor session, not from version creation.
+- The design keeps migration fidelity as the top priority.
+- The design does not recommend a broad rewrite.
+- The design keeps shared orchestration and audit persistence in central backend services.
+- The design moves engine-specific behavior behind explicit adapters.
+- The design treats frontend canonical export/import as part of the engine boundary, not just backend connectivity.
+- The design recommends that preview persist the exact rendered execution plan that apply later executes.
 
-Approach intentionally avoided:
+### Approach intentionally avoided
 
-- No “show Versions in another tab” implementation.
-- No editable historical branch model.
-- No broad rewrite of the editor core or compare engine.
-- No weakening of existing immutable snapshot guarantees.
+- No full MySQL adapter implementation
+- No MariaDB adapter implementation
+- No SQL Server adapter implementation
+- No broad refactor of unrelated editor or workflow systems
+- No speculative code scaffolding that would commit the repo to an untested architecture too early
 
 ## 4. Files Changed
 
-Files created:
+### Files created
 
-- `backend/src/routes/diagram-changelog-routes.ts`
-    - API surface for listing, loading, capturing, and reverting changelog entries.
-- `backend/src/services/diagram-changelog-service.ts`
-    - Changelog domain service for persistence orchestration, event summaries, and dedupe.
-- `backend/test/diagram-changelog-service.test.ts`
-    - Backend regression coverage for changelog entry capture and deduplication.
-- `frontend/src/dialogs/revert-changelog-dialog/revert-changelog-dialog.tsx`
-    - Confirmation flow for reverting Development from a selected changelog state.
-- `frontend/src/lib/diagram-workflow/changelog-entry-format.ts`
-    - Shared changelog labels, timestamps, and canonical-schema resolution helpers.
-- `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-list-item.tsx`
-    - Timeline list item UI for a changelog entry.
-- `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/current-development-card.tsx`
-    - Distinct Current Development card shown above the timeline.
-- `frontend/src/pages/editor-page/workflow/workflow-development-changelog-sync.tsx`
-    - Editor integration that emits save and auto-checkpoint changelog entries.
-- `frontend/src/pages/editor-page/workflow/workflow-development-changelog-sync.test.tsx`
-    - Frontend regression coverage for save-triggered and timed checkpoint capture.
+- `docs/audits/schema-sync-postgres-coupling-audit.md`
+  - Repository-specific audit of current PostgreSQL coupling across shared core, frontend, and backend.
+- `docs/multi-engine-schema-sync-architecture.md`
+  - Main architecture proposal for multi-engine schema sync adapters.
 
-Files modified:
+### Files modified
 
-- `backend/src/app.ts`
-    - Registers changelog routes.
-- `backend/src/context/app-context.ts`
-    - Wires the changelog service into the app container and restore service.
-- `backend/src/repositories/diagram-workflow-repository.ts`
-    - Adds changelog entry table, migration, and repository methods.
-- `backend/src/schemas/diagram-workflow.ts`
-    - Adds changelog schemas, event types, compare source support, and revert input.
-- `backend/src/services/diagram-version-restore-service.ts`
-    - Adds restore-generated changelog entries and changelog revert semantics.
-- `backend/test/diagram-version-restore-service.test.ts`
-    - Covers restore-created changelog events and revert flows.
-- `frontend/src/context/diagram-workflow-context/diagram-workflow-context.tsx`
-    - Exposes changelog mode/state/hooks in the workflow context API.
-- `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
-    - Loads changelog data, resolves changelog viewing mode, and supports compare/review baselines from changelog entries.
-- `frontend/src/dialogs/restore-version-dialog/restore-version-dialog.tsx`
-    - Refreshes changelog state after version restore.
-- `frontend/src/dialogs/restore-version-dialog/restore-version-dialog.test.tsx`
-    - Updates restore expectations for changelog outputs.
-- `frontend/src/dialogs/review-changes-dialog/review-changes-dialog.tsx`
-    - Accepts changelog baselines for review.
-- `frontend/src/lib/api/diagram-workflow-client.ts`
-    - Adds changelog DTOs and API client methods.
-- `frontend/src/pages/editor-page/canvas/workflow/compare-summary-chip.tsx`
-    - Shows changelog baseline labels in compare mode.
-- `frontend/src/pages/editor-page/canvas/workflow/live-status-chip.tsx`
-    - Shows changelog viewing/read-only state in canvas chrome.
-- `frontend/src/pages/editor-page/editor-page.tsx`
-    - Mounts the Development changelog sync bridge.
-- `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.tsx`
-    - Replaces the placeholder tab with the real timeline UI.
-- `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.test.tsx`
-    - Covers Current Development + timeline rendering.
-- `frontend/src/pages/editor-page/side-panel/versions-section/version-tab/version-tab.tsx`
-    - Shows changelog-aware compare copy without changing the Versions workflow itself.
-- `frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.tsx`
-    - Supports changelog viewing and compare badges.
-- `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
-    - Adds changelog Review and Options actions, including revert.
-- `frontend/src/pages/editor-page/workflow-editor-page.tsx`
-    - Supports changelog read-only rendering in the workflow page shell.
+- `docs/codex-handoff.md`
+  - Rewritten for this architecture/design task and for a future fresh Codex session.
 
-Important files intentionally not changed:
+### Important files intentionally not changed
 
-- `backend/src/services/diagram-workflow-service.ts`
-    - Versions remain distinct and still represent explicit/manual immutable snapshots.
-- `frontend/src/pages/editor-page/side-panel/versions-section/versions-section.tsx`
-    - The existing Versions/Changelog panel structure was reused rather than redesigned.
-- `packages/schema-sync-core/*`
-    - Compare/review reuse the existing canonical diff engine instead of introducing a new one for changelog.
+- `packages/schema-sync-core/src/types.ts`
+  - Intentionally not refactored yet; the audit/design docs explain how it should evolve.
+- `packages/schema-sync-core/src/diff.ts`
+  - Intentionally not refactored yet; current shared planning remains as-is until adapter seams are approved.
+- `packages/schema-sync-core/src/sql.ts`
+  - Intentionally not moved yet; the design recommends extracting SQL rendering from the shared core in a later implementation phase.
+- `frontend/src/lib/schema-sync/canonical-adapters.ts`
+  - Intentionally not refactored yet; the design calls this out as a fidelity-critical future step.
+- `backend/src/services/apply-service.ts`
+  - Intentionally not refactored yet; no apply-path changes were made in this design-first task.
+- `backend/src/postgres/introspection.ts`
+  - Intentionally not moved yet; it remains the current PostgreSQL implementation to isolate later.
 
 ## 5. Data / API / Workflow Changes
 
-New data/model behavior:
+### Data model changes
 
-- Added diagram-scoped changelog entries linked to immutable snapshots of the Development state.
-- Each changelog entry stores:
-    - event type (`save`, `auto_checkpoint`, `restore`, `revert`)
-    - timestamp
-    - optional actor
-    - optional source label
-    - optional source document version
-    - summary text
-    - optional compare summary counts
-    - snapshot reference and fingerprint
+- None in code for this task.
 
-Backend/API changes:
+### API changes
 
-- `GET /api/diagrams/:id/workflow/changelog`
-    - Returns the chronological Development history timeline for the diagram.
-- `GET /api/diagrams/:id/workflow/changelog/:entryId`
-    - Returns a single changelog entry with its historical diagram/canonical snapshot.
-- `POST /api/diagrams/:id/workflow/changelog`
-    - Captures a changelog entry from the current Development state.
-- `POST /api/diagrams/:id/workflow/changelog/:entryId/revert-to-development`
-    - Safely copies a historical changelog snapshot into Development.
+- None in code for this task.
 
-Storage behavior:
+### Workflow behavior changes
 
-- Changelog is persisted separately from Version records but uses the existing workflow snapshot table as the immutable state carrier.
-- Snapshot classification now distinguishes version/manual/system/changelog usage through schema-level enums and entry metadata.
-- The workflow repository migration for this task creates the changelog entry table.
+- None in runtime behavior for this task.
 
-Workflow behavior:
+### Architectural/workflow guidance added
 
-- Manual editor saves create `save` changelog entries when the current collaboration session is the saving actor.
-- Version restore creates a `restore` changelog event after Development is updated.
-- Changelog revert creates:
-    - a safety Version snapshot first
-    - a new Development head copied from the historical entry
-    - a new `revert` changelog event describing the action
-- Automatic checkpoints run on a 2-minute interval in editable Development mode and only capture when the Development state meaningfully changed.
+- Future multi-engine work should preserve alignment among:
+  - Development schema export
+  - canonical schema snapshots
+  - migration preview rendering
+  - apply execution
+- Future plans should persist a richer rendered execution plan rather than treating `sqlStatements: string[]` as the whole engine contract.
 
-Config/env changes:
+### Migrations, env vars, config
 
-- No environment variable changes.
-- Auto-checkpoint timing is currently code-defined in `frontend/src/pages/editor-page/workflow/workflow-development-changelog-sync.tsx` (`2 minutes`, polled every `30 seconds`).
+- No database migrations added
+- No environment variable changes
+- No config changes
 
 ## 6. Validation Performed
 
-Automated validation run:
+### What was verified
 
-- `npx vitest run test/diagram-changelog-service.test.ts test/diagram-version-restore-service.test.ts test/diagram-workflow-service.test.ts` in `backend/`
-- `npx vitest run --config frontend/vitest.config.ts frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.test.tsx frontend/src/dialogs/restore-version-dialog/restore-version-dialog.test.tsx frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.test.tsx frontend/src/pages/editor-page/top-navbar/workflow/version-view-badge.test.tsx frontend/src/pages/editor-page/workflow/workflow-development-changelog-sync.test.tsx` in `frontend/`
+- The requested branch was created and work was performed on `design/01-multi-engine-schema-sync-architecture`.
+- The existing repository structure was audited directly from source files.
+- The design was grounded in the actual code paths used today:
+  - shared canonical core
+  - frontend canonical adapters
+  - backend connection/introspection services
+  - apply orchestration
+  - workflow migration orchestration
+- The design explicitly preserves preview/apply fidelity as a first-class requirement.
 
-What was verified:
+### Manual validation done
 
-- Changelog entries persist as immutable Development-history snapshots.
-- Manual save and timed auto-checkpoint flows call changelog capture correctly.
-- No-change auto-checkpoints dedupe while later manual saves still create history entries.
-- Restore creates a changelog `restore` event.
-- Changelog revert creates a safety snapshot and a new `revert` event.
-- The Changelog tab renders Current Development separately from historical entries.
-- Toolbar/view badges remain coherent while viewing or comparing a changelog entry.
+- Read and traced the main schema-sync modules and relevant docs.
+- Confirmed that the repository is currently on a PostgreSQL-only implementation path despite broader DB logos and types in the UI.
+- Confirmed that both direct schema sync and workflow migration routes depend on the same PostgreSQL assumptions.
 
-What remains unverified:
+### What remains unverified
 
-- No full end-to-end browser manual QA was run in this session.
-- No repository-wide frontend test or typecheck pass was achieved because unrelated pre-existing failures exist elsewhere in the repo.
+- No runtime behavior changed, so no tests were required for correctness changes.
+- No build/typecheck/test run was necessary for the docs-only task.
+- No experimental code scaffolding was added.
 
-Known limitations / risks:
+### Known limitations or risks
 
-- Auto-checkpoint timing is frontend-driven. If a future requirement needs server-authoritative background checkpointing, this implementation should be moved or supplemented on the backend.
-- Dedupe uses canonical schema fingerprints and save document versions. If richer “meaningful change” semantics are needed later, extend `DiagramChangelogService.shouldSkipCapture(...)`.
+- The design is detailed, but it is still a design. The next implementation phase must prove the proposed seams with PostgreSQL first.
+- `docs/codex-handoff.md` was rewritten for this task, so future sessions should treat older branch-specific handoff assumptions as superseded by this branch state.
 
 ## 7. Outstanding Work
 
-- Add browser-level manual QA for the full changelog journey:
-    - save Development
-    - wait for an auto-checkpoint
-    - open historical view
-    - compare against current Development
-    - review
-    - revert
-- Consider whether auto-checkpoint interval should become a shared config value instead of remaining in frontend code.
-- If future UX work expands changelog, add richer per-entry change summaries or filtering without collapsing the distinction between Versions and Changelog.
+### Not done yet
+
+- No adapter registry exists yet.
+- PostgreSQL is not yet encapsulated as a first-class adapter.
+- Shared types are still PostgreSQL-shaped.
+- Frontend Development canonical export/import is still PostgreSQL-only.
+- SQL rendering is still embedded in the shared core.
+- MySQL, MariaDB, and SQL Server adapters do not exist yet.
+
+### Next recommended implementation phase
+
+Implement Phase 1 and Phase 2 from `docs/multi-engine-schema-sync-architecture.md`:
+
+1. extract engine contracts and capability types
+2. add adapter registry
+3. move current PostgreSQL connectivity and introspection behind the registry
+4. move PostgreSQL SQL rendering and apply preflight policy behind the adapter boundary
+5. add an engine-aware seam for frontend canonical export/import
+
+### Blockers and dependencies
+
+- The main dependency is architectural approval of the adapter shape and fidelity rules in the design doc.
+- Future code work should avoid adding new engine behavior directly into current PostgreSQL-oriented shared files.
 
 ## 8. Instructions for the Next Codex Session
 
-Exact reading order:
+### Exact reading order
 
-1. `docs/live-database-development-compare-versions-design.md`
-2. `docs/codex-handoff.md`
-3. `backend/src/repositories/diagram-workflow-repository.ts`
-4. `backend/src/services/diagram-changelog-service.ts`
-5. `backend/src/services/diagram-version-restore-service.ts`
-6. `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`
-7. `frontend/src/pages/editor-page/side-panel/versions-section/changelog-tab/changelog-tab.tsx`
-8. `frontend/src/pages/editor-page/top-navbar/workflow/workflow-mode-switcher.tsx`
-9. `frontend/src/pages/editor-page/workflow/workflow-development-changelog-sync.tsx`
-10. `backend/test/diagram-changelog-service.test.ts`
-11. `frontend/src/pages/editor-page/workflow/workflow-development-changelog-sync.test.tsx`
+1. `docs/codex-handoff.md`
+2. `docs/audits/schema-sync-postgres-coupling-audit.md`
+3. `docs/multi-engine-schema-sync-architecture.md`
+4. `docs/architecture/schema-sync-architecture.md`
+5. `packages/schema-sync-core/src/types.ts`
+6. `packages/schema-sync-core/src/diff.ts`
+7. `packages/schema-sync-core/src/sql.ts`
+8. `frontend/src/lib/schema-sync/canonical-adapters.ts`
+9. `backend/src/services/connections-service.ts`
+10. `backend/src/services/schema-sync-service.ts`
+11. `backend/src/services/diagram-migration-service.ts`
+12. `backend/src/services/apply-service.ts`
+13. `backend/src/postgres/introspection.ts`
 
-What to avoid breaking:
+### What to avoid breaking
 
-- Development must remain the only mutable head.
-- Versions must remain explicit/manual immutable snapshots and not become auto-generated changelog aliases.
-- Historical changelog entries must remain read-only.
-- Compare/review should continue reusing the existing canonical diff infrastructure.
-- Revert must continue creating a safety snapshot before replacing Development.
+- Do not break current PostgreSQL preview/apply behavior while extracting adapter seams.
+- Do not let frontend Development export remain PostgreSQL-specific if backend starts supporting multiple engines.
+- Do not re-render SQL differently at apply time after preview has already been persisted.
+- Do not split direct schema sync and workflow migration onto different engine semantics.
+- Do not expand shared core files with large engine-specific `switch` branches as the long-term architecture.
 
-Where to continue:
+### Where to continue implementation
 
-- If the next task is changelog refinement, start in `backend/src/services/diagram-changelog-service.ts` and `frontend/src/context/diagram-workflow-context/diagram-workflow-provider.tsx`.
-- If the next task is UX polish, start in the changelog tab components and top-navbar workflow chrome.
-- If the next task is persistence expansion, inspect the workflow repository migration and snapshot/changelog record mapping first.
+- Start with backend adapter registry and PostgreSQL adapter extraction.
+- Then address the shared `DatabaseEngine` and capability types.
+- Then add the frontend engine-aware canonical mapping seam.
+
+If the next session is implementation-focused, the first files to inspect should be:
+
+1. `packages/schema-sync-core/src/types.ts`
+2. `backend/src/services/connections-service.ts`
+3. `backend/src/services/schema-sync-service.ts`
+4. `backend/src/services/apply-service.ts`
+5. `backend/src/postgres/introspection.ts`
+6. `frontend/src/lib/schema-sync/canonical-adapters.ts`
 
 ## 9. Git Summary
 
-- Working branch: `pro/02-add-development-changelog-timeline`
-- Pull request title: `Add development changelog timeline with save change revert and auto-snapshot history`
+- Working branch: `design/01-multi-engine-schema-sync-architecture`
+- Pull request title: `Design multi-engine schema sync adapter architecture for SchemaDash`
 - Commit list created for this task:
-  - `9c3d9933` `feat: add development changelog model and history event persistence`
-    - Added changelog persistence schemas, repository storage, backend service orchestration, API routes, and app wiring.
-  - `09fd0bac` `feat: add changelog panel and development history entry list UI`
-    - Added the Changelog tab data flow, current Development card, changelog list items, and frontend API/context support.
-  - `100d305f` `feat: add changelog viewing mode and diff/review integration`
-    - Added changelog read-only viewing state plus compare/review integration across the editor chrome and canvas badges.
-  - `196d2cc7` `feat: add revert from changelog using safe restore semantics`
-    - Added the changelog revert confirmation flow and frontend restore/revert state refresh behavior.
-  - `05455a7f` `feat: add periodic development checkpoint generation and deduplication safeguards`
-    - Added automatic timed checkpoint capture from Development editing with no-change dedupe protection.
-  - `test: validate development changelog history timeline behavior`
-    - Adds targeted backend/frontend changelog regression coverage and finalizes this handoff for the next session.
+  - `chore: audit current postgres-oriented schema sync architecture`
+    - Adds the repository-specific audit of existing PostgreSQL coupling.
+  - `docs: add multi-engine schema sync architecture design`
+    - Adds the main architecture design doc and updates this handoff for future sessions.
+
+No minimal adapter groundwork files were added in this task because the design-first goal was better served by documentation without introducing premature runtime abstractions.
