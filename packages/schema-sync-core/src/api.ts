@@ -109,6 +109,17 @@ export type ImportLiveSchemaResponse = z.infer<
     typeof importLiveSchemaResponseSchema
 >;
 
+export const snapshotRecordSchema = z.object({
+    id: z.string(),
+    connectionId: z.string(),
+    kind: z.enum(['baseline', 'target', 'pre_apply', 'post_apply']),
+    fingerprint: z.string(),
+    importedSchemas: z.array(z.string()).default([]),
+    schema: canonicalSchemaSchema,
+    createdAt: z.string(),
+});
+export type SnapshotRecord = z.infer<typeof snapshotRecordSchema>;
+
 export const diffSchemaRequestSchema = z.object({
     baselineSnapshotId: z.string(),
     targetSchema: canonicalSchemaSchema,

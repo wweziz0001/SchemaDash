@@ -27,7 +27,7 @@ export const registerDiagramWorkflowRoutes = (
         const params = request.params as { id: string };
 
         return {
-            workflow: context.diagramWorkflowService.bindConnection(
+            workflow: await context.diagramWorkflowService.bindConnection(
                 params.id,
                 request.body,
                 request.auth.user

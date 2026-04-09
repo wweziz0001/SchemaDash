@@ -7,10 +7,6 @@ const resolveReadiness = (context: AppContext) => {
             status: context.appRepository.ping() ? 'up' : 'down',
             path: context.env.appDbPath,
         },
-        metadataDatabase: {
-            status: context.metadataRepository.ping() ? 'up' : 'down',
-            path: context.env.metadataDbPath,
-        },
     } as const;
 
     return {
@@ -65,9 +61,9 @@ export const registerHealthRoutes = (
                     status: readiness.checks.appDatabase.status,
                 },
                 schemaSync: {
-                    adapter: 'sqlite',
-                    path: context.env.metadataDbPath,
-                    status: readiness.checks.metadataDatabase.status,
+                    mode: context.env.schemaSyncMode,
+                    serviceUrl: context.env.schemaSyncServiceUrl,
+                    enabled: context.env.schemaSyncEnabled,
                 },
             },
             auth: {

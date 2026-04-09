@@ -1,6 +1,5 @@
 import {
     canonicalSchemaSchema,
-    createChangePlan,
     hashCanonicalSchema,
     type CanonicalSchema,
     type ChangePlan,
@@ -8,14 +7,10 @@ import {
 } from '@schemadash/schema-sync-core';
 import type { AppUserRecord } from '../repositories/app-repository.js';
 import type { DiagramWorkflowRepository } from '../repositories/diagram-workflow-repository.js';
-import type { MetadataRepository } from '../repositories/metadata-repository.js';
-import type { ConnectionsService } from './connections-service.js';
 import type { PersistenceService } from './persistence-service.js';
-import type { ApplyService } from './apply-service.js';
+import type { SchemaSyncClient } from '../schema-sync/client.js';
 import { AppError } from '../utils/app-error.js';
 import { generateId } from '../utils/id.js';
-import type { SchemaSyncAdapterRegistry } from '../engines/registry.js';
-import { renderChangePlanForAdapter } from '../engines/plan.js';
 
 export type DiagramMigrationIssueSeverity = 'info' | 'warning' | 'blocking';
 export type DiagramMigrationCheckStatus = 'passed' | 'warning' | 'failed';
@@ -96,17 +91,33 @@ const warningToIssue = (warning: RiskWarning): DiagramMigrationIssue => ({
     message: warning.message,
 });
 
+const resolveMigrationActorLabel = (actor?: AppUserRecord | null) =>
+    actor?.displayName ?? actor?.email ?? 'workflow-preview';
+
+type PersistedDiagramView = NonNullable<
+    ReturnType<PersistenceService['getDiagram']>
+>;
+
+interface DiagramSchemaSyncMetadata {
+    connectionId?: string;
+    baselineSnapshotId?: string;
+    baselineFingerprint?: string;
+    importedSchemas?: string[];
+}
+
+const getDiagramSchemaSyncMetadata = (
+    diagram: PersistedDiagramView
+): DiagramSchemaSyncMetadata =>
+    (diagram.diagram.schemaSync as DiagramSchemaSyncMetadata | undefined) ?? {};
+
 export class DiagramMigrationService {
     constructor(
         private readonly workflowRepository: DiagramWorkflowRepository,
-        private readonly metadataRepository: MetadataRepository,
         private readonly persistenceService: PersistenceService,
-        private readonly connectionsService: ConnectionsService,
-        private readonly applyService: ApplyService,
-        private readonly adapterRegistry: SchemaSyncAdapterRegistry
+        private readonly schemaSyncClient: SchemaSyncClient
     ) {}
 
-    previewMigration(
+    async previewMigration(
         diagramId: string,
         input: {
             targetSchema: CanonicalSchema;
@@ -114,8 +125,8 @@ export class DiagramMigrationService {
             workflowFallback?: DiagramMigrationWorkflowFallback | null;
         },
         actor?: AppUserRecord | null
-    ): DiagramMigrationPreview {
-        this.requireEditableDiagram(diagramId, actor);
+    ): Promise<DiagramMigrationPreview> {
+        const diagram = this.requireEditableDiagram(diagramId, actor);
 
         const targetSchema = canonicalSchemaSchema.parse(input.targetSchema);
         const generatedAt = new Date().toISOString();
@@ -159,8 +170,21 @@ export class DiagramMigrationService {
             });
         }
 
+        let plan: ChangePlan | null = null;
+
+        const persistedSchemaSync = getDiagramSchemaSyncMetadata(diagram);
+        const persistedBaselineSnapshotId =
+            persistedSchemaSync.connectionId === state?.connectionId
+                ? (persistedSchemaSync.baselineSnapshotId ?? null)
+                : null;
+        const persistedBaselineFingerprint =
+            persistedSchemaSync.connectionId === state?.connectionId
+                ? (persistedSchemaSync.baselineFingerprint ?? null)
+                : null;
+
+        let connectionName = state?.connectionNameCache ?? null;
         if (state?.connectionId) {
-            const connection = this.metadataRepository.getConnection(
+            const connection = await this.schemaSyncClient.getConnection(
                 state.connectionId
             );
             if (!connection) {
@@ -171,59 +195,71 @@ export class DiagramMigrationService {
                     message:
                         'The saved connection for this diagram no longer exists.',
                 });
+            } else {
+                connectionName = connection.name;
             }
         }
 
-        let plan: ChangePlan | null = null;
-
-        if (state?.connectionId && liveSnapshot) {
-            const baselineSnapshotId = generateId();
-            this.metadataRepository.putSnapshot({
-                id: baselineSnapshotId,
-                connectionId: state.connectionId,
-                kind: 'baseline',
-                fingerprint: liveSnapshot.fingerprint,
-                importedSchemas: state.importedSchemas,
-                schema: liveSnapshot.canonicalSchema,
-                createdAt: generatedAt,
+        if (
+            state?.connectionId &&
+            persistedSchemaSync.connectionId &&
+            persistedSchemaSync.connectionId !== state.connectionId
+        ) {
+            issues.push({
+                code: 'migration_schema_sync_connection_mismatch',
+                severity: 'blocking',
+                title: 'Schema sync baseline is stale',
+                message:
+                    'The saved schema sync baseline belongs to a different connection. Refresh the live database before planning a migration.',
             });
+        }
 
-            const connection = this.metadataRepository.getConnection(
-                state.connectionId
-            );
-            if (!connection) {
-                throw new AppError(
-                    `Connection ${state.connectionId} not found.`,
-                    404,
-                    'connection_not_found'
-                );
-            }
+        if (state?.connectionId && !persistedBaselineSnapshotId) {
+            issues.push({
+                code: 'migration_baseline_snapshot_missing',
+                severity: 'blocking',
+                title: 'Baseline snapshot missing',
+                message:
+                    'Refresh the live database before reviewing a migration plan.',
+            });
+        }
 
-            const adapter = this.adapterRegistry.resolve(connection.engine);
-            const rawPlan = createChangePlan({
-                id: generateId(),
-                baselineSnapshotId,
-                connectionId: state.connectionId,
-                baseline: liveSnapshot.canonicalSchema,
-                target: targetSchema,
-            });
-            plan = renderChangePlanForAdapter({
-                plan: rawPlan,
-                targetSchema,
-                adapter,
-            });
-            this.metadataRepository.putChangePlan(plan);
-            issues.push(...plan.warnings.map(warningToIssue));
-            if (
-                plan.blocked &&
-                !plan.warnings.some((warning) => warning.level === 'blocked')
-            ) {
+        if (
+            state?.connectionId &&
+            persistedBaselineSnapshotId &&
+            liveSnapshot
+        ) {
+            try {
+                const response = await this.schemaSyncClient.diffSchema({
+                    baselineSnapshotId: persistedBaselineSnapshotId,
+                    targetSchema,
+                    actor: resolveMigrationActorLabel(actor),
+                });
+                plan = response.plan;
+                issues.push(...plan.warnings.map(warningToIssue));
+                if (
+                    plan.blocked &&
+                    !plan.warnings.some(
+                        (warning) => warning.level === 'blocked'
+                    )
+                ) {
+                    issues.push({
+                        code: 'migration_plan_blocked',
+                        severity: 'blocking',
+                        title: 'Migration plan blocked',
+                        message:
+                            'The generated migration plan contains blocking changes and cannot be applied automatically.',
+                    });
+                }
+            } catch (error) {
                 issues.push({
-                    code: 'migration_plan_blocked',
+                    code: 'migration_plan_generation_failed',
                     severity: 'blocking',
-                    title: 'Migration plan blocked',
+                    title: 'Unable to generate migration plan',
                     message:
-                        'The generated migration plan contains blocking changes and cannot be applied automatically.',
+                        error instanceof Error
+                            ? error.message
+                            : 'The schema sync service could not generate a migration plan.',
                 });
             }
         }
@@ -231,10 +267,13 @@ export class DiagramMigrationService {
         return {
             diagramId,
             connectionId: state?.connectionId ?? null,
-            connectionName: state?.connectionNameCache ?? null,
+            connectionName,
             workflowLiveSnapshotId: state?.liveSnapshotId ?? null,
             workflowLiveFingerprint: state?.liveFingerprint ?? null,
-            baselineFingerprint: liveSnapshot?.fingerprint ?? null,
+            baselineFingerprint:
+                persistedBaselineFingerprint ??
+                liveSnapshot?.fingerprint ??
+                null,
             targetFingerprint:
                 plan?.targetFingerprint ?? hashCanonicalSchema(targetSchema),
             generatedAt,
@@ -255,7 +294,7 @@ export class DiagramMigrationService {
         },
         actor?: AppUserRecord | null
     ): Promise<DiagramMigrationValidation> {
-        const preview = this.previewMigration(
+        const preview = await this.previewMigration(
             diagramId,
             {
                 targetSchema: input.targetSchema,
@@ -274,12 +313,13 @@ export class DiagramMigrationService {
         }
 
         const state = this.workflowRepository.getState(diagramId);
+        const diagram = this.requireEditableDiagram(diagramId, actor);
         const checks: DiagramMigrationCheck[] = [];
         const issues = [...preview.issues];
         const validatedAt = new Date().toISOString();
 
         const connectionResult = state?.connectionId
-            ? await this.connectionsService.testConnection({
+            ? await this.schemaSyncClient.testConnection({
                   connectionId: state.connectionId,
               })
             : {
@@ -307,62 +347,83 @@ export class DiagramMigrationService {
             });
         }
 
-        const planBaseline = this.metadataRepository.getSnapshot(
-            preview.plan.baselineSnapshotId
-        );
-        if (!planBaseline) {
+        const importedSchemas = state?.importedSchemas?.length
+            ? state.importedSchemas
+            : (getDiagramSchemaSyncMetadata(diagram).importedSchemas ?? []);
+
+        if (state?.connectionId && connectionResult.ok) {
+            try {
+                const liveImport = await this.schemaSyncClient.importLiveSchema(
+                    {
+                        connectionId: state.connectionId,
+                        schemas: importedSchemas,
+                    }
+                );
+                const baselineMatches =
+                    !!preview.baselineFingerprint &&
+                    liveImport.fingerprint === preview.baselineFingerprint;
+                checks.push({
+                    code: 'baseline_snapshot_available',
+                    label: 'Baseline snapshot available',
+                    status: preview.plan.baselineSnapshotId
+                        ? 'passed'
+                        : 'failed',
+                    detail: preview.plan.baselineSnapshotId
+                        ? 'The migration plan is anchored to a stored schema sync baseline.'
+                        : 'The migration plan is missing a stored baseline snapshot.',
+                });
+                checks.push({
+                    code: 'live_baseline_match',
+                    label: 'Live baseline still matches',
+                    status: baselineMatches ? 'passed' : 'failed',
+                    detail: baselineMatches
+                        ? 'The database still matches the expected live baseline snapshot.'
+                        : 'The database drifted since the live baseline was captured. Refresh the live snapshot before applying.',
+                });
+                if (!baselineMatches) {
+                    issues.push({
+                        code: 'migration_live_drift_detected',
+                        severity: 'blocking',
+                        title: 'Live drift detected',
+                        message:
+                            'The current live schema no longer matches the expected baseline. Refresh Live Database and regenerate the migration plan.',
+                    });
+                }
+            } catch (error) {
+                checks.push({
+                    code: 'baseline_snapshot_available',
+                    label: 'Baseline snapshot available',
+                    status: 'failed',
+                    detail: 'The planned migration baseline snapshot could not be validated.',
+                });
+                checks.push({
+                    code: 'live_baseline_match',
+                    label: 'Live baseline still matches',
+                    status: 'failed',
+                    detail:
+                        error instanceof Error
+                            ? error.message
+                            : 'Unable to validate the live baseline against the schema sync service.',
+                });
+                issues.push({
+                    code: 'migration_live_drift_validation_failed',
+                    severity: 'blocking',
+                    title: 'Unable to validate live baseline',
+                    message:
+                        error instanceof Error
+                            ? error.message
+                            : 'Unable to validate the live baseline against the schema sync service.',
+                });
+            }
+        } else {
             checks.push({
                 code: 'baseline_snapshot_available',
                 label: 'Baseline snapshot available',
-                status: 'failed',
-                detail: 'The planned migration baseline snapshot could not be found.',
+                status: preview.plan.baselineSnapshotId ? 'passed' : 'failed',
+                detail: preview.plan.baselineSnapshotId
+                    ? 'The migration plan is anchored to a stored schema sync baseline.'
+                    : 'The planned migration baseline snapshot could not be found.',
             });
-            issues.push({
-                code: 'migration_baseline_snapshot_missing',
-                severity: 'blocking',
-                title: 'Baseline snapshot missing',
-                message:
-                    'The stored migration baseline snapshot was not found. Regenerate the migration preview.',
-            });
-        } else if (state?.connectionId && connectionResult.ok) {
-            const secret = this.connectionsService.getDecryptedSecret(
-                state.connectionId
-            );
-            const connection = this.metadataRepository.getConnection(
-                state.connectionId
-            );
-            if (!connection) {
-                throw new AppError(
-                    `Connection ${state.connectionId} not found.`,
-                    404,
-                    'connection_not_found'
-                );
-            }
-            const adapter = this.adapterRegistry.resolve(connection.engine);
-            const liveSchema = await adapter.introspectSchema({
-                secret,
-                schemas: planBaseline.importedSchemas,
-            });
-            const liveFingerprint = hashCanonicalSchema(liveSchema);
-            const baselineMatches =
-                liveFingerprint === planBaseline.fingerprint;
-            checks.push({
-                code: 'live_baseline_match',
-                label: 'Live baseline still matches',
-                status: baselineMatches ? 'passed' : 'failed',
-                detail: baselineMatches
-                    ? 'The database still matches the expected live baseline snapshot.'
-                    : 'The database drifted since the live baseline was captured. Refresh the live snapshot before applying.',
-            });
-            if (!baselineMatches) {
-                issues.push({
-                    code: 'migration_live_drift_detected',
-                    severity: 'blocking',
-                    title: 'Live drift detected',
-                    message:
-                        'The current live schema no longer matches the expected baseline. Refresh Live Database and regenerate the migration plan.',
-                });
-            }
         }
 
         checks.push({
@@ -433,19 +494,21 @@ export class DiagramMigrationService {
         }
 
         try {
-            const applyResult = await this.applyService.applyPlan({
+            const applyResult = await this.schemaSyncClient.applySchema({
                 planId: validation.plan.id,
                 actor: actorLabel,
                 destructiveApproval: input.destructiveApproval,
             });
-            const updatedLiveSnapshotId = this.recordPostApplyLiveSnapshot({
-                diagramId,
-                actor,
-                connectionId: validation.plan.connectionId,
-                previousLiveSnapshotId:
-                    validation.workflowLiveSnapshotId ?? undefined,
-                postApplySnapshotId: applyResult.postApplySnapshotId ?? null,
-            });
+            const updatedLiveSnapshotId =
+                await this.recordPostApplyLiveSnapshot({
+                    diagramId,
+                    actor,
+                    connectionId: validation.plan.connectionId,
+                    previousLiveSnapshotId:
+                        validation.workflowLiveSnapshotId ?? undefined,
+                    postApplySnapshotId:
+                        applyResult.postApplySnapshotId ?? null,
+                });
 
             return {
                 validation,
@@ -462,9 +525,10 @@ export class DiagramMigrationService {
                 },
             };
         } catch (error) {
-            const audit = this.metadataRepository.getLatestAuditForChangePlan(
-                validation.plan.id
-            );
+            const audit =
+                await this.schemaSyncClient.getLatestAuditForChangePlan(
+                    validation.plan.id
+                );
 
             return {
                 validation,
@@ -485,7 +549,7 @@ export class DiagramMigrationService {
         }
     }
 
-    private recordPostApplyLiveSnapshot({
+    private async recordPostApplyLiveSnapshot({
         diagramId,
         actor,
         connectionId,
@@ -497,13 +561,13 @@ export class DiagramMigrationService {
         connectionId: string;
         previousLiveSnapshotId?: string | null;
         postApplySnapshotId: string | null;
-    }): string | null {
+    }): Promise<string | null> {
         if (!postApplySnapshotId) {
             return null;
         }
 
         const postApplySnapshot =
-            this.metadataRepository.getSnapshot(postApplySnapshotId);
+            await this.schemaSyncClient.getSnapshot(postApplySnapshotId);
         const state = this.workflowRepository.getState(diagramId);
         if (!postApplySnapshot || !state) {
             return null;
@@ -659,7 +723,7 @@ export class DiagramMigrationService {
     private requireEditableDiagram(
         diagramId: string,
         actor?: AppUserRecord | null
-    ) {
+    ): PersistedDiagramView {
         const diagram = this.persistenceService.getDiagram(diagramId, actor);
         if (diagram.access !== 'edit' && diagram.access !== 'owner') {
             throw new AppError('Diagram not found.', 404, 'DIAGRAM_NOT_FOUND');

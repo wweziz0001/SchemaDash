@@ -6,7 +6,6 @@ import { serverEnv, type ServerEnv } from './config/env.js';
 import { buildLoggerOptions } from './config/logger.js';
 import { createAppContext } from './context/app-context.js';
 import type { AppRepository } from './repositories/app-repository.js';
-import type { MetadataRepository } from './repositories/metadata-repository.js';
 import { registerAdminRoutes } from './routes/admin-routes.js';
 import { registerAuthRoutes } from './routes/auth-routes.js';
 import { registerDiagramChangelogRoutes } from './routes/diagram-changelog-routes.js';
@@ -17,6 +16,7 @@ import { registerHealthRoutes } from './routes/health-routes.js';
 import { registerPersistenceRoutes } from './routes/persistence-routes.js';
 import { registerSchemaSyncRoutes } from './routes/schema-sync-routes.js';
 import type { OidcClientProvider } from './services/oidc-provider.js';
+import type { SchemaSyncClient } from './schema-sync/client.js';
 import {
     isShareTokenApiRoute,
     resolveRequestShareToken,
@@ -25,9 +25,9 @@ import { AppError } from './utils/app-error.js';
 
 export const buildApp = (options?: {
     env?: ServerEnv;
-    metadataRepository?: MetadataRepository;
     appRepository?: AppRepository;
     oidcProvider?: OidcClientProvider;
+    schemaSyncClient?: SchemaSyncClient;
 }) => {
     const env = options?.env ?? serverEnv;
     const app = Fastify({
@@ -37,9 +37,9 @@ export const buildApp = (options?: {
         requestIdLogLabel: 'requestId',
     });
     const context = createAppContext(env, {
-        metadataRepository: options?.metadataRepository,
         appRepository: options?.appRepository,
         oidcProvider: options?.oidcProvider,
+        schemaSyncClient: options?.schemaSyncClient,
     });
 
     app.register(cors, {

@@ -87,7 +87,7 @@ export const registerDiagramMigrationRoutes = (
         const payload = migrationPreviewRequestSchema.parse(request.body);
 
         return {
-            preview: context.diagramMigrationService.previewMigration(
+            preview: await context.diagramMigrationService.previewMigration(
                 params.id,
                 payload,
                 request.auth.user

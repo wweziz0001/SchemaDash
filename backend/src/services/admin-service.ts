@@ -39,7 +39,7 @@ export interface AdminOverviewResponse {
         oidcConfigured: boolean;
         persistence: {
             app: 'sqlite';
-            schemaSync: 'sqlite';
+            schemaSync: 'disabled' | 'external-service';
         };
     };
     users: {
@@ -145,7 +145,7 @@ export class AdminService {
                     Boolean(this.env.oidcRedirectUrl),
                 persistence: {
                     app: 'sqlite',
-                    schemaSync: 'sqlite',
+                    schemaSync: this.env.schemaSyncMode,
                 },
             },
             users: {
