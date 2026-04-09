@@ -99,7 +99,9 @@ type RemoteMigrationOperation =
     | 'get_connection'
     | 'test_connection'
     | 'import_live_schema'
-    | 'diff_schema';
+    | 'diff_schema'
+    | 'apply_schema'
+    | 'get_snapshot';
 
 type RemoteMigrationFailureClassification =
     | 'timeout'
@@ -206,6 +208,53 @@ const createRemoteMigrationIssue = (
         title: fallbackTitle,
         message: failure.message || fallbackMessage,
     };
+};
+
+const describeApplyFailureMessage = (error: unknown) => {
+    const failure = classifyRemoteMigrationFailure('apply_schema', error);
+
+    if (failure.classification === 'timeout') {
+        return 'Schema sync service timed out while applying the migration. Apply status could not be confirmed. Check the schema sync service audit history before retrying.';
+    }
+
+    if (failure.classification === 'service_unavailable') {
+        return 'Schema sync service became unavailable while applying the migration. Apply status could not be confirmed. Check the schema sync service audit history before retrying.';
+    }
+
+    if (failure.classification === 'not_ready') {
+        return 'Schema sync service is enabled but not ready yet, so the migration could not be applied.';
+    }
+
+    if (failure.classification === 'invalid_response') {
+        return 'Schema sync service returned an invalid apply response. Check the schema sync service audit history before retrying.';
+    }
+
+    return failure.message || 'Failed to apply the migration plan.';
+};
+
+const describePostApplySyncWarning = (error: unknown) => {
+    const failure = classifyRemoteMigrationFailure('get_snapshot', error);
+
+    if (failure.classification === 'timeout') {
+        return 'Migration applied successfully, but SchemaDash timed out while refreshing the post-apply live snapshot. Refresh the live database before planning another migration.';
+    }
+
+    if (failure.classification === 'service_unavailable') {
+        return 'Migration applied successfully, but the schema sync service became unavailable before SchemaDash could refresh the post-apply live snapshot. Refresh the live database before planning another migration.';
+    }
+
+    if (failure.classification === 'not_ready') {
+        return 'Migration applied successfully, but the schema sync service is not ready for post-apply snapshot refresh yet. Refresh the live database before planning another migration.';
+    }
+
+    if (failure.classification === 'invalid_response') {
+        return 'Migration applied successfully, but the schema sync service returned invalid post-apply snapshot data. Refresh the live database before planning another migration.';
+    }
+
+    return (
+        failure.message ||
+        'Migration applied successfully, but SchemaDash could not refresh the post-apply live snapshot.'
+    );
 };
 
 type PersistedDiagramView = NonNullable<
@@ -643,8 +692,10 @@ export class DiagramMigrationService {
                 actor: actorLabel,
                 destructiveApproval: input.destructiveApproval,
             });
-            const updatedLiveSnapshotId =
-                await this.recordPostApplyLiveSnapshot({
+            let updatedLiveSnapshotId: string | null = null;
+            let followUpWarning: string | null = null;
+            try {
+                updatedLiveSnapshotId = await this.recordPostApplyLiveSnapshot({
                     diagramId,
                     actor,
                     connectionId: validation.plan.connectionId,
@@ -653,6 +704,9 @@ export class DiagramMigrationService {
                     postApplySnapshotId:
                         applyResult.postApplySnapshotId ?? null,
                 });
+            } catch (error) {
+                followUpWarning = describePostApplySyncWarning(error);
+            }
 
             return {
                 validation,
@@ -662,17 +716,63 @@ export class DiagramMigrationService {
                     auditId: applyResult.auditId,
                     logs: applyResult.logs,
                     executedStatements: applyResult.executedStatements,
-                    error: applyResult.error ?? null,
+                    error: applyResult.error ?? followUpWarning ?? null,
                     postApplySnapshotId:
                         applyResult.postApplySnapshotId ?? null,
                     updatedLiveSnapshotId,
                 },
             };
         } catch (error) {
-            const audit =
-                await this.schemaSyncClient.getLatestAuditForChangePlan(
+            let audit = null;
+            try {
+                audit = await this.schemaSyncClient.getLatestAuditForChangePlan(
                     validation.plan.id
                 );
+            } catch {
+                audit = null;
+            }
+
+            if (audit?.status === 'succeeded') {
+                let updatedLiveSnapshotId: string | null = null;
+                let followUpWarning: string | null = null;
+                try {
+                    updatedLiveSnapshotId =
+                        await this.recordPostApplyLiveSnapshot({
+                            diagramId,
+                            actor,
+                            connectionId: validation.plan.connectionId,
+                            previousLiveSnapshotId:
+                                validation.workflowLiveSnapshotId ?? undefined,
+                            postApplySnapshotId:
+                                audit.postApplySnapshotId ?? null,
+                        });
+                } catch (snapshotError) {
+                    followUpWarning =
+                        describePostApplySyncWarning(snapshotError);
+                }
+
+                return {
+                    validation,
+                    result: {
+                        status: 'succeeded',
+                        jobId: null,
+                        auditId: audit.id,
+                        logs: audit.logs,
+                        executedStatements: audit.sqlStatements,
+                        error: followUpWarning,
+                        postApplySnapshotId: audit.postApplySnapshotId ?? null,
+                        updatedLiveSnapshotId,
+                    },
+                };
+            }
+
+            const failureMessage = describeApplyFailureMessage(error);
+            const resultError =
+                audit?.status === 'failed'
+                    ? (audit.error ?? failureMessage)
+                    : audit?.status === 'running'
+                      ? `${failureMessage} The latest remote audit is still marked running.`
+                      : failureMessage;
 
             return {
                 validation,
@@ -681,11 +781,9 @@ export class DiagramMigrationService {
                     jobId: null,
                     auditId: audit?.id ?? null,
                     logs: audit?.logs ?? [],
-                    executedStatements: [],
-                    error:
-                        error instanceof Error
-                            ? error.message
-                            : 'Failed to apply the migration plan.',
+                    executedStatements:
+                        audit?.status === 'failed' ? audit.sqlStatements : [],
+                    error: resultError,
                     postApplySnapshotId: audit?.postApplySnapshotId ?? null,
                     updatedLiveSnapshotId: null,
                 },
