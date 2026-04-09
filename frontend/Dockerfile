@@ -6,7 +6,7 @@ COPY package.json package-lock.json ./
 COPY frontend/package.json ./frontend/package.json
 COPY backend/package.json ./backend/package.json
 COPY services/schema-sync-service/package.json ./services/schema-sync-service/package.json
-COPY packages/schema-sync-core/package.json ./packages/schema-sync-core/package.json
+COPY shared/schema-sync-core/package.json ./shared/schema-sync-core/package.json
 
 RUN npm ci
 

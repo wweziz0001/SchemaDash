@@ -14,7 +14,7 @@
         "test:coverage": "vitest --config vitest.config.ts --coverage"
     },
     "dependencies": {
-        "@schemadash/schema-sync-core": "file:../packages/schema-sync-core",
+        "@schemadash/schema-sync-core": "file:../shared/schema-sync-core",
         "@ai-sdk/openai": "^2.0.72",
         "@dbml/core": "^3.14.1",
         "@dbml/parse": "^5.3.0",

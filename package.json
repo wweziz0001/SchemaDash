@@ -4,7 +4,7 @@
     "version": "1.20.0",
     "type": "module",
     "workspaces": [
-        "packages/*",
+        "shared/*",
         "frontend",
         "backend",
         "services/*"
@@ -15,10 +15,11 @@
         "dev:web:raw": "npm run dev -w @schemadash/frontend",
         "dev:backend": "npm run build -w @schemadash/schema-sync-core && npm run dev:backend:raw",
         "dev:backend:raw": "npm run dev -w @schemadash/backend",
-        "dev:schema-sync-service": "npm run build -w @schemadash/schema-sync-core && npm run dev -w @schemadash/schema-sync-service",
+        "dev:schema-sync-service": "npm run build -w @schemadash/schema-sync-core && npm run dev:schema-sync-service:raw",
+        "dev:schema-sync-service:raw": "npm run dev -w @schemadash/schema-sync-service",
         "dev:core": "npm run dev -w @schemadash/schema-sync-core",
         "dev:server": "npm run dev:backend",
-        "dev:full": "npm run build -w @schemadash/schema-sync-core && concurrently -n core,web,api -c magenta,blue,green \"npm run dev:core\" \"npm run dev:web:raw\" \"npm run dev:backend:raw\"",
+        "dev:full": "npm run build -w @schemadash/schema-sync-core && concurrently -n core,web,api,sync -c magenta,blue,green,yellow \"npm run dev:core\" \"npm run dev:web:raw\" \"npm run dev:backend:raw\" \"npm run dev:schema-sync-service:raw\"",
         "build": "npm run lint && npm run typecheck && npm run build:web && npm run build:backend && npm run build:schema-sync-service",
         "build:web": "npm run build -w @schemadash/schema-sync-core && npm run build -w @schemadash/frontend",
         "build:backend": "npm run build -w @schemadash/schema-sync-core && npm run build -w @schemadash/backend",
