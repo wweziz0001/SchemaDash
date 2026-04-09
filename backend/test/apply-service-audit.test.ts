@@ -11,24 +11,13 @@ import {
     createChangePlan,
     hashCanonicalSchema,
 } from '@schemadash/schema-sync-core';
+import { splitPostgresqlStatements } from '../src/engines/postgresql/apply.js';
+import type { SchemaSyncAdapterRegistry } from '../src/engines/registry.js';
 import { MetadataRepository } from '../src/repositories/metadata-repository.js';
 
 const introspectPostgresSchemaMock = vi.fn();
-const connectMock = vi.fn();
 const queryMock = vi.fn();
 const endMock = vi.fn();
-
-vi.mock('../postgres/introspection.js', () => ({
-    introspectPostgresSchema: introspectPostgresSchemaMock,
-}));
-
-vi.mock('pg', () => ({
-    Client: vi.fn().mockImplementation(() => ({
-        connect: connectMock,
-        query: queryMock,
-        end: endMock,
-    })),
-}));
 
 const { ApplyService } = await import('../src/services/apply-service.js');
 
@@ -117,9 +106,20 @@ describe('apply service audit hardening', () => {
         repository.putAudit(previewAudit);
 
         introspectPostgresSchemaMock.mockResolvedValue(baselineSchema);
-        connectMock.mockResolvedValue(undefined);
         queryMock.mockResolvedValue({ rows: [] });
         endMock.mockResolvedValue(undefined);
+        const adapterRegistry = {
+            resolve: vi.fn().mockReturnValue({
+                engine: 'postgresql',
+                introspectSchema: introspectPostgresSchemaMock,
+                createClient: vi.fn().mockResolvedValue({
+                    query: queryMock,
+                    end: endMock,
+                }),
+                validateApplyPreflight: vi.fn().mockResolvedValue(undefined),
+                splitStatements: splitPostgresqlStatements,
+            }),
+        } as unknown as SchemaSyncAdapterRegistry;
 
         const service = new ApplyService(
             repository,
@@ -135,7 +135,8 @@ describe('apply service audit hardening', () => {
             } as never,
             {
                 getChangePlan: vi.fn().mockReturnValue(plan),
-            } as never
+            } as never,
+            adapterRegistry
         );
 
         const result = await service.applyPlan({
@@ -245,9 +246,20 @@ describe('apply service audit hardening', () => {
         introspectPostgresSchemaMock
             .mockResolvedValueOnce(baselineSchema)
             .mockResolvedValueOnce(targetSchema);
-        connectMock.mockResolvedValue(undefined);
         queryMock.mockResolvedValue({ rows: [] });
         endMock.mockResolvedValue(undefined);
+        const adapterRegistry = {
+            resolve: vi.fn().mockReturnValue({
+                engine: 'postgresql',
+                introspectSchema: introspectPostgresSchemaMock,
+                createClient: vi.fn().mockResolvedValue({
+                    query: queryMock,
+                    end: endMock,
+                }),
+                validateApplyPreflight: vi.fn().mockResolvedValue(undefined),
+                splitStatements: splitPostgresqlStatements,
+            }),
+        } as unknown as SchemaSyncAdapterRegistry;
 
         const service = new ApplyService(
             repository,
@@ -263,7 +275,8 @@ describe('apply service audit hardening', () => {
             } as never,
             {
                 getChangePlan: vi.fn().mockReturnValue(plan),
-            } as never
+            } as never,
+            adapterRegistry
         );
 
         const result = await service.applyPlan({

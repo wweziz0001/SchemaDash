@@ -144,6 +144,19 @@ describe('schema sync routes', () => {
         });
         const cookie = getSessionCookie(loginResponse.headers['set-cookie']);
         const baselineSchema = createCanonicalSchema();
+        metadataRepository.putConnection({
+            id: 'connection-1',
+            name: 'Warehouse',
+            engine: 'postgresql',
+            defaultSchemas: ['public'],
+            host: 'localhost',
+            port: 5432,
+            database: 'warehouse',
+            username: 'postgres',
+            secretCiphertext: 'ciphertext',
+            createdAt: '2026-03-25T00:00:00.000Z',
+            updatedAt: '2026-03-25T00:00:00.000Z',
+        });
         metadataRepository.putSnapshot({
             id: 'baseline-snapshot',
             connectionId: 'connection-1',

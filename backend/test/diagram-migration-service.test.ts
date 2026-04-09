@@ -3,24 +3,21 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+    generateMigrationSql,
     hashCanonicalSchema,
     type AuditRecord,
     type CanonicalSchema,
 } from '@schemadash/schema-sync-core';
-import { introspectPostgresSchema } from '../src/postgres/introspection.js';
 import { AppRepository } from '../src/repositories/app-repository.js';
 import { DiagramWorkflowRepository } from '../src/repositories/diagram-workflow-repository.js';
 import { MetadataRepository } from '../src/repositories/metadata-repository.js';
+import type { SchemaSyncAdapterRegistry } from '../src/engines/registry.js';
 import { DiagramMigrationService } from '../src/services/diagram-migration-service.js';
 import type { ApplyService } from '../src/services/apply-service.js';
 import type { ConnectionsService } from '../src/services/connections-service.js';
 import { PersistenceService } from '../src/services/persistence-service.js';
 
-vi.mock('../src/postgres/introspection.js', () => ({
-    introspectPostgresSchema: vi.fn(),
-}));
-
-const mockedIntrospectPostgresSchema = vi.mocked(introspectPostgresSchema);
+const mockedIntrospectPostgresSchema = vi.fn();
 const tempDirs: string[] = [];
 
 const baselineSchema: CanonicalSchema = {
@@ -170,12 +167,26 @@ const createHarness = (options?: { includeWorkflowState?: boolean }) => {
     const applyService = {
         applyPlan: vi.fn(),
     } as unknown as ApplyService;
+    const adapterRegistry = {
+        resolve: vi.fn().mockReturnValue({
+            engine: 'postgresql',
+            renderPlan: ({
+                changes,
+                targetSchema: renderedTargetSchema,
+            }: {
+                changes: Parameters<typeof generateMigrationSql>[0];
+                targetSchema: Parameters<typeof generateMigrationSql>[1];
+            }) => generateMigrationSql(changes, renderedTargetSchema),
+            introspectSchema: mockedIntrospectPostgresSchema,
+        }),
+    } as unknown as SchemaSyncAdapterRegistry;
     const migrationService = new DiagramMigrationService(
         workflowRepository,
         metadataRepository,
         persistenceService,
         connectionsService,
-        applyService
+        applyService,
+        adapterRegistry
     );
 
     return {
