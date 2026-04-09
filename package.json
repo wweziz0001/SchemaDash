@@ -5,7 +5,8 @@
     "type": "module",
     "workspaces": [
         "packages/*",
-        "backend"
+        "backend",
+        "services/*"
     ],
     "scripts": {
         "dev": "npm run dev:web",
@@ -13,12 +14,14 @@
         "dev:web:raw": "vite --config frontend/vite.config.ts",
         "dev:backend": "npm run build -w @schemadash/schema-sync-core && npm run dev:backend:raw",
         "dev:backend:raw": "npm run dev -w @schemadash/backend",
+        "dev:schema-sync-service": "npm run build -w @schemadash/schema-sync-core && npm run dev -w @schemadash/schema-sync-service",
         "dev:core": "npm run dev -w @schemadash/schema-sync-core",
         "dev:server": "npm run dev:backend",
         "dev:full": "npm run build -w @schemadash/schema-sync-core && concurrently -n core,web,api -c magenta,blue,green \"npm run dev:core\" \"npm run dev:web:raw\" \"npm run dev:backend:raw\"",
         "build": "npm run lint && npm run typecheck && npm run build:web && npm run build:backend",
         "build:web": "npm run build -w @schemadash/schema-sync-core && vite build --config frontend/vite.config.ts",
         "build:backend": "npm run build -w @schemadash/schema-sync-core && npm run build -w @schemadash/backend",
+        "build:schema-sync-service": "npm run build -w @schemadash/schema-sync-core && npm run build -w @schemadash/schema-sync-service",
         "build:server": "npm run build:backend",
         "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
         "lint:fix": "npm run lint -- --fix",
@@ -29,6 +32,7 @@
         "test:web": "npm run build -w @schemadash/schema-sync-core && vitest --config frontend/vitest.config.ts",
         "test:core": "npm run test -w @schemadash/schema-sync-core",
         "test:backend": "npm run build -w @schemadash/schema-sync-core && npm run test -w @schemadash/backend",
+        "test:schema-sync-service": "npm run build -w @schemadash/schema-sync-core && npm run test -w @schemadash/schema-sync-service",
         "test:server": "npm run test:backend",
         "test:ci": "npm run test:web:ci && npm run test:core:ci && npm run test:backend:ci",
         "test:web:ci": "npm run build -w @schemadash/schema-sync-core && vitest run --config frontend/vitest.config.ts --reporter=verbose --bail=1",
