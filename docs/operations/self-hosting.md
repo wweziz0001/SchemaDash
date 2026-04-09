@@ -1,8 +1,22 @@
 # Self-Hosting SchemaDash
 
-SchemaDash can run as a lightweight self-hosted stack with a static web container, a Fastify API, and local SQLite persistence for application metadata.
+SchemaDash can run as a lightweight self-hosted stack with a static web
+container, a Fastify API, and local SQLite persistence for application
+metadata.
 
-The optional PostgreSQL container in `docker-compose.yml` is a convenience service for local schema-sync testing. SchemaDash's own application state still persists in SQLite unless you are connecting the schema-sync workflow to an external live PostgreSQL database.
+The optional PostgreSQL container in `docker-compose.yml` is a convenience
+service for local schema-sync testing. SchemaDash's own application state still
+persists in SQLite unless you are connecting the schema-sync workflow to an
+external live PostgreSQL database.
+
+The standalone schema sync runtime now ships as its own container image and
+compose service:
+
+- `SCHEMADASH_SCHEMA_SYNC_ENABLED=false` keeps schema sync disabled and leaves
+  unrelated SchemaDash features operating normally
+- `SCHEMADASH_SCHEMA_SYNC_ENABLED=true` makes the main app call the standalone
+  `schema-sync-adapter` service
+- there is no embedded in-process schema sync runtime in the main app anymore
 
 ## Local run
 
@@ -40,7 +54,7 @@ npm run build
 
 ## Docker Compose
 
-Start the full self-hosted stack:
+Start the default self-hosted stack with schema sync disabled:
 
 ```bash
 docker compose up --build -d
@@ -52,20 +66,42 @@ This starts:
 - `api` on `http://localhost:4010`
 - `postgres` on `localhost:5432`
 
+Enable the standalone schema sync service only when you want it:
+
+```bash
+COMPOSE_PROFILES=schema-sync \
+SCHEMADASH_SCHEMA_SYNC_ENABLED=true \
+docker compose up --build -d
+```
+
+That adds:
+
+- `schema-sync-adapter` on `http://localhost:4020`
+
+Compose intentionally does not hard-block `api` on `schema-sync-adapter`
+startup. This keeps unrelated product features reachable while
+`schema-sync-adapter` is starting or temporarily unavailable. When schema sync
+is enabled, the main app surfaces the dependency state through `GET /api/readyz`
+and `GET /api/health`.
+
 Useful follow-up commands:
 
 ```bash
 docker compose ps
 docker compose logs -f api
+docker compose logs -f schema-sync-adapter
 docker compose down -v
 ```
 
 Health endpoints:
 
 - `GET /healthz` on the web container
-- `GET /api/livez` for process liveness
-- `GET /api/readyz` for API + SQLite readiness
+- `GET /api/livez` for main app liveness
+- `GET /api/readyz` for main app readiness, including schema sync dependency
+  state when enabled
 - `GET /api/health` for a detailed operational snapshot
+- `GET /readyz` on `schema-sync-adapter` for standalone service readiness
+- `GET /healthz` on `schema-sync-adapter` for standalone service diagnostics
 
 ## Environment variables
 
@@ -91,6 +127,8 @@ Backend runtime variables:
 - `SCHEMADASH_LOG_LEVEL`: Fastify/Pino level
 - `SCHEMADASH_DEFAULT_PROJECT_NAME`: bootstrap default project name
 - `SCHEMADASH_DEFAULT_OWNER_NAME`: bootstrap default owner display name
+- `SCHEMADASH_SCHEMA_SYNC_ENABLED`: `true` enables the external standalone schema sync service
+- `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL`: base URL for the standalone schema sync service
 
 Authentication variables:
 
@@ -123,6 +161,16 @@ Compose helper variables:
 - `SCHEMADASH_POSTGRES_USER`: local compose database user
 - `SCHEMADASH_POSTGRES_PASSWORD`: local compose database password
 
+Standalone schema sync service variables:
+
+- `SCHEMADASH_SCHEMA_SYNC_SERVICE_HOST`: service bind host, defaults to `0.0.0.0`
+- `SCHEMADASH_SCHEMA_SYNC_SERVICE_PORT`: service port, defaults to `4020`
+- `SCHEMADASH_SCHEMA_SYNC_SERVICE_DATA_DIR`: directory for service-local SQLite metadata
+- `SCHEMADASH_SCHEMA_SYNC_METADATA_DB_PATH`: optional explicit path for the standalone service metadata SQLite database
+- `SCHEMADASH_SCHEMA_SYNC_SECRET_KEY`: optional dedicated encryption key for service-stored connection secrets
+- `SCHEMADASH_SECRET_KEY`: accepted by the service as a fallback secret source
+- `SCHEMADASH_SCHEMA_SYNC_LOG_LEVEL`: service log level
+
 ## Reverse proxy notes
 
 - Prefer serving the frontend and API from the same external origin and let the web container proxy `/api` internally.
@@ -137,8 +185,29 @@ Compose helper variables:
 
 - Run the API with `NODE_ENV=production`.
 - Mount `/app/data` on persistent storage when using the API container.
+- Mount `/app/data` on persistent storage for `schema-sync-adapter` when the
+  standalone service is enabled.
 - Back up the SQLite files in `SCHEMADASH_DATA_DIR` regularly.
+- Back up the standalone service SQLite database in
+  `SCHEMADASH_SCHEMA_SYNC_SERVICE_DATA_DIR` when schema sync is enabled.
 - Keep API replicas at `1` today. SchemaDash currently uses SQLite plus in-memory collaboration state, so multi-replica API deployments need extra coordination work before they are safe.
 - The web container is stateless and is compatible with future Kubernetes ingress or service-based routing.
-- For Kubernetes, map probes to `/healthz`, `/api/livez`, and `/api/readyz`, and back the API pod with a persistent volume claim.
+- For Kubernetes, map probes to `/healthz`, `/api/livez`, `/api/readyz`, and
+  the standalone service `/readyz`, and back the stateful pods with persistent
+  volume claims.
 - Review [Schema Sync Architecture](./schema-sync-architecture.md) before exposing live PostgreSQL apply in production, especially around enum/custom type limitations and destructive-change confirmations.
+
+## Troubleshooting
+
+- If `api` health is green but `/api/readyz` returns `503`, inspect the
+  `schemaSyncService` check in `/api/health`.
+- If schema sync is intentionally off, leave
+  `SCHEMADASH_SCHEMA_SYNC_ENABLED=false`; the rest of SchemaDash should keep
+  functioning normally.
+- If schema sync is enabled in Compose, make sure the `schema-sync` profile is
+  active and `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL` stays on
+  `http://schema-sync-adapter:4020`.
+- If `schema-sync-adapter` fails readiness, check the mounted service data
+  directory, secret configuration, and service logs.
+- When running the service outside Docker, switch the main app URL to
+  `http://localhost:4020`.

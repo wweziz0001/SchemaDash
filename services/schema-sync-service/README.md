@@ -28,7 +28,10 @@ reference.
 Configure the main SchemaDash app with:
 
 - `SCHEMADASH_SCHEMA_SYNC_ENABLED=true`
-- `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL=http://localhost:4020`
+- `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL=http://localhost:4020` for local
+  host-based development
+- `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL=http://schema-sync-adapter:4020` for
+  Docker Compose deployments
 
 If `SCHEMADASH_SCHEMA_SYNC_ENABLED=false`, the main app keeps running without
 schema sync.
@@ -46,6 +49,7 @@ The service reads these variables:
 - `SCHEMADASH_SCHEMA_SYNC_SERVICE_DATA_DIR`
 - `SCHEMADASH_SCHEMA_SYNC_METADATA_DB_PATH`
 - `SCHEMADASH_SCHEMA_SYNC_SECRET_KEY`
+- `SCHEMADASH_SECRET_KEY` as an optional fallback secret source
 - `SCHEMADASH_SCHEMA_SYNC_LOG_LEVEL`
 
 Defaults:
@@ -75,6 +79,66 @@ Or from the repo root:
 npm run dev:schema-sync-service
 ```
 
+To connect the main app to the local service outside Docker, set:
+
+```dotenv
+SCHEMADASH_SCHEMA_SYNC_ENABLED=true
+SCHEMADASH_SCHEMA_SYNC_SERVICE_URL=http://localhost:4020
+```
+
+## Docker
+
+Build the standalone image from the repository root so the workspace build can
+see `shared/schema-sync-core`:
+
+```bash
+docker build -f services/schema-sync-service/Dockerfile -t schemadash-schema-sync-service .
+```
+
+Run it directly:
+
+```bash
+docker run --rm \
+  -p 4020:4020 \
+  -e NODE_ENV=production \
+  -e SCHEMADASH_SECRET_KEY=replace-with-a-long-random-secret \
+  -e SCHEMADASH_SCHEMA_SYNC_SERVICE_DATA_DIR=/app/data \
+  -v schemadash-schema-sync-data:/app/data \
+  schemadash-schema-sync-service
+```
+
+The container stores its SQLite metadata database under `/app/data` by default.
+
+## Docker Compose
+
+The repository root compose file keeps the service behind the optional
+`schema-sync` profile so disabled mode stays boring:
+
+```bash
+docker compose up --build -d
+```
+
+This starts `web`, `api`, and `postgres` with schema sync disabled by default.
+
+To enable the standalone service in the compose stack:
+
+```bash
+COMPOSE_PROFILES=schema-sync \
+SCHEMADASH_SCHEMA_SYNC_ENABLED=true \
+docker compose up --build -d
+```
+
+When that profile is enabled:
+
+- Compose starts `schema-sync-adapter`
+- the main app reads `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL=http://schema-sync-adapter:4020`
+- `api` does not hard-crash if the service is briefly unavailable
+- `/api/readyz` on the main app reports schema sync as `down` until the service
+  is healthy
+
+This is intentional. The compose stack favors safe degraded startup for
+unrelated SchemaDash features over hard startup coupling.
+
 ## Routes
 
 Primary routes:
@@ -98,9 +162,33 @@ Internal support routes used by the main app boundary:
 
 Health routes:
 
+- `GET /livez`
+- `GET /readyz`
+- `GET /healthz`
 - `GET /api/livez`
 - `GET /api/readyz`
 - `GET /api/health`
+
+Probe guidance:
+
+- `GET /livez` is process liveness and is suitable for simple liveness checks
+- `GET /readyz` verifies the service can access its SQLite metadata database
+- `GET /healthz` returns the fuller operational snapshot used for debugging
+
+The container image healthcheck uses `GET /readyz`.
+
+## Troubleshooting
+
+- If the main app returns `schema_sync_disabled`, confirm
+  `SCHEMADASH_SCHEMA_SYNC_ENABLED=true`.
+- If the main app returns `schema_sync_service_unavailable`, confirm
+  `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL` points to the reachable service host.
+- In Docker Compose, remember to start the `schema-sync` profile when enabling
+  schema sync.
+- Check `GET /readyz` on the service first. If it returns `503`, the service
+  metadata SQLite database is not ready.
+- In containers, keep the service URL on `http://schema-sync-adapter:4020`.
+  Use `http://localhost:4020` only when the main app runs outside Docker.
 
 ## Current Engine Support
 
