@@ -8,12 +8,11 @@ import type {
 } from '@schemadash/schema-sync-core';
 import { AppRepository } from '../src/repositories/app-repository.js';
 import { DiagramWorkflowRepository } from '../src/repositories/diagram-workflow-repository.js';
-import { MetadataRepository } from '../src/repositories/metadata-repository.js';
 import { DiagramChangelogService } from '../src/services/diagram-changelog-service.js';
 import { PersistenceService } from '../src/services/persistence-service.js';
 import { DiagramWorkflowService } from '../src/services/diagram-workflow-service.js';
 import { DiagramVersionRestoreService } from '../src/services/diagram-version-restore-service.js';
-import type { SchemaSyncService } from '../src/services/schema-sync-service.js';
+import type { SchemaSyncClient } from '../src/schema-sync/client.js';
 
 const tempDirs: string[] = [];
 
@@ -50,10 +49,8 @@ const createHarness = () => {
     tempDirs.push(dataDir);
 
     const appDbPath = path.join(dataDir, 'app.sqlite');
-    const metadataDbPath = path.join(dataDir, 'metadata.sqlite');
     const appRepository = new AppRepository(appDbPath);
     const workflowRepository = new DiagramWorkflowRepository(appDbPath);
-    const metadataRepository = new MetadataRepository(metadataDbPath);
     const persistenceService = new PersistenceService(appRepository, {
         defaultOwnerName: 'Test Owner',
         defaultProjectName: 'Test Project',
@@ -84,14 +81,49 @@ const createHarness = () => {
                 schemas: string[];
             }) => Promise<ImportLiveSchemaResponse>
         >();
-    const schemaSyncService = {
+    const schemaSyncClient = {
+        config: {
+            enabled: true,
+            mode: 'external-service',
+            serviceUrl: 'http://schema-sync.test',
+        },
+        getReadiness: vi.fn().mockResolvedValue({
+            enabled: true,
+            mode: 'external-service',
+            serviceUrl: 'http://schema-sync.test',
+            status: 'up',
+            ok: true,
+            error: null,
+        }),
+        getConnection: vi.fn().mockResolvedValue({
+            id: 'connection-1',
+            name: 'Warehouse',
+            engine: 'postgresql',
+            defaultSchemas: ['public'],
+            host: 'localhost',
+            port: 5432,
+            database: 'warehouse',
+            username: 'postgres',
+            createdAt: '2026-03-29T09:00:00.000Z',
+            updatedAt: '2026-03-29T09:00:00.000Z',
+        }),
         importLiveSchema,
-    } as unknown as SchemaSyncService;
+        listConnections: vi.fn(),
+        createConnection: vi.fn(),
+        updateConnection: vi.fn(),
+        deleteConnection: vi.fn(),
+        testConnection: vi.fn(),
+        diffSchema: vi.fn(),
+        applySchema: vi.fn(),
+        getApplyJob: vi.fn(),
+        getAudit: vi.fn(),
+        getLatestAuditForChangePlan: vi.fn(),
+        getSnapshot: vi.fn(),
+    } as unknown as SchemaSyncClient;
     const workflowService = new DiagramWorkflowService(
         workflowRepository,
-        metadataRepository,
         persistenceService,
-        schemaSyncService
+        schemaSyncClient
     );
     const changelogService = new DiagramChangelogService(
         workflowRepository,

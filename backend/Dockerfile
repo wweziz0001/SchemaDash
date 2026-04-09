@@ -3,8 +3,10 @@ FROM node:24-bookworm-slim AS builder
 WORKDIR /usr/src/app
 
 COPY package.json package-lock.json ./
-COPY packages/schema-sync-core/package.json ./packages/schema-sync-core/package.json
+COPY frontend/package.json ./frontend/package.json
+COPY shared/schema-sync-core/package.json ./shared/schema-sync-core/package.json
 COPY backend/package.json ./backend/package.json
+COPY services/schema-sync-service/package.json ./services/schema-sync-service/package.json
 
 RUN npm ci
 
@@ -24,8 +26,8 @@ ENV SCHEMADASH_DATA_DIR=/app/data
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/backend/dist ./dist
 COPY --from=builder /usr/src/app/backend/package.json ./package.json
-COPY --from=builder /usr/src/app/packages/schema-sync-core/dist ./node_modules/@schemadash/schema-sync-core/dist
-COPY --from=builder /usr/src/app/packages/schema-sync-core/package.json ./node_modules/@schemadash/schema-sync-core/package.json
+COPY --from=builder /usr/src/app/shared/schema-sync-core/dist ./node_modules/@schemadash/schema-sync-core/dist
+COPY --from=builder /usr/src/app/shared/schema-sync-core/package.json ./node_modules/@schemadash/schema-sync-core/package.json
 
 RUN mkdir -p /app/data && chown -R node:node /app
 

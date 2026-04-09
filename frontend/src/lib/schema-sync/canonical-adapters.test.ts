@@ -3,11 +3,25 @@ import {
     canonicalSchemaToDiagram,
     diagramToCanonicalSchema,
 } from './canonical-adapters';
+import { getDiagramSchemaSyncEngineDefinition } from './engine-definitions';
 import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 import { DatabaseType } from '@/lib/domain/database-type';
 import { DBCustomTypeKind, type Diagram } from '@/lib/domain';
 
 describe('canonical adapters', () => {
+    it('exposes a PostgreSQL engine definition for canonical mapping', () => {
+        const definition = getDiagramSchemaSyncEngineDefinition('postgresql');
+
+        expect(definition.id).toBe('postgresql');
+        expect(definition.defaultNamespace).toBe('public');
+        expect(definition.canonicalMapping.diagramToCanonicalSchema).toBeTypeOf(
+            'function'
+        );
+        expect(definition.canonicalMapping.canonicalSchemaToDiagram).toBeTypeOf(
+            'function'
+        );
+    });
+
     it('preserves sync metadata during import to diagram', () => {
         const canonical: CanonicalSchema = {
             engine: 'postgresql',

@@ -161,6 +161,11 @@ const envSchema = z.object({
         .min(1)
         .optional()
         .default('openid profile email'),
+    SCHEMADASH_SCHEMA_SYNC_ENABLED: z
+        .enum(['true', 'false'])
+        .optional()
+        .default('false'),
+    SCHEMADASH_SCHEMA_SYNC_SERVICE_URL: z.string().trim().url().optional(),
     SCHEMADASH_DEFAULT_PROJECT_NAME: z
         .string()
         .optional()
@@ -252,6 +257,9 @@ export interface ServerEnv {
     oidcRedirectUrl: string | null;
     oidcLogoutUrl: string | null;
     oidcScopes: string;
+    schemaSyncEnabled: boolean;
+    schemaSyncMode: 'disabled' | 'external-service';
+    schemaSyncServiceUrl: string | null;
     dataDir: string;
     metadataDbPath: string;
     appDbPath: string;
@@ -350,6 +358,14 @@ export const parseServerEnv = (
         );
     }
 
+    const schemaSyncEnabled =
+        parsedEnv.SCHEMADASH_SCHEMA_SYNC_ENABLED === 'true';
+    if (schemaSyncEnabled && !parsedEnv.SCHEMADASH_SCHEMA_SYNC_SERVICE_URL) {
+        throw new Error(
+            'SCHEMADASH_SCHEMA_SYNC_SERVICE_URL must be set when SCHEMADASH_SCHEMA_SYNC_ENABLED=true.'
+        );
+    }
+
     const resolvedSecretKey = resolveSecretKey(parsedEnv, parsedEnv.NODE_ENV);
     const runtimeWarnings = [...legacyWarnings, ...resolvedSecretKey.warnings];
 
@@ -380,6 +396,10 @@ export const parseServerEnv = (
         oidcRedirectUrl: parsedEnv.SCHEMADASH_OIDC_REDIRECT_URL ?? null,
         oidcLogoutUrl: parsedEnv.SCHEMADASH_OIDC_LOGOUT_URL ?? null,
         oidcScopes: parsedEnv.SCHEMADASH_OIDC_SCOPES,
+        schemaSyncEnabled,
+        schemaSyncMode: schemaSyncEnabled ? 'external-service' : 'disabled',
+        schemaSyncServiceUrl:
+            parsedEnv.SCHEMADASH_SCHEMA_SYNC_SERVICE_URL ?? null,
         dataDir,
         metadataDbPath: parsedEnv.SCHEMADASH_METADATA_DB_PATH
             ? path.resolve(parsedEnv.SCHEMADASH_METADATA_DB_PATH)

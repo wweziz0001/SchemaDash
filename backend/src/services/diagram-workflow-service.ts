@@ -9,14 +9,13 @@ import type {
     DiagramWorkflowStateRecord,
     DiagramWorkflowVersionRecord,
 } from '../repositories/diagram-workflow-repository.js';
-import type { MetadataRepository } from '../repositories/metadata-repository.js';
 import {
     bindDiagramWorkflowConnectionSchema,
     createDiagramWorkflowVersionSchema,
     type DiagramWorkflowVersionOrigin,
 } from '../schemas/diagram-workflow.js';
 import type { PersistenceService } from './persistence-service.js';
-import type { SchemaSyncService } from './schema-sync-service.js';
+import type { SchemaSyncClient } from '../schema-sync/client.js';
 import { AppError } from '../utils/app-error.js';
 import { generateId } from '../utils/id.js';
 import type { DiagramDocument } from '../schemas/persistence.js';
@@ -102,9 +101,8 @@ export interface DiagramWorkflowVersionDeleteResultView {
 export class DiagramWorkflowService {
     constructor(
         private readonly repository: DiagramWorkflowRepository,
-        private readonly metadataRepository: MetadataRepository,
         private readonly persistenceService: PersistenceService,
-        private readonly schemaSyncService: SchemaSyncService
+        private readonly schemaSyncClient: SchemaSyncClient
     ) {}
 
     getDiagramWorkflow(
@@ -270,14 +268,14 @@ export class DiagramWorkflowService {
         };
     }
 
-    bindConnection(
+    async bindConnection(
         diagramId: string,
         input: unknown,
         actor?: AppUserRecord | null
-    ): DiagramWorkflowView {
+    ): Promise<DiagramWorkflowView> {
         const diagram = this.requireEditableDiagram(diagramId, actor);
         const payload = bindDiagramWorkflowConnectionSchema.parse(input);
-        const connection = this.metadataRepository.getConnection(
+        const connection = await this.schemaSyncClient.getConnection(
             payload.connectionId
         );
 
@@ -361,7 +359,7 @@ export class DiagramWorkflowService {
             );
         }
 
-        const connection = this.metadataRepository.getConnection(
+        const connection = await this.schemaSyncClient.getConnection(
             existing.connectionId
         );
         if (!connection) {
@@ -390,7 +388,7 @@ export class DiagramWorkflowService {
         });
 
         try {
-            const result = await this.schemaSyncService.importLiveSchema({
+            const result = await this.schemaSyncClient.importLiveSchema({
                 connectionId: connection.id,
                 schemas: importedSchemas,
             });

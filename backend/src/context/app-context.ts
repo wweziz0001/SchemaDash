@@ -1,11 +1,8 @@
 import type { ServerEnv } from '../config/env.js';
 import { AppRepository } from '../repositories/app-repository.js';
 import { DiagramWorkflowRepository } from '../repositories/diagram-workflow-repository.js';
-import { MetadataRepository } from '../repositories/metadata-repository.js';
-import { ApplyService } from '../services/apply-service.js';
 import { AdminService } from '../services/admin-service.js';
 import { AuthService } from '../services/auth-service.js';
-import { ConnectionsService } from '../services/connections-service.js';
 import { DiagramChangelogService } from '../services/diagram-changelog-service.js';
 import { DiagramMigrationService } from '../services/diagram-migration-service.js';
 import { DiagramVersionRestoreService } from '../services/diagram-version-restore-service.js';
@@ -13,18 +10,18 @@ import { DiagramWorkflowService } from '../services/diagram-workflow-service.js'
 import { DiagramCollaborationBroker } from '../services/diagram-collaboration-broker.js';
 import type { OidcClientProvider } from '../services/oidc-provider.js';
 import { PersistenceService } from '../services/persistence-service.js';
-import { SchemaSyncService } from '../services/schema-sync-service.js';
+import {
+    createSchemaSyncClient,
+    type SchemaSyncClient,
+} from '../schema-sync/client.js';
 
 export interface AppContext {
     env: ServerEnv;
-    metadataRepository: MetadataRepository;
     appRepository: AppRepository;
     authService: AuthService;
     adminService: AdminService;
-    connectionsService: ConnectionsService;
     diagramCollaborationBroker: DiagramCollaborationBroker;
-    schemaSyncService: SchemaSyncService;
-    applyService: ApplyService;
+    schemaSyncClient: SchemaSyncClient;
     diagramMigrationService: DiagramMigrationService;
     persistenceService: PersistenceService;
     diagramWorkflowService: DiagramWorkflowService;
@@ -36,14 +33,11 @@ export interface AppContext {
 export const createAppContext = (
     env: ServerEnv,
     options?: {
-        metadataRepository?: MetadataRepository;
         appRepository?: AppRepository;
         oidcProvider?: OidcClientProvider;
+        schemaSyncClient?: SchemaSyncClient;
     }
 ): AppContext => {
-    const metadataRepository =
-        options?.metadataRepository ??
-        new MetadataRepository(env.metadataDbPath);
     const appRepository =
         options?.appRepository ?? new AppRepository(env.appDbPath);
     const diagramWorkflowRepository = new DiagramWorkflowRepository(
@@ -54,21 +48,10 @@ export const createAppContext = (
         env,
         options?.oidcProvider
     );
+    const schemaSyncClient =
+        options?.schemaSyncClient ?? createSchemaSyncClient(env);
     const diagramCollaborationBroker = new DiagramCollaborationBroker();
     const adminService = new AdminService(appRepository, authService, env);
-    const connectionsService = new ConnectionsService(
-        metadataRepository,
-        env.encryptionKey
-    );
-    const schemaSyncService = new SchemaSyncService(
-        metadataRepository,
-        connectionsService
-    );
-    const applyService = new ApplyService(
-        metadataRepository,
-        connectionsService,
-        schemaSyncService
-    );
     const persistenceService = new PersistenceService(
         appRepository,
         {
@@ -82,9 +65,8 @@ export const createAppContext = (
     );
     const diagramWorkflowService = new DiagramWorkflowService(
         diagramWorkflowRepository,
-        metadataRepository,
         persistenceService,
-        schemaSyncService
+        schemaSyncClient
     );
     const diagramChangelogService = new DiagramChangelogService(
         diagramWorkflowRepository,
@@ -97,31 +79,23 @@ export const createAppContext = (
     );
     const diagramMigrationService = new DiagramMigrationService(
         diagramWorkflowRepository,
-        metadataRepository,
         persistenceService,
-        connectionsService,
-        applyService
+        schemaSyncClient
     );
 
     return {
         env,
-        metadataRepository,
         appRepository,
         authService,
         adminService,
-        connectionsService,
         diagramCollaborationBroker,
-        schemaSyncService,
-        applyService,
+        schemaSyncClient,
         diagramMigrationService,
         persistenceService,
         diagramWorkflowService,
         diagramChangelogService,
         diagramVersionRestoreService,
         close: () => {
-            if (!options?.metadataRepository) {
-                metadataRepository.close();
-            }
             if (!options?.appRepository) {
                 appRepository.close();
             }

@@ -1,16 +1,19 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import type { CanonicalSchema } from '@schemadash/schema-sync-core';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type {
+    CanonicalSchema,
+    DiffSchemaResponse,
+} from '@schemadash/schema-sync-core';
 import { buildApp } from '../src/app.js';
 import type { ServerEnv } from '../src/config/env.js';
 import { AppRepository } from '../src/repositories/app-repository.js';
-import { MetadataRepository } from '../src/repositories/metadata-repository.js';
+import type { SchemaSyncClient } from '../src/schema-sync/client.js';
 
 const tempDirs: string[] = [];
 
-const createSchemaSyncEnv = (): ServerEnv => {
+const createSchemaSyncEnv = (overrides: Partial<ServerEnv> = {}): ServerEnv => {
     const dataDir = mkdtempSync(path.join(os.tmpdir(), 'chartdb-schema-sync-'));
     tempDirs.push(dataDir);
     return {
@@ -36,12 +39,16 @@ const createSchemaSyncEnv = (): ServerEnv => {
         oidcRedirectUrl: null,
         oidcLogoutUrl: null,
         oidcScopes: 'openid profile email',
+        schemaSyncEnabled: false,
+        schemaSyncMode: 'disabled',
+        schemaSyncServiceUrl: null,
         dataDir,
         metadataDbPath: path.join(dataDir, 'schema-sync.sqlite'),
         appDbPath: path.join(dataDir, 'chartdb-app.sqlite'),
         encryptionKey: Buffer.from('test-key'),
         defaultOwnerName: 'Test Owner',
         defaultProjectName: 'Test Project',
+        ...overrides,
     };
 };
 
@@ -68,6 +75,39 @@ const createCanonicalSchema = (): CanonicalSchema => ({
     importedAt: '2026-03-25T00:00:00.000Z',
 });
 
+const createSchemaSyncClientMock = (
+    overrides: Partial<SchemaSyncClient> = {}
+): SchemaSyncClient =>
+    ({
+        config: {
+            enabled: true,
+            mode: 'external-service',
+            serviceUrl: 'http://schema-sync.test',
+        },
+        getReadiness: vi.fn().mockResolvedValue({
+            enabled: true,
+            mode: 'external-service',
+            serviceUrl: 'http://schema-sync.test',
+            status: 'up',
+            ok: true,
+            error: null,
+        }),
+        listConnections: vi.fn().mockResolvedValue([]),
+        getConnection: vi.fn().mockResolvedValue(null),
+        createConnection: vi.fn(),
+        updateConnection: vi.fn(),
+        deleteConnection: vi.fn(),
+        testConnection: vi.fn(),
+        importLiveSchema: vi.fn(),
+        diffSchema: vi.fn(),
+        applySchema: vi.fn(),
+        getApplyJob: vi.fn().mockResolvedValue(null),
+        getAudit: vi.fn().mockResolvedValue(null),
+        getLatestAuditForChangePlan: vi.fn().mockResolvedValue(null),
+        getSnapshot: vi.fn().mockResolvedValue(null),
+        ...overrides,
+    }) as SchemaSyncClient;
+
 afterEach(() => {
     while (tempDirs.length > 0) {
         const dir = tempDirs.pop();
@@ -78,14 +118,39 @@ afterEach(() => {
 });
 
 describe('schema sync routes', () => {
+    it('returns 503 when schema sync is disabled', async () => {
+        const app = buildApp({
+            env: createSchemaSyncEnv({
+                authMode: 'disabled',
+            }),
+        });
+
+        const response = await app.inject({
+            method: 'GET',
+            url: '/api/connections',
+        });
+
+        expect(response.statusCode).toBe(503);
+        expect(response.json()).toEqual(
+            expect.objectContaining({
+                code: 'schema_sync_disabled',
+            })
+        );
+
+        await app.close();
+    });
+
     it('requires an administrator for operational schema-sync routes when auth is enabled', async () => {
-        const env = createSchemaSyncEnv();
+        const env = createSchemaSyncEnv({
+            schemaSyncEnabled: true,
+            schemaSyncMode: 'external-service',
+            schemaSyncServiceUrl: 'http://schema-sync.test',
+        });
         const appRepository = new AppRepository(env.appDbPath);
-        const metadataRepository = new MetadataRepository(env.metadataDbPath);
         const app = buildApp({
             env,
             appRepository,
-            metadataRepository,
+            schemaSyncClient: createSchemaSyncClientMock(),
         });
 
         const loginResponse = await app.inject({
@@ -120,18 +185,46 @@ describe('schema sync routes', () => {
         );
 
         await app.close();
-        metadataRepository.close();
         appRepository.close();
     });
 
-    it('derives the diff audit actor from the authenticated request instead of the client payload', async () => {
-        const env = createSchemaSyncEnv();
+    it('routes diff requests through the schema sync client and overwrites spoofed actors', async () => {
+        const env = createSchemaSyncEnv({
+            schemaSyncEnabled: true,
+            schemaSyncMode: 'external-service',
+            schemaSyncServiceUrl: 'http://schema-sync.test',
+        });
         const appRepository = new AppRepository(env.appDbPath);
-        const metadataRepository = new MetadataRepository(env.metadataDbPath);
+        const diffResponse: DiffSchemaResponse = {
+            plan: {
+                id: 'plan-1',
+                baselineSnapshotId: 'baseline-snapshot',
+                connectionId: 'connection-1',
+                engine: 'postgresql',
+                baselineFingerprint: 'baseline-fingerprint',
+                targetFingerprint: 'baseline-fingerprint',
+                changes: [],
+                warnings: [],
+                sqlStatements: [],
+                summary: {
+                    totalChanges: 0,
+                    safeChanges: 0,
+                    warningChanges: 0,
+                    destructiveChanges: 0,
+                    blockedChanges: 0,
+                },
+                requiresConfirmation: false,
+                blocked: false,
+                createdAt: '2026-03-25T00:00:00.000Z',
+            },
+        };
+        const schemaSyncClient = createSchemaSyncClientMock({
+            diffSchema: vi.fn().mockResolvedValue(diffResponse),
+        });
         const app = buildApp({
             env,
             appRepository,
-            metadataRepository,
+            schemaSyncClient,
         });
 
         const loginResponse = await app.inject({
@@ -144,15 +237,6 @@ describe('schema sync routes', () => {
         });
         const cookie = getSessionCookie(loginResponse.headers['set-cookie']);
         const baselineSchema = createCanonicalSchema();
-        metadataRepository.putSnapshot({
-            id: 'baseline-snapshot',
-            connectionId: 'connection-1',
-            kind: 'baseline',
-            fingerprint: 'baseline-fingerprint',
-            importedSchemas: ['public'],
-            schema: baselineSchema,
-            createdAt: '2026-03-25T00:00:00.000Z',
-        });
 
         const response = await app.inject({
             method: 'POST',
@@ -168,25 +252,14 @@ describe('schema sync routes', () => {
         });
 
         expect(response.statusCode).toBe(200);
-        const body = response.json() as {
-            plan: {
-                id: string;
-            };
-        };
-        const audit = metadataRepository.getLatestAuditForChangePlan(
-            body.plan.id
-        );
-
-        expect(audit).toEqual(
-            expect.objectContaining({
-                actor: 'admin:owner@example.com',
-                changePlanId: body.plan.id,
-                status: 'pending',
-            })
-        );
+        expect(schemaSyncClient.diffSchema).toHaveBeenCalledWith({
+            baselineSnapshotId: 'baseline-snapshot',
+            targetSchema: baselineSchema,
+            actor: 'admin:owner@example.com',
+        });
+        expect(response.json()).toEqual(diffResponse);
 
         await app.close();
-        metadataRepository.close();
         appRepository.close();
     });
 });

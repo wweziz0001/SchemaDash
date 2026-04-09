@@ -8,10 +8,9 @@ import type {
 } from '@schemadash/schema-sync-core';
 import { AppRepository } from '../src/repositories/app-repository.js';
 import { DiagramWorkflowRepository } from '../src/repositories/diagram-workflow-repository.js';
-import { MetadataRepository } from '../src/repositories/metadata-repository.js';
 import { PersistenceService } from '../src/services/persistence-service.js';
 import { DiagramWorkflowService } from '../src/services/diagram-workflow-service.js';
-import type { SchemaSyncService } from '../src/services/schema-sync-service.js';
+import type { SchemaSyncClient } from '../src/schema-sync/client.js';
 
 const tempDirs: string[] = [];
 
@@ -45,10 +44,8 @@ const createHarness = () => {
     tempDirs.push(dataDir);
 
     const appDbPath = path.join(dataDir, 'app.sqlite');
-    const metadataDbPath = path.join(dataDir, 'metadata.sqlite');
     const appRepository = new AppRepository(appDbPath);
     const workflowRepository = new DiagramWorkflowRepository(appDbPath);
-    const metadataRepository = new MetadataRepository(metadataDbPath);
     const persistenceService = new PersistenceService(appRepository, {
         defaultOwnerName: 'Test Owner',
         defaultProjectName: 'Test Project',
@@ -67,20 +64,6 @@ const createHarness = () => {
         },
     });
 
-    metadataRepository.putConnection({
-        id: 'connection-1',
-        name: 'Warehouse',
-        engine: 'postgresql',
-        defaultSchemas: ['public'],
-        host: 'localhost',
-        port: 5432,
-        database: 'warehouse',
-        username: 'postgres',
-        secretCiphertext: 'ciphertext',
-        createdAt: '2026-03-28T09:00:00.000Z',
-        updatedAt: '2026-03-28T09:00:00.000Z',
-    });
-
     const importLiveSchema =
         vi.fn<
             (request: {
@@ -88,25 +71,58 @@ const createHarness = () => {
                 schemas: string[];
             }) => Promise<ImportLiveSchemaResponse>
         >();
-    const schemaSyncService = {
+    const schemaSyncClient = {
+        config: {
+            enabled: true,
+            mode: 'external-service',
+            serviceUrl: 'http://schema-sync.test',
+        },
+        getReadiness: vi.fn().mockResolvedValue({
+            enabled: true,
+            mode: 'external-service',
+            serviceUrl: 'http://schema-sync.test',
+            status: 'up',
+            ok: true,
+            error: null,
+        }),
+        getConnection: vi.fn().mockResolvedValue({
+            id: 'connection-1',
+            name: 'Warehouse',
+            engine: 'postgresql',
+            defaultSchemas: ['public'],
+            host: 'localhost',
+            port: 5432,
+            database: 'warehouse',
+            username: 'postgres',
+            createdAt: '2026-03-28T09:00:00.000Z',
+            updatedAt: '2026-03-28T09:00:00.000Z',
+        }),
         importLiveSchema,
-    } as unknown as SchemaSyncService;
+        listConnections: vi.fn(),
+        createConnection: vi.fn(),
+        updateConnection: vi.fn(),
+        deleteConnection: vi.fn(),
+        testConnection: vi.fn(),
+        diffSchema: vi.fn(),
+        applySchema: vi.fn(),
+        getApplyJob: vi.fn(),
+        getAudit: vi.fn(),
+        getLatestAuditForChangePlan: vi.fn(),
+        getSnapshot: vi.fn(),
+    } as unknown as SchemaSyncClient;
     const workflowService = new DiagramWorkflowService(
         workflowRepository,
-        metadataRepository,
         persistenceService,
-        schemaSyncService
+        schemaSyncClient
     );
 
     return {
         appRepository,
         actor: bootstrap.user,
-        defaultProjectId: bootstrap.defaultProject.id,
         workflowRepository,
-        metadataRepository,
-        persistenceService,
         workflowService,
         importLiveSchema,
+        getConnection: vi.mocked(schemaSyncClient.getConnection),
     };
 };
 
@@ -120,15 +136,17 @@ afterEach(() => {
 });
 
 describe('diagram workflow service', () => {
-    it('binds a diagram to a saved connection without replacing Development', () => {
-        const { appRepository, workflowService } = createHarness();
+    it('binds a diagram to a saved remote connection without replacing Development', async () => {
+        const { appRepository, workflowService, getConnection } =
+            createHarness();
 
         const beforeDocument = appRepository.getDiagram('diagram-1')?.document;
-        const workflow = workflowService.bindConnection('diagram-1', {
+        const workflow = await workflowService.bindConnection('diagram-1', {
             connectionId: 'connection-1',
             importedSchemas: ['public', 'analytics'],
         });
 
+        expect(getConnection).toHaveBeenCalledWith('connection-1');
         expect(workflow.connectionId).toBe('connection-1');
         expect(workflow.importedSchemas).toEqual(['public', 'analytics']);
         expect(workflow.liveSnapshotId).toBeNull();
@@ -161,11 +179,11 @@ describe('diagram workflow service', () => {
                 updatedAt: '2026-03-28T09:00:00.000Z',
             },
             snapshotId: 'metadata-baseline-1',
-            fingerprint: liveSchema.fingerprint,
+            fingerprint: liveSchema.fingerprint!,
             canonicalSchema: liveSchema,
         });
 
-        workflowService.bindConnection('diagram-1', {
+        await workflowService.bindConnection('diagram-1', {
             connectionId: 'connection-1',
             importedSchemas: ['public'],
         });
@@ -200,128 +218,6 @@ describe('diagram workflow service', () => {
         );
         expect(appRepository.getDiagram('diagram-1')?.document).toEqual(
             beforeDocument
-        );
-    });
-
-    it('creates immutable version snapshots that can be listed and opened later', () => {
-        const {
-            actor,
-            appRepository,
-            defaultProjectId,
-            persistenceService,
-            workflowRepository,
-            workflowService,
-        } = createHarness();
-        const developmentDocument =
-            appRepository.getDiagram('diagram-1')?.document ?? null;
-
-        expect(developmentDocument).toBeTruthy();
-
-        const createdVersion = workflowService.createVersion(
-            'diagram-1',
-            {
-                name: null,
-                description: 'Before the rename',
-                origin: 'manual',
-                canonicalSchema: createCanonicalSchema(),
-                diagramDocument: developmentDocument,
-            },
-            actor
-        );
-
-        expect(createdVersion.versionLabel).toBe('Version 1');
-        expect(createdVersion.description).toBe('Before the rename');
-        expect(createdVersion.createdBy?.displayName).toBe('Test Owner');
-        expect(createdVersion.snapshot.diagramDocument).toEqual(
-            developmentDocument
-        );
-        expect(
-            workflowRepository.getSnapshot(createdVersion.snapshotId)
-        ).toEqual(
-            expect.objectContaining({
-                snapshotKind: 'version',
-                sourceKind: 'development',
-            })
-        );
-
-        const listedVersions = workflowService.listVersions('diagram-1', actor);
-        expect(listedVersions).toHaveLength(1);
-        expect(listedVersions[0]).toEqual(
-            expect.objectContaining({
-                id: createdVersion.id,
-                description: 'Before the rename',
-                versionLabel: 'Version 1',
-            })
-        );
-
-        persistenceService.upsertDiagram('diagram-1', {
-            projectId: defaultProjectId,
-            ownerUserId: actor.id,
-            diagram: {
-                ...developmentDocument!,
-                name: 'Renamed Development Diagram',
-                updatedAt: '2026-03-28T12:00:00.000Z',
-            },
-        });
-
-        const reopenedVersion = workflowService.getVersion(
-            'diagram-1',
-            createdVersion.id,
-            actor
-        );
-
-        expect(reopenedVersion.snapshot.diagramDocument?.name).toBe(
-            'Development Diagram'
-        );
-        expect(appRepository.getDiagram('diagram-1')?.document.name).toBe(
-            'Renamed Development Diagram'
-        );
-    });
-
-    it('deletes a saved version and removes its snapshot from history', () => {
-        const { actor, appRepository, workflowRepository, workflowService } =
-            createHarness();
-        const developmentDocument =
-            appRepository.getDiagram('diagram-1')?.document ?? null;
-
-        const versionOne = workflowService.createVersion(
-            'diagram-1',
-            {
-                name: 'Version One',
-                description: null,
-                origin: 'manual',
-                canonicalSchema: createCanonicalSchema(),
-                diagramDocument: developmentDocument,
-            },
-            actor
-        );
-        const versionTwo = workflowService.createVersion(
-            'diagram-1',
-            {
-                name: 'Version Two',
-                description: null,
-                origin: 'manual',
-                canonicalSchema: createCanonicalSchema(),
-                diagramDocument: developmentDocument,
-            },
-            actor
-        );
-
-        const result = workflowService.deleteVersion(
-            'diagram-1',
-            versionOne.id,
-            actor
-        );
-
-        expect(result.deletedVersionId).toBe(versionOne.id);
-        expect(result.versions).toHaveLength(1);
-        expect(result.versions[0]?.id).toBe(versionTwo.id);
-        expect(workflowRepository.getVersion(versionOne.id)).toBeUndefined();
-        expect(
-            workflowRepository.getSnapshot(versionOne.snapshotId)
-        ).toBeUndefined();
-        expect(workflowService.listVersions('diagram-1', actor)).toHaveLength(
-            1
         );
     });
 });

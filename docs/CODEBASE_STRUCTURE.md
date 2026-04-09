@@ -22,10 +22,9 @@ Key runtime parts of the system:
 
 ### Root
 
-- `package.json` -> workspace root, development/build/test scripts, frontend dependencies, and backend/core workspace orchestration.
+- `package.json` -> workspace root, shared development/build/test orchestration, and monorepo tooling.
 - `tsconfig.json` -> TypeScript project references for the frontend app and node config.
 - `.env.example` -> deployment and local development environment variables for frontend runtime, backend auth/persistence, and Docker ports.
-- `Dockerfile` -> production web image builder for the frontend bundle.
 - `docker-compose.yml` -> local full-stack deployment with `web`, `api`, and `postgres`.
 - `README.md` -> product overview, setup instructions, and links to architecture/operations docs.
 
@@ -42,6 +41,8 @@ Key subfolders:
 - `frontend/src/lib/` -> domain models, import/export logic, DBML support, SQL tooling, utility helpers, and runtime env access.
 - `frontend/src/assets/`, `frontend/public/`, `frontend/src/templates-data/` -> images, examples, and template data.
 - `frontend/test/` -> frontend test support.
+- `frontend/package.json` -> frontend-specific dependencies and scripts.
+- `frontend/Dockerfile` -> production web image builder for the frontend bundle.
 - `frontend/src/features/` does not exist anymore; former feature-owned code has been redistributed into the native folders above.
 
 Important entry files:

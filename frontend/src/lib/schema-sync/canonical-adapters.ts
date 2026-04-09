@@ -1,4 +1,5 @@
 import {
+    type DatabaseEngine,
     type CanonicalColumn,
     type CanonicalCompositeType,
     type CanonicalCustomType,
@@ -7,6 +8,7 @@ import {
     type CanonicalSchema,
     type CanonicalTable,
     type CanonicalUniqueConstraint,
+    getSchemaEngineDefaultNamespace,
 } from '@schemadash/schema-sync-core';
 import { DatabaseType } from '@/lib/domain/database-type';
 import type {
@@ -30,7 +32,19 @@ import { defaultSchemas } from '@/lib/data/default-schemas';
 import { generateDBFieldSuffix } from '@/lib/domain/db-field';
 import { generateDiagramId, generateId } from '@/lib/utils';
 
-const defaultSchemaName = defaultSchemas[DatabaseType.POSTGRESQL] ?? 'public';
+const schemaSyncDiagramDatabaseTypes: Record<DatabaseEngine, DatabaseType> = {
+    postgresql: DatabaseType.POSTGRESQL,
+    mysql: DatabaseType.MYSQL,
+    mariadb: DatabaseType.MARIADB,
+    sqlserver: DatabaseType.SQL_SERVER,
+};
+
+const getSchemaSyncDatabaseType = (engine: DatabaseEngine): DatabaseType =>
+    schemaSyncDiagramDatabaseTypes[engine];
+
+const getDefaultSchemaName = (engine: DatabaseEngine): string =>
+    defaultSchemas[getSchemaSyncDatabaseType(engine)] ??
+    getSchemaEngineDefaultNamespace(engine);
 
 const normalizeTypeReference = (typeName: string) =>
     typeName.replace(/\[\]$/, '').replace(/"/g, '').trim();
@@ -38,11 +52,15 @@ const normalizeTypeReference = (typeName: string) =>
 const customTypeKey = (schemaName: string, typeName: string) =>
     `${schemaName}.${typeName}`.toLowerCase();
 
-const normalizeDataType = (typeName: string): DataType => {
+const normalizeDataType = (
+    typeName: string,
+    engine: DatabaseEngine
+): DataType => {
+    const databaseType = getSchemaSyncDatabaseType(engine);
     const normalized = typeName.replace(/\[\]$/, '').trim().toLowerCase();
-    const preferred = getPreferredSynonym(normalized, DatabaseType.POSTGRESQL);
+    const preferred = getPreferredSynonym(normalized, databaseType);
     const dataType = preferred ??
-        findDataTypeDataById(normalized, DatabaseType.POSTGRESQL) ?? {
+        findDataTypeDataById(normalized, databaseType) ?? {
             id: normalized.replace(/\s+/g, '_'),
             name: typeName,
         };
@@ -92,7 +110,7 @@ const canonicalCustomTypeToDiagramCustomType = (
 const diagramCustomTypeToCanonicalCustomType = (
     customType: DBCustomType
 ): CanonicalCustomType => {
-    const schemaName = customType.schema ?? defaultSchemaName;
+    const schemaName = customType.schema ?? getDefaultSchemaName('postgresql');
     if (customType.kind === DBCustomTypeKind.enum) {
         const canonical: CanonicalEnumType = {
             id: customType.syncMetadata?.sourceId ?? customType.id,
@@ -186,6 +204,7 @@ export const canonicalSchemaToDiagram = ({
     diagramName?: string;
     schemaSync?: Diagram['schemaSync'];
 }): Diagram => {
+    const databaseType = getSchemaSyncDatabaseType(canonicalSchema.engine);
     const customTypes = canonicalSchema.customTypes.map(
         canonicalCustomTypeToDiagramCustomType
     );
@@ -214,7 +233,10 @@ export const canonicalSchemaToDiagram = ({
                       id: referencedCustomType.name,
                       name: referencedCustomType.name,
                   }
-                : normalizeDataType(column.dataTypeDisplay ?? column.dataType);
+                : normalizeDataType(
+                      column.dataTypeDisplay ?? column.dataType,
+                      canonicalSchema.engine
+                  );
 
             return {
                 id: generateId(),
@@ -365,7 +387,7 @@ export const canonicalSchemaToDiagram = ({
     return {
         id: diagramId,
         name: diagramName ?? canonicalSchema.databaseName,
-        databaseType: DatabaseType.POSTGRESQL,
+        databaseType,
         tables: adjustedTables,
         relationships,
         dependencies: [],
@@ -480,6 +502,8 @@ const buildUniqueConstraints = ({
 };
 
 export const diagramToCanonicalSchema = (diagram: Diagram): CanonicalSchema => {
+    const schemaSyncEngine: DatabaseEngine = 'postgresql';
+    const defaultSchemaName = getDefaultSchemaName(schemaSyncEngine);
     const canonicalCustomTypes = (diagram.customTypes ?? []).map(
         diagramCustomTypeToCanonicalCustomType
     );
@@ -634,9 +658,7 @@ export const diagramToCanonicalSchema = (diagram: Diagram): CanonicalSchema => {
                                 `${table.schema ?? 'public'}.${table.name}.${localField.name}`,
                         ],
                         referencedSchemaName:
-                            referencedTable.schema ??
-                            defaultSchemas[DatabaseType.POSTGRESQL] ??
-                            'public',
+                            referencedTable.schema ?? defaultSchemaName,
                         referencedTableName: referencedTable.name,
                         referencedColumnNames: [referencedField.name],
                         sync: {
@@ -654,10 +676,7 @@ export const diagramToCanonicalSchema = (diagram: Diagram): CanonicalSchema => {
             id:
                 table.syncMetadata?.sourceId ??
                 `${table.schema ?? 'public'}.${table.name}`,
-            schemaName:
-                table.schema ??
-                defaultSchemas[DatabaseType.POSTGRESQL] ??
-                'public',
+            schemaName: table.schema ?? defaultSchemaName,
             name: table.name,
             kind: table.isView ? 'view' : 'table',
             columns,
@@ -695,10 +714,10 @@ export const diagramToCanonicalSchema = (diagram: Diagram): CanonicalSchema => {
     });
 
     const canonical: CanonicalSchema = {
-        engine: 'postgresql',
+        engine: schemaSyncEngine,
         databaseName: diagram.name,
-        defaultSchemaName: defaultSchemaName,
-        schemaNames: schemaNames.length > 0 ? schemaNames : ['public'],
+        defaultSchemaName,
+        schemaNames: schemaNames.length > 0 ? schemaNames : [defaultSchemaName],
         tables,
         customTypes: canonicalCustomTypes,
     };

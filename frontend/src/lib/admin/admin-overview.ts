@@ -30,7 +30,7 @@ export interface AdminOverviewResponse {
         oidcConfigured: boolean;
         persistence: {
             app: 'sqlite';
-            schemaSync: 'sqlite';
+            schemaSync: 'disabled' | 'external-service';
         };
     };
     users: {

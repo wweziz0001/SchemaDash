@@ -19,7 +19,7 @@ export const registerSchemaSyncRoutes = (
     app.get('/api/connections', async (request) => {
         requireOperationalAccess(request);
         return {
-            items: context.connectionsService.listConnections(),
+            items: await context.schemaSyncClient.listConnections(),
         };
     });
 
@@ -27,7 +27,8 @@ export const registerSchemaSyncRoutes = (
         requireOperationalAccess(request);
         const payload = connectionUpsertSchema.parse(request.body);
         return {
-            connection: context.connectionsService.createConnection(payload),
+            connection:
+                await context.schemaSyncClient.createConnection(payload),
         };
     });
 
@@ -36,7 +37,7 @@ export const registerSchemaSyncRoutes = (
         const payload = connectionUpsertSchema.parse(request.body);
         const params = request.params as { id: string };
         return {
-            connection: context.connectionsService.updateConnection(
+            connection: await context.schemaSyncClient.updateConnection(
                 params.id,
                 payload
             ),
@@ -46,20 +47,20 @@ export const registerSchemaSyncRoutes = (
     app.delete('/api/connections/:id', async (request) => {
         requireOperationalAccess(request);
         const params = request.params as { id: string };
-        context.connectionsService.deleteConnection(params.id);
+        await context.schemaSyncClient.deleteConnection(params.id);
         return { ok: true };
     });
 
     app.post('/api/connections/test', async (request) => {
         requireOperationalAccess(request);
         const payload = connectionTestRequestSchema.parse(request.body);
-        return await context.connectionsService.testConnection(payload);
+        return await context.schemaSyncClient.testConnection(payload);
     });
 
     app.post('/api/connections/:id/test', async (request) => {
         requireOperationalAccess(request);
         const params = request.params as { id: string };
-        return await context.connectionsService.testConnection({
+        return await context.schemaSyncClient.testConnection({
             connectionId: params.id,
         });
     });
@@ -67,13 +68,13 @@ export const registerSchemaSyncRoutes = (
     app.post('/api/schema/import-live', async (request) => {
         requireOperationalAccess(request);
         const payload = importLiveSchemaRequestSchema.parse(request.body);
-        return await context.schemaSyncService.importLiveSchema(payload);
+        return await context.schemaSyncClient.importLiveSchema(payload);
     });
 
     app.post('/api/schema/diff', async (request) => {
         requireOperationalAccess(request);
         const payload = diffSchemaRequestSchema.parse(request.body);
-        return await context.schemaSyncService.diffSchema({
+        return await context.schemaSyncClient.diffSchema({
             ...payload,
             actor: resolveRequestActor(request),
         });
@@ -82,7 +83,7 @@ export const registerSchemaSyncRoutes = (
     app.post('/api/schema/apply', async (request) => {
         requireOperationalAccess(request);
         const payload = applySchemaRequestSchema.parse(request.body);
-        return await context.applyService.applyPlan({
+        return await context.schemaSyncClient.applySchema({
             ...payload,
             actor: resolveRequestActor(request),
         });
@@ -91,24 +92,17 @@ export const registerSchemaSyncRoutes = (
     app.get('/api/schema/jobs/:id', async (request, reply) => {
         requireOperationalAccess(request);
         const params = request.params as { id: string };
-        const job = context.metadataRepository.getApplyJob(params.id);
+        const job = await context.schemaSyncClient.getApplyJob(params.id);
         if (!job) {
             return reply.code(404).send({ error: 'Job not found' });
         }
-        return {
-            id: job.id,
-            status: job.status,
-            logs: job.logs,
-            error: job.error ?? null,
-            executedStatements: job.executedStatements,
-            auditId: job.auditId,
-        };
+        return job;
     });
 
     app.get('/api/audit/:id', async (request, reply) => {
         requireOperationalAccess(request);
         const params = request.params as { id: string };
-        const audit = context.metadataRepository.getAudit(params.id);
+        const audit = await context.schemaSyncClient.getAudit(params.id);
         if (!audit) {
             return reply.code(404).send({ error: 'Audit record not found' });
         }

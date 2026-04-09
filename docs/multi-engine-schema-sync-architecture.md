@@ -37,6 +37,39 @@ The design priorities are:
 
 Related audit: [docs/audits/schema-sync-postgres-coupling-audit.md](/root/data/SchemaDash/docs/audits/schema-sync-postgres-coupling-audit.md)
 
+## Implementation Status
+
+Status on branch `sync/01-extract-postgres-first-schema-sync-adapter`:
+
+- shared engine ids and capability types now exist in
+  `packages/schema-sync-core/src/engines.ts`
+- PostgreSQL now has a formal backend adapter implementation under
+  `backend/src/engines/postgresql/`
+- backend services now resolve adapters through
+  `backend/src/engines/registry.ts` instead of importing PostgreSQL behavior
+  directly
+- apply preflight, statement grouping, connection testing, and live
+  introspection now run through the PostgreSQL adapter path
+- a lightweight frontend engine-definition seam now exists in
+  `frontend/src/lib/schema-sync/engine-definitions.ts`
+
+Important current limitations after this extraction:
+
+- `packages/schema-sync-core/src/diff.ts` still contains PostgreSQL-shaped
+  validation and warning language
+- `packages/schema-sync-core/src/sql.ts` remains the legacy PostgreSQL SQL
+  renderer, even though live preview/apply now consume it through the adapter
+  wrapper
+- `packages/schema-sync-core/src/type-normalization.ts` is still
+  PostgreSQL-biased
+- connection payloads in `packages/schema-sync-core/src/api.ts` remain
+  PostgreSQL-shaped; this task intentionally avoided premature multi-engine
+  connection DTO changes
+
+This is an intentional intermediate state: PostgreSQL behavior stays stable for
+production Live Schema Sync, while the runtime architecture now has an explicit
+adapter seam for future engines.
+
 ## 2. Current State Audit
 
 ### What is already engine-agnostic

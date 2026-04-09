@@ -12,7 +12,7 @@
         "test:ci": "vitest run --reporter=verbose --bail=1"
     },
     "dependencies": {
-        "@schemadash/schema-sync-core": "file:../packages/schema-sync-core",
+        "@schemadash/schema-sync-core": "file:../shared/schema-sync-core",
         "@fastify/cookie": "^11.0.2",
         "@fastify/cors": "^11.1.0",
         "better-sqlite3": "^11.10.0",
