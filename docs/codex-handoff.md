@@ -2,285 +2,300 @@
 
 ## 1. Project Overview
 
-SchemaDash is a full-stack schema design and schema-sync product. The relevant system area for this task is the live schema sync and migration workflow that connects:
+SchemaDash is a diagram-first database design tool with a Live Schema Sync MVP.
+The product can store database connections, introspect a live PostgreSQL
+database into a canonical schema, diff that live baseline against the editor's
+Development schema, preview migration SQL, and safely apply the persisted plan
+with drift detection, audit logs, and apply jobs.
 
-- frontend Development diagram editing
-- shared canonical schema diff/compare logic
-- backend live database introspection and safe apply orchestration
+The system area touched by this task is the schema-sync pipeline:
 
-For the current MVP, PostgreSQL is the only supported live engine. The product already supports:
+- frontend Development diagram -> canonical schema export
+- backend live database introspection -> canonical schema import
+- shared canonical diff/change-plan generation
+- backend preview/apply orchestration
+- metadata persistence for connections, snapshots, plans, jobs, and audits
 
-- saved live database connections
-- live schema import into the editor
-- canonical schema diff preview
-- generated migration SQL preview
-- destructive confirmation gating
-- safe apply with drift checks
-- audit trails and execution logs
-- workflow-aware migration preview/validate/apply routes
+Key concepts:
 
-Key concepts for understanding this area:
-
-- `Development` remains the editable schema design in the frontend editor.
-- `CanonicalSchema` is the shared schema representation used for compare, diff, preview, and audit snapshots.
-- `ChangePlan` is the persisted preview artifact that currently carries canonical changes, warnings, and SQL statements.
-- Migration fidelity means Development schema export, canonical planning, preview SQL, and apply execution must stay aligned.
+- `CanonicalSchema`: the shared schema representation used across frontend and
+  backend
+- `ChangePlan`: the persisted preview/apply contract containing changes,
+  warnings, and SQL statements
+- Live Schema Sync fidelity: the preview SQL and apply execution must stay
+  aligned
+- adapter architecture: shared orchestration with engine-specific runtime
+  behavior hidden behind explicit contracts
 
 ## 2. Current Architectural Context
 
-### Parts of the system that matter most
+Read these first:
 
-Read these first for follow-up work:
+1. [docs/multi-engine-schema-sync-architecture.md](/root/data/SchemaDash/docs/multi-engine-schema-sync-architecture.md)
+2. [docs/audits/schema-sync-postgres-coupling-audit.md](/root/data/SchemaDash/docs/audits/schema-sync-postgres-coupling-audit.md)
+3. [backend/src/engines/types.ts](/root/data/SchemaDash/backend/src/engines/types.ts)
+4. [backend/src/engines/registry.ts](/root/data/SchemaDash/backend/src/engines/registry.ts)
+5. [backend/src/engines/postgresql/adapter.ts](/root/data/SchemaDash/backend/src/engines/postgresql/adapter.ts)
+6. [backend/src/services/schema-sync-service.ts](/root/data/SchemaDash/backend/src/services/schema-sync-service.ts)
+7. [backend/src/services/apply-service.ts](/root/data/SchemaDash/backend/src/services/apply-service.ts)
 
-1. `docs/audits/schema-sync-postgres-coupling-audit.md`
-2. `docs/multi-engine-schema-sync-architecture.md`
-3. `docs/architecture/schema-sync-architecture.md`
-4. `docs/live-workflow-release-readiness-checklist.md`
-5. `packages/schema-sync-core/src/types.ts`
-6. `packages/schema-sync-core/src/diff.ts`
-7. `packages/schema-sync-core/src/sql.ts`
-8. `frontend/src/lib/schema-sync/canonical-adapters.ts`
-9. `backend/src/services/schema-sync-service.ts`
-10. `backend/src/services/diagram-migration-service.ts`
-11. `backend/src/services/apply-service.ts`
-12. `backend/src/services/connections-service.ts`
-13. `backend/src/postgres/introspection.ts`
+Important high-risk files and boundaries:
 
-### Important service and module boundaries
+- [packages/schema-sync-core/src/diff.ts](/root/data/SchemaDash/packages/schema-sync-core/src/diff.ts)
+  Shared structural planner, but still contains PostgreSQL-shaped validation and
+  warning language.
+- [packages/schema-sync-core/src/sql.ts](/root/data/SchemaDash/packages/schema-sync-core/src/sql.ts)
+  Still the legacy PostgreSQL SQL renderer. Live preview/apply now call it
+  through the PostgreSQL adapter wrapper to preserve behavior.
+- [packages/schema-sync-core/src/type-normalization.ts](/root/data/SchemaDash/packages/schema-sync-core/src/type-normalization.ts)
+  Still PostgreSQL-biased.
+- [backend/src/services/schema-sync-service.ts](/root/data/SchemaDash/backend/src/services/schema-sync-service.ts)
+  Imports live schema through the adapter registry and re-renders persisted plan
+  SQL through the resolved adapter.
+- [backend/src/services/diagram-migration-service.ts](/root/data/SchemaDash/backend/src/services/diagram-migration-service.ts)
+  Uses the same adapter path for migration preview/validation.
+- [backend/src/services/apply-service.ts](/root/data/SchemaDash/backend/src/services/apply-service.ts)
+  Uses adapter-owned introspection, client creation, preflight checks, and
+  transaction grouping.
+- [frontend/src/lib/schema-sync/canonical-adapters.ts](/root/data/SchemaDash/frontend/src/lib/schema-sync/canonical-adapters.ts)
+  Still contains the concrete PostgreSQL canonical mapping logic.
+- [frontend/src/lib/schema-sync/engine-definitions.ts](/root/data/SchemaDash/frontend/src/lib/schema-sync/engine-definitions.ts)
+  Lightweight seam added in this task so future engines have an explicit place
+  to plug in.
 
-- `packages/schema-sync-core/`
-  - Shared canonical schema contracts, diffing, compare logic, risk classification, and API schemas.
-- `frontend/src/lib/schema-sync/canonical-adapters.ts`
-  - Converts canonical schemas to editor diagrams and editor diagrams back to canonical schemas.
-  - High risk because it currently hard-codes PostgreSQL semantics for Development export/import.
-- `backend/src/services/schema-sync-service.ts`
-  - Direct operational import and diff orchestration.
-- `backend/src/services/diagram-migration-service.ts`
-  - Workflow-aware migration preview, validate, and apply orchestration.
-- `backend/src/services/apply-service.ts`
-  - Drift recheck, preflight validation, SQL execution, and audit/job persistence.
-- `backend/src/postgres/introspection.ts`
-  - Current PostgreSQL-specific live adapter in all but name.
-- `backend/src/repositories/metadata-repository.ts`
-  - Persists connections, snapshots, change plans, apply jobs, and audits in SQLite.
+Frontend/backend/shared relationship:
 
-### High-risk files
-
-- `packages/schema-sync-core/src/types.ts`
-- `packages/schema-sync-core/src/diff.ts`
-- `packages/schema-sync-core/src/sql.ts`
-- `packages/schema-sync-core/src/type-normalization.ts`
-- `frontend/src/lib/schema-sync/canonical-adapters.ts`
-- `backend/src/services/apply-service.ts`
-- `backend/src/services/schema-sync-service.ts`
-- `backend/src/services/diagram-migration-service.ts`
-- `backend/src/services/connections-service.ts`
-- `backend/src/postgres/introspection.ts`
-
-### Frontend/backend/shared relationships
-
-- The frontend exports Development diagram state into `CanonicalSchema`.
-- The backend imports live database structure into `CanonicalSchema`.
-- The shared core computes compare/diff behavior over canonical schema.
-- The backend persists plans and executes apply using the stored preview artifact.
-
-This cross-layer canonical boundary is the main strength to preserve in future work.
+- `packages/schema-sync-core` owns shared engine ids/capabilities, canonical
+  schema types, change planning, hashing, and the legacy SQL renderer.
+- `backend/src/engines/*` now owns runtime engine behavior for live sync.
+- `frontend/src/lib/schema-sync/*` still uses PostgreSQL-only mapping logic, but
+  now also has an engine-definition seam for future adapters.
 
 ## 3. Task Completed
 
-### Task goal
+Goal of this task:
 
-Design a concrete, repository-aware multi-engine schema sync architecture for SchemaDash without rushing into full MySQL, MariaDB, or SQL Server implementation.
+- extract PostgreSQL into the first formal schema sync adapter
+- keep current PostgreSQL Live Schema Sync behavior intact
+- make the runtime architecture ready for MySQL, MariaDB, and SQL Server later
 
-### What was implemented
+What was implemented:
 
-- Added a focused audit document:
-  - `docs/audits/schema-sync-postgres-coupling-audit.md`
-- Added the main design document:
-  - `docs/multi-engine-schema-sync-architecture.md`
-- Replaced this handoff with a task-specific handoff for future sessions.
+- added shared engine ids and capability types in
+  [packages/schema-sync-core/src/engines.ts](/root/data/SchemaDash/packages/schema-sync-core/src/engines.ts)
+- added backend adapter contracts in
+  [backend/src/engines/types.ts](/root/data/SchemaDash/backend/src/engines/types.ts)
+- extracted PostgreSQL runtime logic into:
+  - [backend/src/engines/postgresql/connection.ts](/root/data/SchemaDash/backend/src/engines/postgresql/connection.ts)
+  - [backend/src/engines/postgresql/introspection.ts](/root/data/SchemaDash/backend/src/engines/postgresql/introspection.ts)
+  - [backend/src/engines/postgresql/renderer.ts](/root/data/SchemaDash/backend/src/engines/postgresql/renderer.ts)
+  - [backend/src/engines/postgresql/apply.ts](/root/data/SchemaDash/backend/src/engines/postgresql/apply.ts)
+  - [backend/src/engines/postgresql/capabilities.ts](/root/data/SchemaDash/backend/src/engines/postgresql/capabilities.ts)
+  - [backend/src/engines/postgresql/adapter.ts](/root/data/SchemaDash/backend/src/engines/postgresql/adapter.ts)
+- added adapter registry and change-plan rendering helper:
+  - [backend/src/engines/registry.ts](/root/data/SchemaDash/backend/src/engines/registry.ts)
+  - [backend/src/engines/plan.ts](/root/data/SchemaDash/backend/src/engines/plan.ts)
+- routed backend services through adapter resolution instead of direct
+  PostgreSQL imports
+- kept [backend/src/postgres/introspection.ts](/root/data/SchemaDash/backend/src/postgres/introspection.ts)
+  as a compatibility shim
+- added a lightweight frontend engine-definition seam:
+  - [frontend/src/lib/schema-sync/engine-definitions.ts](/root/data/SchemaDash/frontend/src/lib/schema-sync/engine-definitions.ts)
+  - [frontend/src/lib/schema-sync/canonical-adapters.postgresql.ts](/root/data/SchemaDash/frontend/src/lib/schema-sync/canonical-adapters.postgresql.ts)
 
-### Decisions made
+Decisions made:
 
-- The design keeps migration fidelity as the top priority.
-- The design does not recommend a broad rewrite.
-- The design keeps shared orchestration and audit persistence in central backend services.
-- The design moves engine-specific behavior behind explicit adapters.
-- The design treats frontend canonical export/import as part of the engine boundary, not just backend connectivity.
-- The design recommends that preview persist the exact rendered execution plan that apply later executes.
+- preserve the existing PostgreSQL SQL renderer by wrapping it from the adapter
+  instead of rewriting it during the extraction
+- keep connection request DTOs PostgreSQL-shaped for now to avoid mixing this
+  adapter refactor with premature multi-engine connection API changes
+- keep the persisted `ChangePlan` shape unchanged so preview/apply fidelity and
+  audit compatibility remain stable
 
-### Approach intentionally avoided
+Approach intentionally avoided:
 
-- No full MySQL adapter implementation
-- No MariaDB adapter implementation
-- No SQL Server adapter implementation
-- No broad refactor of unrelated editor or workflow systems
-- No speculative code scaffolding that would commit the repo to an untested architecture too early
+- no MySQL, MariaDB, or SQL Server runtime implementation
+- no repository-wide type/generalization sweep
+- no destructive change to the current PostgreSQL preview/apply flow just to
+  make the abstraction look cleaner
 
 ## 4. Files Changed
 
-### Files created
+Files created:
 
-- `docs/audits/schema-sync-postgres-coupling-audit.md`
-  - Repository-specific audit of current PostgreSQL coupling across shared core, frontend, and backend.
-- `docs/multi-engine-schema-sync-architecture.md`
-  - Main architecture proposal for multi-engine schema sync adapters.
+- [packages/schema-sync-core/src/engines.ts](/root/data/SchemaDash/packages/schema-sync-core/src/engines.ts)
+  Shared engine ids, capability types, and static engine metadata.
+- [backend/src/engines/types.ts](/root/data/SchemaDash/backend/src/engines/types.ts)
+  Backend adapter contract for connection testing, introspection, rendering, and
+  apply semantics.
+- [backend/src/engines/registry.ts](/root/data/SchemaDash/backend/src/engines/registry.ts)
+  Adapter resolution entrypoint.
+- [backend/src/engines/plan.ts](/root/data/SchemaDash/backend/src/engines/plan.ts)
+  Helper to render persisted `ChangePlan.sqlStatements` through the resolved
+  adapter.
+- [backend/src/engines/postgresql/adapter.ts](/root/data/SchemaDash/backend/src/engines/postgresql/adapter.ts)
+- [backend/src/engines/postgresql/apply.ts](/root/data/SchemaDash/backend/src/engines/postgresql/apply.ts)
+- [backend/src/engines/postgresql/capabilities.ts](/root/data/SchemaDash/backend/src/engines/postgresql/capabilities.ts)
+- [backend/src/engines/postgresql/connection.ts](/root/data/SchemaDash/backend/src/engines/postgresql/connection.ts)
+- [backend/src/engines/postgresql/introspection.ts](/root/data/SchemaDash/backend/src/engines/postgresql/introspection.ts)
+- [backend/src/engines/postgresql/renderer.ts](/root/data/SchemaDash/backend/src/engines/postgresql/renderer.ts)
+- [backend/test/schema-sync-adapter-registry.test.ts](/root/data/SchemaDash/backend/test/schema-sync-adapter-registry.test.ts)
+  Registry/capability/connection-routing coverage.
+- [frontend/src/lib/schema-sync/canonical-adapters.postgresql.ts](/root/data/SchemaDash/frontend/src/lib/schema-sync/canonical-adapters.postgresql.ts)
+  PostgreSQL canonical adapter wrapper for the new frontend seam.
+- [frontend/src/lib/schema-sync/engine-definitions.ts](/root/data/SchemaDash/frontend/src/lib/schema-sync/engine-definitions.ts)
+  Frontend engine-definition lookup.
 
-### Files modified
+Files modified:
 
-- `docs/codex-handoff.md`
-  - Rewritten for this architecture/design task and for a future fresh Codex session.
+- [packages/schema-sync-core/src/types.ts](/root/data/SchemaDash/packages/schema-sync-core/src/types.ts)
+- [packages/schema-sync-core/src/api.ts](/root/data/SchemaDash/packages/schema-sync-core/src/api.ts)
+- [packages/schema-sync-core/src/index.ts](/root/data/SchemaDash/packages/schema-sync-core/src/index.ts)
+- [backend/src/postgres/introspection.ts](/root/data/SchemaDash/backend/src/postgres/introspection.ts)
+- [backend/src/context/app-context.ts](/root/data/SchemaDash/backend/src/context/app-context.ts)
+- [backend/src/services/connections-service.ts](/root/data/SchemaDash/backend/src/services/connections-service.ts)
+- [backend/src/services/schema-sync-service.ts](/root/data/SchemaDash/backend/src/services/schema-sync-service.ts)
+- [backend/src/services/diagram-migration-service.ts](/root/data/SchemaDash/backend/src/services/diagram-migration-service.ts)
+- [backend/src/services/apply-service.ts](/root/data/SchemaDash/backend/src/services/apply-service.ts)
+- [backend/test/apply-service-audit.test.ts](/root/data/SchemaDash/backend/test/apply-service-audit.test.ts)
+- [backend/test/diagram-migration-service.test.ts](/root/data/SchemaDash/backend/test/diagram-migration-service.test.ts)
+- [backend/test/schema-sync-routes.test.ts](/root/data/SchemaDash/backend/test/schema-sync-routes.test.ts)
+- [frontend/src/lib/schema-sync/canonical-adapters.test.ts](/root/data/SchemaDash/frontend/src/lib/schema-sync/canonical-adapters.test.ts)
+- [docs/multi-engine-schema-sync-architecture.md](/root/data/SchemaDash/docs/multi-engine-schema-sync-architecture.md)
 
-### Important files intentionally not changed
+Important files intentionally not changed:
 
-- `packages/schema-sync-core/src/types.ts`
-  - Intentionally not refactored yet; the audit/design docs explain how it should evolve.
-- `packages/schema-sync-core/src/diff.ts`
-  - Intentionally not refactored yet; current shared planning remains as-is until adapter seams are approved.
-- `packages/schema-sync-core/src/sql.ts`
-  - Intentionally not moved yet; the design recommends extracting SQL rendering from the shared core in a later implementation phase.
-- `frontend/src/lib/schema-sync/canonical-adapters.ts`
-  - Intentionally not refactored yet; the design calls this out as a fidelity-critical future step.
-- `backend/src/services/apply-service.ts`
-  - Intentionally not refactored yet; no apply-path changes were made in this design-first task.
-- `backend/src/postgres/introspection.ts`
-  - Intentionally not moved yet; it remains the current PostgreSQL implementation to isolate later.
+- [packages/schema-sync-core/src/diff.ts](/root/data/SchemaDash/packages/schema-sync-core/src/diff.ts)
+  Still shared and still partly PostgreSQL-shaped. Avoided in this task to keep
+  runtime extraction low-risk.
+- [packages/schema-sync-core/src/sql.ts](/root/data/SchemaDash/packages/schema-sync-core/src/sql.ts)
+  Still the legacy PostgreSQL renderer. Adapter currently wraps it.
+- [packages/schema-sync-core/src/type-normalization.ts](/root/data/SchemaDash/packages/schema-sync-core/src/type-normalization.ts)
+  Still PostgreSQL-biased.
+- [backend/src/repositories/metadata-repository.ts](/root/data/SchemaDash/backend/src/repositories/metadata-repository.ts)
+  No schema/storage changes were needed for this extraction.
 
 ## 5. Data / API / Workflow Changes
 
-### Data model changes
+No database migration or metadata schema migration was added.
 
-- None in code for this task.
+Behavioral/runtime changes:
 
-### API changes
-
-- None in code for this task.
-
-### Workflow behavior changes
-
-- None in runtime behavior for this task.
-
-### Architectural/workflow guidance added
-
-- Future multi-engine work should preserve alignment among:
-  - Development schema export
-  - canonical schema snapshots
-  - migration preview rendering
-  - apply execution
-- Future plans should persist a richer rendered execution plan rather than treating `sqlStatements: string[]` as the whole engine contract.
-
-### Migrations, env vars, config
-
-- No database migrations added
-- No environment variable changes
-- No config changes
+- `ConnectionSummary.engine` can now represent any shared `DatabaseEngine`
+  value, though only PostgreSQL is currently supported by the backend registry.
+- backend services now resolve an engine adapter from the stored connection or
+  persisted plan engine before:
+  - testing connections
+  - introspecting live schema
+  - rendering preview SQL into `ChangePlan.sqlStatements`
+  - validating apply preflights
+  - grouping statements into transactional vs non-transactional execution
+- `ChangePlan` storage format is unchanged
+- audit and apply-job storage behavior is unchanged
+- connection request payloads are intentionally still PostgreSQL-shaped
 
 ## 6. Validation Performed
 
-### What was verified
+Validated:
 
-- The requested branch was created and work was performed on `design/01-multi-engine-schema-sync-architecture`.
-- The existing repository structure was audited directly from source files.
-- The design was grounded in the actual code paths used today:
-  - shared canonical core
-  - frontend canonical adapters
-  - backend connection/introspection services
-  - apply orchestration
-  - workflow migration orchestration
-- The design explicitly preserves preview/apply fidelity as a first-class requirement.
+- `npm run build -w @schemadash/schema-sync-core`
+- `npm run build -w @schemadash/backend`
+- `npm run test -w @schemadash/schema-sync-core`
+- `npm run test -w @schemadash/backend`
+- `npx vitest run --config frontend/vitest.config.ts frontend/src/lib/schema-sync/canonical-adapters.test.ts`
 
-### Manual validation done
+What was verified:
 
-- Read and traced the main schema-sync modules and relevant docs.
-- Confirmed that the repository is currently on a PostgreSQL-only implementation path despite broader DB logos and types in the UI.
-- Confirmed that both direct schema sync and workflow migration routes depend on the same PostgreSQL assumptions.
+- backend registry resolves PostgreSQL and exposes the expected capability
+  profile
+- draft connection testing routes through the resolved adapter
+- import/diff/apply service tests still pass under adapter injection
+- diagram migration preview/validation/apply tests still pass
+- audit reuse and preview/apply SQL alignment tests still pass
+- frontend canonical adapter behavior is unchanged and now has an engine
+  definition seam
 
-### What remains unverified
+Unverified / remaining risk:
 
-- No runtime behavior changed, so no tests were required for correctness changes.
-- No build/typecheck/test run was necessary for the docs-only task.
-- No experimental code scaffolding was added.
-
-### Known limitations or risks
-
-- The design is detailed, but it is still a design. The next implementation phase must prove the proposed seams with PostgreSQL first.
-- `docs/codex-handoff.md` was rewritten for this task, so future sessions should treat older branch-specific handoff assumptions as superseded by this branch state.
+- no manual end-to-end test against a real PostgreSQL database was run in this
+  session
+- no full frontend test suite run was performed, only the canonical adapter test
+- multi-engine connection DTO changes and richer rendered execution-plan storage
+  remain future work
 
 ## 7. Outstanding Work
 
-### Not done yet
+Not done yet:
 
-- No adapter registry exists yet.
-- PostgreSQL is not yet encapsulated as a first-class adapter.
-- Shared types are still PostgreSQL-shaped.
-- Frontend Development canonical export/import is still PostgreSQL-only.
-- SQL rendering is still embedded in the shared core.
-- MySQL, MariaDB, and SQL Server adapters do not exist yet.
+- move PostgreSQL-specific validation/warning logic out of
+  [packages/schema-sync-core/src/diff.ts](/root/data/SchemaDash/packages/schema-sync-core/src/diff.ts)
+- replace the legacy shared PostgreSQL renderer in
+  [packages/schema-sync-core/src/sql.ts](/root/data/SchemaDash/packages/schema-sync-core/src/sql.ts)
+  with fully adapter-owned rendering
+- split connection payload schemas by engine
+- add real MySQL, MariaDB, or SQL Server adapters
+- persist richer rendered execution plans beyond `sqlStatements: string[]`
 
-### Next recommended implementation phase
+Recommended next phase:
 
-Implement Phase 1 and Phase 2 from `docs/multi-engine-schema-sync-architecture.md`:
+1. Extract PostgreSQL-shaped validation and warning logic from the shared diff
+   layer into adapter-aware plan validation.
+2. Keep PostgreSQL behavior identical while introducing an explicit rendered-plan
+   object owned by the adapter.
+3. After that, begin MySQL compare/review/import support behind the same
+   registry.
 
-1. extract engine contracts and capability types
-2. add adapter registry
-3. move current PostgreSQL connectivity and introspection behind the registry
-4. move PostgreSQL SQL rendering and apply preflight policy behind the adapter boundary
-5. add an engine-aware seam for frontend canonical export/import
+Blockers / risks:
 
-### Blockers and dependencies
-
-- The main dependency is architectural approval of the adapter shape and fidelity rules in the design doc.
-- Future code work should avoid adding new engine behavior directly into current PostgreSQL-oriented shared files.
+- touching `diff.ts` and `sql.ts` can easily break preview/apply fidelity if the
+  persisted plan contract changes carelessly
+- future connection DTO work should not be mixed with adapter semantics unless
+  tests cover all route validation paths
 
 ## 8. Instructions for the Next Codex Session
 
-### Exact reading order
+Read in this order:
 
-1. `docs/codex-handoff.md`
-2. `docs/audits/schema-sync-postgres-coupling-audit.md`
-3. `docs/multi-engine-schema-sync-architecture.md`
-4. `docs/architecture/schema-sync-architecture.md`
-5. `packages/schema-sync-core/src/types.ts`
-6. `packages/schema-sync-core/src/diff.ts`
-7. `packages/schema-sync-core/src/sql.ts`
-8. `frontend/src/lib/schema-sync/canonical-adapters.ts`
-9. `backend/src/services/connections-service.ts`
-10. `backend/src/services/schema-sync-service.ts`
-11. `backend/src/services/diagram-migration-service.ts`
-12. `backend/src/services/apply-service.ts`
-13. `backend/src/postgres/introspection.ts`
+1. [docs/codex-handoff.md](/root/data/SchemaDash/docs/codex-handoff.md)
+2. [docs/multi-engine-schema-sync-architecture.md](/root/data/SchemaDash/docs/multi-engine-schema-sync-architecture.md)
+3. [backend/src/engines/types.ts](/root/data/SchemaDash/backend/src/engines/types.ts)
+4. [backend/src/engines/postgresql/adapter.ts](/root/data/SchemaDash/backend/src/engines/postgresql/adapter.ts)
+5. [backend/src/services/schema-sync-service.ts](/root/data/SchemaDash/backend/src/services/schema-sync-service.ts)
+6. [backend/src/services/apply-service.ts](/root/data/SchemaDash/backend/src/services/apply-service.ts)
+7. [packages/schema-sync-core/src/diff.ts](/root/data/SchemaDash/packages/schema-sync-core/src/diff.ts)
+8. [packages/schema-sync-core/src/sql.ts](/root/data/SchemaDash/packages/schema-sync-core/src/sql.ts)
 
-### What to avoid breaking
+Avoid breaking:
 
-- Do not break current PostgreSQL preview/apply behavior while extracting adapter seams.
-- Do not let frontend Development export remain PostgreSQL-specific if backend starts supporting multiple engines.
-- Do not re-render SQL differently at apply time after preview has already been persisted.
-- Do not split direct schema sync and workflow migration onto different engine semantics.
-- Do not expand shared core files with large engine-specific `switch` branches as the long-term architecture.
+- persisted `ChangePlan.sqlStatements` preview/apply alignment
+- PostgreSQL non-transactional statement handling
+- audit record reuse for preview -> apply
+- drift detection before apply
 
-### Where to continue implementation
+Where to continue:
 
-- Start with backend adapter registry and PostgreSQL adapter extraction.
-- Then address the shared `DatabaseEngine` and capability types.
-- Then add the frontend engine-aware canonical mapping seam.
-
-If the next session is implementation-focused, the first files to inspect should be:
-
-1. `packages/schema-sync-core/src/types.ts`
-2. `backend/src/services/connections-service.ts`
-3. `backend/src/services/schema-sync-service.ts`
-4. `backend/src/services/apply-service.ts`
-5. `backend/src/postgres/introspection.ts`
-6. `frontend/src/lib/schema-sync/canonical-adapters.ts`
+- start in `packages/schema-sync-core/src/diff.ts` and identify the
+  PostgreSQL-shaped validation blocks that should move behind adapter-owned plan
+  validation
+- then design the rendered-plan contract before attempting MySQL support
 
 ## 9. Git Summary
 
-- Working branch: `design/01-multi-engine-schema-sync-architecture`
-- Pull request title: `Design multi-engine schema sync adapter architecture for SchemaDash`
-- Commit list created for this task:
-  - `chore: audit current postgres-oriented schema sync architecture`
-    - Adds the repository-specific audit of existing PostgreSQL coupling.
-  - `docs: add multi-engine schema sync architecture design`
-    - Adds the main architecture design doc and updates this handoff for future sessions.
+- Working branch: `sync/01-extract-postgres-first-schema-sync-adapter`
+- Pull request title: `Extract PostgreSQL into the first formal schema sync adapter`
 
-No minimal adapter groundwork files were added in this task because the design-first goal was better served by documentation without introducing premature runtime abstractions.
+Commits created for this task:
+
+- `63eca637` `chore: introduce shared schema sync engine contracts and capability model`
+  Added shared engine ids/capabilities and backend adapter interface contracts.
+- `ac860f43` `refactor: extract postgres-specific schema sync logic into formal adapter modules`
+  Moved PostgreSQL runtime behavior into formal adapter modules and left a
+  compatibility shim at the old import path.
+- `73ca6ae2` `refactor: route live schema sync through postgres adapter resolution path`
+  Routed connection testing, live import, preview rendering, validation drift
+  checks, and apply execution through the adapter registry.
+- `c2be1f99` `test: validate postgres live schema sync behavior under adapter architecture`
+  Updated tests for the injected registry path, added registry/capability
+  coverage, and added the lightweight frontend engine-definition seam.
+- `docs: update multi-engine architecture notes with postgres extraction status`
+  Updates the architecture doc and adds this handoff for future sessions.
