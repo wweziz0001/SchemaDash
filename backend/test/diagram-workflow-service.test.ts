@@ -81,9 +81,11 @@ const createHarness = () => {
             enabled: true,
             mode: 'external-service',
             serviceUrl: 'http://schema-sync.test',
-            status: 'up',
+            status: 'ready',
             ok: true,
             error: null,
+            errorCode: null,
+            checkedAt: '2026-04-09T00:00:00.000Z',
         }),
         getConnection: vi.fn().mockResolvedValue({
             id: 'connection-1',

@@ -63,6 +63,8 @@ const createSchemaSyncClient = (
             status: 'disabled',
             ok: true,
             error: null,
+            errorCode: null,
+            checkedAt: '2026-04-09T00:00:00.000Z',
         }),
         listConnections: vi.fn(),
         getConnection: vi.fn(),
@@ -148,7 +150,7 @@ describe('health routes', () => {
         await app.close();
     });
 
-    it('returns 503 readiness when enabled schema sync service is down', async () => {
+    it('returns 503 readiness when enabled schema sync service is unavailable', async () => {
         const app = buildApp({
             env: createTestEnv({
                 schemaSyncEnabled: true,
@@ -165,9 +167,11 @@ describe('health routes', () => {
                     enabled: true,
                     mode: 'external-service',
                     serviceUrl: 'http://schema-sync.test',
-                    status: 'down',
+                    status: 'unavailable',
                     ok: false,
                     error: 'Schema sync service is unavailable.',
+                    errorCode: 'schema_sync_service_unavailable',
+                    checkedAt: '2026-04-09T00:00:00.000Z',
                 }),
             }),
         });
@@ -182,8 +186,54 @@ describe('health routes', () => {
             ok: false,
             checks: {
                 schemaSyncService: {
-                    status: 'down',
+                    status: 'unavailable',
                     serviceUrl: 'http://schema-sync.test',
+                    errorCode: 'schema_sync_service_unavailable',
+                },
+            },
+        });
+
+        await app.close();
+    });
+
+    it('returns 503 readiness when enabled schema sync service is reachable but not ready', async () => {
+        const app = buildApp({
+            env: createTestEnv({
+                schemaSyncEnabled: true,
+                schemaSyncMode: 'external-service',
+                schemaSyncServiceUrl: 'http://schema-sync.test',
+            }),
+            schemaSyncClient: createSchemaSyncClient({
+                config: {
+                    enabled: true,
+                    mode: 'external-service',
+                    serviceUrl: 'http://schema-sync.test',
+                },
+                getReadiness: vi.fn().mockResolvedValue({
+                    enabled: true,
+                    mode: 'external-service',
+                    serviceUrl: 'http://schema-sync.test',
+                    status: 'not_ready',
+                    ok: false,
+                    error: 'Schema sync service is alive but not ready yet.',
+                    errorCode: 'schema_sync_service_not_ready',
+                    checkedAt: '2026-04-09T00:00:00.000Z',
+                }),
+            }),
+        });
+
+        const health = await app.inject({
+            method: 'GET',
+            url: '/api/health',
+        });
+
+        expect(health.statusCode).toBe(503);
+        expect(health.json()).toMatchObject({
+            ok: false,
+            persistence: {
+                schemaSync: {
+                    status: 'not_ready',
+                    errorCode: 'schema_sync_service_not_ready',
                 },
             },
         });

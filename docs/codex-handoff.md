@@ -124,6 +124,9 @@ Files created in this task:
 - [backend/src/utils/request-context.ts](/root/data/SchemaDash/backend/src/utils/request-context.ts)
   request-id propagation helper so outbound schema-sync calls can reuse the main
   app request id
+- [backend/test/schema-sync-client.test.ts](/root/data/SchemaDash/backend/test/schema-sync-client.test.ts)
+  focused remote-client reliability coverage for disabled mode, timeout,
+  retry, readiness, and invalid-response behavior
 
 Files modified in this task:
 
@@ -147,6 +150,17 @@ Files modified in this task:
   service-facing troubleshooting and runtime contract updates
 - [docs/codex-handoff.md](/root/data/SchemaDash/docs/codex-handoff.md)
   this file
+- [backend/test/health-routes.test.ts](/root/data/SchemaDash/backend/test/health-routes.test.ts)
+  readiness-state assertions for `disabled`, `not_ready`, and `unavailable`
+- [backend/test/schema-sync-routes.test.ts](/root/data/SchemaDash/backend/test/schema-sync-routes.test.ts)
+  schema-sync route mocks updated for the hardened readiness contract
+- [backend/test/diagram-migration-service.test.ts](/root/data/SchemaDash/backend/test/diagram-migration-service.test.ts)
+  migration/apply safety coverage for remote failures, unknown apply outcomes,
+  audit recovery, and post-apply refresh warnings
+- [backend/test/diagram-workflow-service.test.ts](/root/data/SchemaDash/backend/test/diagram-workflow-service.test.ts)
+  schema-sync client mock updated for the hardened readiness contract
+- [backend/test/diagram-version-restore-service.test.ts](/root/data/SchemaDash/backend/test/diagram-version-restore-service.test.ts)
+  schema-sync client mock updated for the hardened readiness contract
 
 Important files intentionally not changed:
 
@@ -190,10 +204,11 @@ Compatibility notes:
 
 ## 6. Validation Performed
 
-Validated so far in this task:
+Validated in this task:
 
 - `npm run build -w @schemadash/schema-sync-core`
 - `npm run build -w @schemadash/backend`
+- `npm run test -w @schemadash/backend -- schema-sync-client.test.ts health-routes.test.ts schema-sync-routes.test.ts diagram-migration-service.test.ts`
 
 Manually verified in code review:
 
@@ -205,8 +220,8 @@ Manually verified in code review:
 
 Not yet completed in this handoff snapshot:
 
-- targeted backend tests for timeout, readiness, disabled mode, and apply safety
-- final test pass and final commit list update
+- full backend or full repository test suites beyond the focused reliability
+  slice above
 
 Known limitations and risks:
 
@@ -218,18 +233,18 @@ Known limitations and risks:
 
 ## 7. Outstanding Work
 
-Still to finish after this docs checkpoint:
+Still not done in this task:
 
-- add or update backend tests for remote timeout handling, disabled mode,
-  readiness-state differentiation, and apply safety
-- run the targeted backend test suite
-- update this handoff with the final validation list and final commit list once
-  the test commit lands
+- full repo-wide regression coverage outside the targeted backend reliability
+  slice
+- cleanup of tracked/generated SQLite WAL state under
+  `services/schema-sync-service/.schemadash-schema-sync-service/`
 
 Recommended next implementation phase:
 
 1. Read the backend client and migration service changes first.
-2. Add focused tests around the new timeout/retry/error-state behavior.
+2. Expand from focused backend tests to broader end-to-end or container-level
+   verification if more confidence is needed.
 3. Keep future work narrowly scoped to reliability and observability rather than
    feature expansion.
 
@@ -269,16 +284,15 @@ Continue work in:
 
 Commits created so far in this task:
 
-1. `e7b00b5b` `chore: audit remote schema sync service failure modes and timeout behavior`
+1. `chore: audit remote schema sync service failure modes and timeout behavior`
    Added the repository audit doc for current remote-client gaps and the chosen hardening direction.
-2. `8ea597df` `fix: harden remote client timeout retry and readiness handling`
+2. `fix: harden remote client timeout retry and readiness handling`
    Added operation-aware timeouts, safe retries, request-id forwarding, remote-call logs, and differentiated readiness states.
-3. `e7a7a19a` `fix: improve remote schema sync error classification and user-facing diagnostics`
+3. `fix: improve remote schema sync error classification and user-facing diagnostics`
    Improved health payload detail, AppError logging, and migration preview/validation surfaces for remote-service failures.
-4. `a276bbfa` `fix: harden remote migration and apply behavior under service failure conditions`
+4. `fix: harden remote migration and apply behavior under service failure conditions`
    Made apply outcome handling safer under remote failures and prevented post-apply refresh problems from misreporting successful applies.
-
-Planned remaining commits after this handoff snapshot:
-
 5. `docs: add remote schema sync hardening and troubleshooting notes`
+   Updated operator docs, service docs, and this handoff for the hardened remote behavior.
 6. `test: validate hardened remote schema sync reliability behavior`
+   Added focused backend reliability tests and updated existing mocks for the new readiness model.
