@@ -2,24 +2,16 @@ import type {
     ApplySchemaRequest,
     ApplySchemaResponse,
     AuditRecord,
-    DatabaseConnectionSecret,
     RiskWarning,
-    SchemaChange,
 } from '@schemadash/schema-sync-core';
 import { generateId } from '../utils/id.js';
 import type { MetadataRepository } from '../repositories/metadata-repository.js';
 import type { ConnectionsService } from './connections-service.js';
 import type { SchemaSyncService } from './schema-sync-service.js';
-import { introspectPostgresSchema } from '../postgres/introspection.js';
-import { Client } from 'pg';
 import { hashCanonicalSchema } from '@schemadash/schema-sync-core';
 import { AppError } from '../utils/app-error.js';
-
-const quoteIdent = (value: string) => `"${value.replace(/"/g, '""')}"`;
-const qualify = (schemaName: string, tableName: string) =>
-    `${quoteIdent(schemaName)}.${quoteIdent(tableName)}`;
-const isNonTransactionalStatement = (statement: string) =>
-    /^\s*ALTER\s+TYPE\b[\s\S]*\bADD\s+VALUE\b/i.test(statement);
+import type { SchemaSyncAdapterRegistry } from '../engines/registry.js';
+import type { SchemaSyncQueryClient } from '../engines/types.js';
 
 const requiresDestructiveApproval = (warnings: RiskWarning[]) =>
     warnings.some((warning) => warning.level === 'destructive');
@@ -30,53 +22,9 @@ export class ApplyService {
     constructor(
         private readonly repository: MetadataRepository,
         private readonly connectionsService: ConnectionsService,
-        private readonly schemaSyncService: SchemaSyncService
+        private readonly schemaSyncService: SchemaSyncService,
+        private readonly adapterRegistry: SchemaSyncAdapterRegistry
     ) {}
-
-    private async makeClient(secret: DatabaseConnectionSecret) {
-        const client = new Client({
-            host: secret.host,
-            port: secret.port,
-            database: secret.database,
-            user: secret.username,
-            password: secret.password,
-            ssl:
-                secret.sslMode === 'disable'
-                    ? false
-                    : { rejectUnauthorized: false },
-        });
-        await client.connect();
-        return client;
-    }
-
-    private async validatePlanPreflight(
-        client: Client,
-        changes: SchemaChange[],
-        logs: string[]
-    ) {
-        for (const change of changes) {
-            if (
-                change.kind === 'alter_column_nullability' &&
-                change.toNullable === false
-            ) {
-                const result = await client.query<{ count: string }>(
-                    `SELECT COUNT(*)::text AS count FROM ${qualify(
-                        change.schemaName,
-                        change.tableName
-                    )} WHERE ${quoteIdent(change.columnName)} IS NULL`
-                );
-                const count = Number.parseInt(result.rows[0]?.count ?? '0', 10);
-                logs.push(
-                    `Preflight check ${change.tableName}.${change.columnName}: ${count} null rows`
-                );
-                if (count > 0) {
-                    throw new Error(
-                        `Cannot set ${change.tableName}.${change.columnName} to NOT NULL while ${count} rows still contain NULL values.`
-                    );
-                }
-            }
-        }
-    }
 
     async applyPlan(request: ApplySchemaRequest): Promise<ApplySchemaResponse> {
         const plan = this.schemaSyncService.getChangePlan(request.planId);
@@ -166,12 +114,13 @@ export class ApplyService {
         const secret = this.connectionsService.getDecryptedSecret(
             plan.connectionId
         );
+        const adapter = this.adapterRegistry.resolve(plan.engine);
         let preApplySnapshotId: string | null = null;
-        let client: Client | null = null;
+        let client: SchemaSyncQueryClient | null = null;
         let transactionStarted = false;
 
         try {
-            const liveSchema = await introspectPostgresSchema({
+            const liveSchema = await adapter.introspectSchema({
                 secret,
                 schemas: baselineSnapshot.importedSchemas,
             });
@@ -198,28 +147,28 @@ export class ApplyService {
                 createdAt: new Date().toISOString(),
             });
 
-            client = await this.makeClient(secret);
-            await this.validatePlanPreflight(client, plan.changes, logs);
+            client = await adapter.createClient(secret);
+            await adapter.validateApplyPreflight({
+                client,
+                changes: plan.changes,
+                logs,
+            });
 
-            const preTransactionStatements = plan.sqlStatements.filter(
-                isNonTransactionalStatement
-            );
-            const transactionalStatements = plan.sqlStatements.filter(
-                (statement) => !isNonTransactionalStatement(statement)
-            );
+            const { beforeTransaction, transactional } =
+                adapter.splitStatements(plan.sqlStatements);
 
-            for (const statement of preTransactionStatements) {
+            for (const statement of beforeTransaction) {
                 logs.push(`Executing before transaction: ${statement}`);
                 await client.query(statement);
                 executedStatements.push(statement);
             }
 
-            if (transactionalStatements.length > 0) {
+            if (transactional.length > 0) {
                 await client.query('BEGIN');
                 transactionStarted = true;
                 logs.push('Transaction started');
 
-                for (const statement of transactionalStatements) {
+                for (const statement of transactional) {
                     logs.push(`Executing: ${statement}`);
                     await client.query(statement);
                     executedStatements.push(statement);
@@ -230,7 +179,7 @@ export class ApplyService {
                 logs.push('Transaction committed');
             }
 
-            const postApplySchema = await introspectPostgresSchema({
+            const postApplySchema = await adapter.introspectSchema({
                 secret,
                 schemas: baselineSnapshot.importedSchemas,
             });

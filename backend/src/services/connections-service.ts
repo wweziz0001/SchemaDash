@@ -8,13 +8,14 @@ import type {
 import { decryptJson, encryptJson } from '../security/encryption.js';
 import type { MetadataRepository } from '../repositories/metadata-repository.js';
 import { generateId } from '../utils/id.js';
-import { testPostgresConnection } from '../postgres/introspection.js';
 import { AppError } from '../utils/app-error.js';
+import type { SchemaSyncAdapterRegistry } from '../engines/registry.js';
 
 export class ConnectionsService {
     constructor(
         private readonly repository: MetadataRepository,
-        private readonly encryptionKey: Buffer
+        private readonly encryptionKey: Buffer,
+        private readonly adapterRegistry: SchemaSyncAdapterRegistry
     ) {}
 
     listConnections(): ConnectionSummary[] {
@@ -22,7 +23,7 @@ export class ConnectionsService {
     }
 
     getDecryptedSecret(connectionId: string): DatabaseConnectionSecret {
-        const connection = this.repository.getConnection(connectionId);
+        const connection = this.getConnection(connectionId);
         if (!connection) {
             throw new AppError(
                 `Connection ${connectionId} not found.`,
@@ -36,13 +37,17 @@ export class ConnectionsService {
         );
     }
 
+    getConnection(connectionId: string) {
+        return this.repository.getConnection(connectionId);
+    }
+
     createConnection(payload: ConnectionUpsert): ConnectionSummary {
         const now = new Date().toISOString();
         const id = generateId();
         this.repository.putConnection({
             id,
             name: payload.name,
-            engine: 'postgresql',
+            engine: payload.engine,
             defaultSchemas: payload.defaultSchemas,
             host: payload.secret.host,
             port: payload.secret.port,
@@ -71,6 +76,7 @@ export class ConnectionsService {
         this.repository.putConnection({
             ...existing,
             name: payload.name,
+            engine: payload.engine,
             defaultSchemas: payload.defaultSchemas,
             host: payload.secret.host,
             port: payload.secret.port,
@@ -101,11 +107,15 @@ export class ConnectionsService {
     async testConnection(
         request: ConnectionTestRequest
     ): Promise<ConnectionTestResponse> {
-        const secret = request.connectionId
-            ? this.getDecryptedSecret(request.connectionId)
+        const connection = request.connectionId
+            ? this.getConnection(request.connectionId)
+            : null;
+        const secret = connection
+            ? this.getDecryptedSecret(request.connectionId!)
             : request.connection?.secret;
+        const engine = connection?.engine ?? request.connection?.engine;
 
-        if (!secret) {
+        if (!secret || !engine) {
             return {
                 ok: false,
                 error: 'Connection details are required.',
@@ -114,7 +124,8 @@ export class ConnectionsService {
         }
 
         try {
-            const result = await testPostgresConnection(secret);
+            const adapter = this.adapterRegistry.resolve(engine);
+            const result = await adapter.testConnection(secret);
             return result;
         } catch (error) {
             return {
@@ -123,7 +134,7 @@ export class ConnectionsService {
                 error:
                     error instanceof Error
                         ? error.message
-                        : 'Unable to connect to PostgreSQL.',
+                        : 'Unable to connect to the database.',
             };
         }
     }

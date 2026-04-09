@@ -13,20 +13,24 @@ import type {
     StoredSnapshot,
 } from '../repositories/metadata-repository.js';
 import { generateId } from '../utils/id.js';
-import { introspectPostgresSchema } from '../postgres/introspection.js';
 import type { ConnectionsService } from './connections-service.js';
 import { AppError } from '../utils/app-error.js';
+import type { SchemaSyncAdapterRegistry } from '../engines/registry.js';
+import { renderChangePlanForAdapter } from '../engines/plan.js';
 
 export class SchemaSyncService {
     constructor(
         private readonly repository: MetadataRepository,
-        private readonly connectionsService: ConnectionsService
+        private readonly connectionsService: ConnectionsService,
+        private readonly adapterRegistry: SchemaSyncAdapterRegistry
     ) {}
 
     async importLiveSchema(
         request: ImportLiveSchemaRequest
     ): Promise<ImportLiveSchemaResponse> {
-        const connection = this.repository.getConnection(request.connectionId);
+        const connection = this.connectionsService.getConnection(
+            request.connectionId
+        );
         if (!connection) {
             throw new AppError(
                 `Connection ${request.connectionId} not found.`,
@@ -38,7 +42,8 @@ export class SchemaSyncService {
         const secret = this.connectionsService.getDecryptedSecret(
             request.connectionId
         );
-        const canonicalSchema = await introspectPostgresSchema({
+        const adapter = this.adapterRegistry.resolve(connection.engine);
+        const canonicalSchema = await adapter.introspectSchema({
             secret,
             schemas:
                 request.schemas.length > 0
@@ -93,12 +98,29 @@ export class SchemaSyncService {
             createdAt: new Date().toISOString(),
         });
 
-        const plan = createChangePlan({
+        const connection = this.connectionsService.getConnection(
+            baseline.connectionId
+        );
+        if (!connection) {
+            throw new AppError(
+                `Connection ${baseline.connectionId} not found.`,
+                404,
+                'connection_not_found'
+            );
+        }
+
+        const adapter = this.adapterRegistry.resolve(connection.engine);
+        const rawPlan = createChangePlan({
             id: generateId(),
             baselineSnapshotId: baseline.id,
             connectionId: baseline.connectionId,
             baseline: baseline.schema,
             target: request.targetSchema,
+        });
+        const plan = renderChangePlanForAdapter({
+            plan: rawPlan,
+            targetSchema: request.targetSchema,
+            adapter,
         });
         this.repository.putChangePlan(plan);
 

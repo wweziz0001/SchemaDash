@@ -14,6 +14,7 @@ import { DiagramCollaborationBroker } from '../services/diagram-collaboration-br
 import type { OidcClientProvider } from '../services/oidc-provider.js';
 import { PersistenceService } from '../services/persistence-service.js';
 import { SchemaSyncService } from '../services/schema-sync-service.js';
+import { createSchemaSyncAdapterRegistry } from '../engines/registry.js';
 
 export interface AppContext {
     env: ServerEnv;
@@ -54,20 +55,24 @@ export const createAppContext = (
         env,
         options?.oidcProvider
     );
+    const schemaSyncAdapterRegistry = createSchemaSyncAdapterRegistry();
     const diagramCollaborationBroker = new DiagramCollaborationBroker();
     const adminService = new AdminService(appRepository, authService, env);
     const connectionsService = new ConnectionsService(
         metadataRepository,
-        env.encryptionKey
+        env.encryptionKey,
+        schemaSyncAdapterRegistry
     );
     const schemaSyncService = new SchemaSyncService(
         metadataRepository,
-        connectionsService
+        connectionsService,
+        schemaSyncAdapterRegistry
     );
     const applyService = new ApplyService(
         metadataRepository,
         connectionsService,
-        schemaSyncService
+        schemaSyncService,
+        schemaSyncAdapterRegistry
     );
     const persistenceService = new PersistenceService(
         appRepository,
@@ -100,7 +105,8 @@ export const createAppContext = (
         metadataRepository,
         persistenceService,
         connectionsService,
-        applyService
+        applyService,
+        schemaSyncAdapterRegistry
     );
 
     return {

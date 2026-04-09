@@ -6,7 +6,6 @@ import {
     type ChangePlan,
     type RiskWarning,
 } from '@schemadash/schema-sync-core';
-import { introspectPostgresSchema } from '../postgres/introspection.js';
 import type { AppUserRecord } from '../repositories/app-repository.js';
 import type { DiagramWorkflowRepository } from '../repositories/diagram-workflow-repository.js';
 import type { MetadataRepository } from '../repositories/metadata-repository.js';
@@ -15,6 +14,8 @@ import type { PersistenceService } from './persistence-service.js';
 import type { ApplyService } from './apply-service.js';
 import { AppError } from '../utils/app-error.js';
 import { generateId } from '../utils/id.js';
+import type { SchemaSyncAdapterRegistry } from '../engines/registry.js';
+import { renderChangePlanForAdapter } from '../engines/plan.js';
 
 export type DiagramMigrationIssueSeverity = 'info' | 'warning' | 'blocking';
 export type DiagramMigrationCheckStatus = 'passed' | 'warning' | 'failed';
@@ -101,7 +102,8 @@ export class DiagramMigrationService {
         private readonly metadataRepository: MetadataRepository,
         private readonly persistenceService: PersistenceService,
         private readonly connectionsService: ConnectionsService,
-        private readonly applyService: ApplyService
+        private readonly applyService: ApplyService,
+        private readonly adapterRegistry: SchemaSyncAdapterRegistry
     ) {}
 
     previewMigration(
@@ -186,12 +188,29 @@ export class DiagramMigrationService {
                 createdAt: generatedAt,
             });
 
-            plan = createChangePlan({
+            const connection = this.metadataRepository.getConnection(
+                state.connectionId
+            );
+            if (!connection) {
+                throw new AppError(
+                    `Connection ${state.connectionId} not found.`,
+                    404,
+                    'connection_not_found'
+                );
+            }
+
+            const adapter = this.adapterRegistry.resolve(connection.engine);
+            const rawPlan = createChangePlan({
                 id: generateId(),
                 baselineSnapshotId,
                 connectionId: state.connectionId,
                 baseline: liveSnapshot.canonicalSchema,
                 target: targetSchema,
+            });
+            plan = renderChangePlanForAdapter({
+                plan: rawPlan,
+                targetSchema,
+                adapter,
             });
             this.metadataRepository.putChangePlan(plan);
             issues.push(...plan.warnings.map(warningToIssue));
@@ -309,7 +328,18 @@ export class DiagramMigrationService {
             const secret = this.connectionsService.getDecryptedSecret(
                 state.connectionId
             );
-            const liveSchema = await introspectPostgresSchema({
+            const connection = this.metadataRepository.getConnection(
+                state.connectionId
+            );
+            if (!connection) {
+                throw new AppError(
+                    `Connection ${state.connectionId} not found.`,
+                    404,
+                    'connection_not_found'
+                );
+            }
+            const adapter = this.adapterRegistry.resolve(connection.engine);
+            const liveSchema = await adapter.introspectSchema({
                 secret,
                 schemas: planBaseline.importedSchemas,
             });
