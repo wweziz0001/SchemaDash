@@ -157,6 +157,14 @@ Inside that area:
 This structure is intentionally deployable on its own and straightforward to
 containerize later.
 
+The current implementation now uses that repository location directly:
+
+- service package: `services/schema-sync-service/package.json`
+- service entrypoint: `services/schema-sync-service/src/index.ts`
+- service app factory: `services/schema-sync-service/src/app.ts`
+- service env parser: `services/schema-sync-service/src/config/env.ts`
+- service routes: `services/schema-sync-service/src/routes/*`
+
 ## API Shape And Compatibility
 
 The main app should keep the existing UI-facing schema-sync endpoints when
@@ -229,6 +237,11 @@ Examples:
 - add service README
 - add env example or startup notes
 - add a placeholder Dockerfile if useful
+
+The current branch now includes:
+
+- `services/schema-sync-service/README.md`
+- `services/schema-sync-service/.env.example`
 
 ## Migration Notes
 
