@@ -5,7 +5,10 @@ import {
     changePlanSchema,
     riskWarningSchema,
 } from './types.js';
-import { databaseEngineSchema } from './engines.js';
+import {
+    databaseEngineSchema,
+    getSchemaEngineDefaultNamespace,
+} from './engines.js';
 
 export const sslModeSchema = z.enum(['disable', 'prefer', 'require']);
 
@@ -21,20 +24,40 @@ export type DatabaseConnectionSecret = z.infer<
     typeof databaseConnectionSecretSchema
 >;
 
-export const connectionUpsertSchema = z.object({
-    name: z.string().min(1),
-    engine: z.literal('postgresql').default('postgresql'),
-    defaultSchemas: z.array(z.string()).default(['public']),
-    secret: databaseConnectionSecretSchema,
-});
+export const connectionUpsertSchema = z
+    .object({
+        name: z.string().min(1),
+        engine: databaseEngineSchema.default('postgresql'),
+        defaultSchemas: z.array(z.string()).default([]),
+        secret: databaseConnectionSecretSchema,
+    })
+    .transform((value) => ({
+        ...value,
+        defaultSchemas:
+            value.defaultSchemas.length > 0
+                ? value.defaultSchemas
+                : [getSchemaEngineDefaultNamespace(value.engine)].filter(
+                      Boolean
+                  ),
+    }));
 export type ConnectionUpsert = z.infer<typeof connectionUpsertSchema>;
 
-export const connectionTestDraftSchema = z.object({
-    name: z.string().default(''),
-    engine: z.literal('postgresql').default('postgresql'),
-    defaultSchemas: z.array(z.string()).default(['public']),
-    secret: databaseConnectionSecretSchema,
-});
+export const connectionTestDraftSchema = z
+    .object({
+        name: z.string().default(''),
+        engine: databaseEngineSchema.default('postgresql'),
+        defaultSchemas: z.array(z.string()).default([]),
+        secret: databaseConnectionSecretSchema,
+    })
+    .transform((value) => ({
+        ...value,
+        defaultSchemas:
+            value.defaultSchemas.length > 0
+                ? value.defaultSchemas
+                : [getSchemaEngineDefaultNamespace(value.engine)].filter(
+                      Boolean
+                  ),
+    }));
 export type ConnectionTestDraft = z.infer<typeof connectionTestDraftSchema>;
 
 export const connectionSummarySchema = z.object({

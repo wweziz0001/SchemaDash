@@ -14,6 +14,7 @@ import {
     type SchemaChange,
     type SchemaChangeSummary,
 } from './types.js';
+import type { DatabaseEngine } from './engines.js';
 import { analyzePlanRisks } from './risk.js';
 import { generateMigrationSql } from './sql.js';
 import { hashCanonicalSchema } from './hash.js';
@@ -95,8 +96,14 @@ const normalizeTypeName = (value: string) =>
         .replace(/^pg_catalog\./i, '')
         .toLowerCase();
 
-const isBuiltinPostgresType = (value: string) =>
-    BUILTIN_POSTGRES_TYPES.has(normalizeTypeName(value));
+const isBuiltinEngineType = (engine: DatabaseEngine, value: string) => {
+    switch (engine) {
+        case 'postgresql':
+            return BUILTIN_POSTGRES_TYPES.has(normalizeTypeName(value));
+        default:
+            return false;
+    }
+};
 
 const getCustomTypeMatchKey = (customType: CanonicalCustomType): string =>
     customType.sync?.sourceId?.toLowerCase() ??
@@ -659,10 +666,12 @@ export const createChangePlan = ({
 
             if (
                 normalizeComparableType(
-                    baselineColumn.dataTypeDisplay ?? baselineColumn.dataType
+                    baselineColumn.dataTypeDisplay ?? baselineColumn.dataType,
+                    baseline.engine
                 ) !==
                 normalizeComparableType(
-                    targetColumn.dataTypeDisplay ?? targetColumn.dataType
+                    targetColumn.dataTypeDisplay ?? targetColumn.dataType,
+                    target.engine
                 )
             ) {
                 changes.push({
@@ -941,7 +950,7 @@ export const createChangePlan = ({
         const unqualified = normalized.split('.').at(-1) ?? normalized;
         if (
             !normalized ||
-            isBuiltinPostgresType(typeName) ||
+            isBuiltinEngineType(target.engine, typeName) ||
             baselineKnownTypes.has(normalized) ||
             baselineKnownTypes.has(unqualified)
         ) {
@@ -1191,7 +1200,7 @@ export const createChangePlan = ({
     }
 
     const summary = summarize(changes, analyzedWarnings);
-    const sqlStatements = generateMigrationSql(changes, target);
+    const sqlStatements = generateMigrationSql(changes, target, target.engine);
     const requiresConfirmation = analyzedWarnings.some(
         (warning) => warning.level === 'destructive'
     );

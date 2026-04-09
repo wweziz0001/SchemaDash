@@ -170,3 +170,7 @@ export const schemaEngineDefinitions: Record<
 export const getSchemaEngineDefinition = (
     engine: DatabaseEngine
 ): SchemaEngineDefinition => schemaEngineDefinitions[engine];
+
+export const getSchemaEngineDefaultNamespace = (
+    engine: DatabaseEngine
+): string => getSchemaEngineDefinition(engine).defaultNamespace;

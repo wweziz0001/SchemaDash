@@ -1,4 +1,6 @@
-const TYPE_ALIAS_MAP = new Map<string, string>([
+import type { DatabaseEngine } from './engines.js';
+
+const POSTGRESQL_TYPE_ALIAS_MAP = new Map<string, string>([
     ['bool', 'boolean'],
     ['boolean', 'boolean'],
     ['char', 'character'],
@@ -28,7 +30,19 @@ const TYPE_ALIAS_MAP = new Map<string, string>([
     ['timestamp with time zone', 'timestamp with time zone'],
 ]);
 
-export const normalizeComparableType = (value?: string | null) => {
+const getTypeAliasMap = (engine: DatabaseEngine) => {
+    switch (engine) {
+        case 'postgresql':
+            return POSTGRESQL_TYPE_ALIAS_MAP;
+        default:
+            return new Map<string, string>();
+    }
+};
+
+export const normalizeComparableType = (
+    value?: string | null,
+    engine: DatabaseEngine = 'postgresql'
+) => {
     if (!value) {
         return null;
     }
@@ -48,7 +62,7 @@ export const normalizeComparableType = (value?: string | null) => {
     }
 
     const baseName = match[1]?.trim() ?? arrayless;
-    const normalizedBase = TYPE_ALIAS_MAP.get(baseName) ?? baseName;
+    const normalizedBase = getTypeAliasMap(engine).get(baseName) ?? baseName;
     const args = match[3]?.replace(/\s+/g, '') ?? '';
     const normalized = args ? `${normalizedBase}(${args})` : normalizedBase;
 

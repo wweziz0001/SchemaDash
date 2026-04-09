@@ -3,6 +3,7 @@ import type {
     AuditRecord,
     ChangePlan,
     ConnectionSummary,
+    DatabaseEngine,
 } from '@schemadash/schema-sync-core';
 import type { CanonicalSchema } from '@schemadash/schema-sync-core';
 
@@ -406,7 +407,7 @@ export class MetadataRepository {
         return {
             id: String(row.id),
             name: String(row.name),
-            engine: 'postgresql',
+            engine: String(row.engine) as DatabaseEngine,
             defaultSchemas: parseJson<string[]>(String(row.default_schemas)),
             host: String(row.host),
             port: Number(row.port),

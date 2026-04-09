@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { databaseEngineSchema } from './engines.js';
+import {
+    databaseEngineSchema,
+    getSchemaEngineDefaultNamespace,
+} from './engines.js';
 
 export const syncRefSchema = z.object({
     sourceId: z.string().optional(),
@@ -131,16 +134,23 @@ export const canonicalTableSchema = z.object({
 });
 export type CanonicalTable = z.infer<typeof canonicalTableSchema>;
 
-export const canonicalSchemaSchema = z.object({
-    engine: databaseEngineSchema,
-    databaseName: z.string(),
-    defaultSchemaName: z.string().default('public'),
-    schemaNames: z.array(z.string()).default([]),
-    tables: z.array(canonicalTableSchema),
-    customTypes: z.array(canonicalCustomTypeSchema).default([]),
-    fingerprint: z.string().optional(),
-    importedAt: z.string().optional(),
-});
+export const canonicalSchemaSchema = z
+    .object({
+        engine: databaseEngineSchema,
+        databaseName: z.string(),
+        defaultSchemaName: z.string().optional(),
+        schemaNames: z.array(z.string()).default([]),
+        tables: z.array(canonicalTableSchema),
+        customTypes: z.array(canonicalCustomTypeSchema).default([]),
+        fingerprint: z.string().optional(),
+        importedAt: z.string().optional(),
+    })
+    .transform((value) => ({
+        ...value,
+        defaultSchemaName:
+            value.defaultSchemaName ??
+            getSchemaEngineDefaultNamespace(value.engine),
+    }));
 export type CanonicalSchema = z.infer<typeof canonicalSchemaSchema>;
 
 export const riskLevelSchema = z.enum([

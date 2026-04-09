@@ -4,6 +4,7 @@ import type {
     CanonicalTable,
     SchemaChange,
 } from './types.js';
+import type { DatabaseEngine } from './engines.js';
 
 const quoteIdent = (value: string) => `"${value.replace(/"/g, '""')}"`;
 const quoteLiteral = (value: string) => `'${value.replace(/'/g, "''")}'`;
@@ -237,7 +238,7 @@ const orderRank = (change: SchemaChange): number => {
     }
 };
 
-export const generateMigrationSql = (
+const generatePostgresqlMigrationSql = (
     changes: SchemaChange[],
     targetSchema?: CanonicalSchema
 ): string[] => {
@@ -431,4 +432,19 @@ export const generateMigrationSql = (
     }
 
     return sql;
+};
+
+export const generateMigrationSql = (
+    changes: SchemaChange[],
+    targetSchema?: CanonicalSchema,
+    engine: DatabaseEngine = targetSchema?.engine ?? 'postgresql'
+): string[] => {
+    switch (engine) {
+        case 'postgresql':
+            return generatePostgresqlMigrationSql(changes, targetSchema);
+        default:
+            throw new Error(
+                `Migration SQL generation for engine "${engine}" is not implemented.`
+            );
+    }
 };
