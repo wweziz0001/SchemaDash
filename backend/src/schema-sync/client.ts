@@ -24,8 +24,18 @@ export interface SchemaSyncClientConfig {
     serviceUrl: string | null;
 }
 
+export interface SchemaSyncServiceReadiness {
+    enabled: boolean;
+    mode: SchemaSyncRuntimeMode;
+    serviceUrl: string | null;
+    status: 'disabled' | 'up' | 'down';
+    ok: boolean;
+    error: string | null;
+}
+
 export interface SchemaSyncClient {
     readonly config: SchemaSyncClientConfig;
+    getReadiness(): Promise<SchemaSyncServiceReadiness>;
     listConnections(): Promise<ConnectionSummary[]>;
     getConnection(connectionId: string): Promise<ConnectionSummary | null>;
     createConnection(payload: ConnectionUpsert): Promise<ConnectionSummary>;
@@ -65,6 +75,17 @@ class DisabledSchemaSyncClient implements SchemaSyncClient {
 
     private reject(): never {
         throw createSchemaSyncDisabledError();
+    }
+
+    async getReadiness(): Promise<SchemaSyncServiceReadiness> {
+        return {
+            enabled: false,
+            mode: 'disabled',
+            serviceUrl: null,
+            status: 'disabled',
+            ok: true,
+            error: null,
+        };
     }
 
     async listConnections(): Promise<ConnectionSummary[]> {
@@ -184,6 +205,29 @@ class HttpSchemaSyncClient implements SchemaSyncClient {
                 502,
                 'schema_sync_service_unavailable'
             );
+        }
+    }
+
+    async getReadiness(): Promise<SchemaSyncServiceReadiness> {
+        try {
+            await this.request<{ ok: boolean }>('/api/readyz');
+            return {
+                enabled: true,
+                mode: 'external-service',
+                serviceUrl: this.config.serviceUrl,
+                status: 'up',
+                ok: true,
+                error: null,
+            };
+        } catch (error) {
+            return {
+                enabled: true,
+                mode: 'external-service',
+                serviceUrl: this.config.serviceUrl,
+                status: 'down',
+                ok: false,
+                error: error instanceof Error ? error.message : 'Unavailable',
+            };
         }
     }
 

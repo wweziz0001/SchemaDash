@@ -1,16 +1,25 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { AppContext } from '../context/app-context.js';
 
-const resolveReadiness = (context: AppContext) => {
+const resolveReadiness = async (context: AppContext) => {
+    const schemaSync = await context.schemaSyncClient.getReadiness();
     const checks = {
         appDatabase: {
             status: context.appRepository.ping() ? 'up' : 'down',
             path: context.env.appDbPath,
         },
+        schemaSyncService: {
+            status: schemaSync.status,
+            serviceUrl: schemaSync.serviceUrl,
+            error: schemaSync.error,
+        },
     } as const;
 
     return {
-        ok: Object.values(checks).every((check) => check.status === 'up'),
+        ok:
+            checks.appDatabase.status === 'up' &&
+            (checks.schemaSyncService.status === 'up' ||
+                checks.schemaSyncService.status === 'disabled'),
         checks,
     };
 };
@@ -36,7 +45,7 @@ export const registerHealthRoutes = (
     });
 
     app.get('/api/readyz', async (_, reply) => {
-        const readiness = resolveReadiness(context);
+        const readiness = await resolveReadiness(context);
 
         return sendWithStatus(reply, readiness.ok ? 200 : 503, {
             ok: readiness.ok,
@@ -47,7 +56,7 @@ export const registerHealthRoutes = (
     });
 
     app.get('/api/health', async (_, reply) => {
-        const readiness = resolveReadiness(context);
+        const readiness = await resolveReadiness(context);
         const authBootstrap = context.authService.getBootstrapStatus();
 
         return sendWithStatus(reply, readiness.ok ? 200 : 503, {
@@ -64,6 +73,8 @@ export const registerHealthRoutes = (
                     mode: context.env.schemaSyncMode,
                     serviceUrl: context.env.schemaSyncServiceUrl,
                     enabled: context.env.schemaSyncEnabled,
+                    status: readiness.checks.schemaSyncService.status,
+                    error: readiness.checks.schemaSyncService.error,
                 },
             },
             auth: {
