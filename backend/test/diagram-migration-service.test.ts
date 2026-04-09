@@ -12,6 +12,7 @@ import { DiagramWorkflowRepository } from '../src/repositories/diagram-workflow-
 import { DiagramMigrationService } from '../src/services/diagram-migration-service.js';
 import { PersistenceService } from '../src/services/persistence-service.js';
 import type { SchemaSyncClient } from '../src/schema-sync/client.js';
+import { AppError } from '../src/utils/app-error.js';
 
 const tempDirs: string[] = [];
 
@@ -183,9 +184,11 @@ const createHarness = (options?: { includeWorkflowState?: boolean }) => {
             enabled: true,
             mode: 'external-service',
             serviceUrl: 'http://schema-sync.test',
-            status: 'up',
+            status: 'ready',
             ok: true,
             error: null,
+            errorCode: null,
+            checkedAt: '2026-04-09T00:00:00.000Z',
         }),
         getConnection: vi.fn().mockResolvedValue({
             id: 'connection-1',
@@ -401,5 +404,169 @@ describe('diagram migration service', () => {
         expect(result.result.status).toBe('failed');
         expect(result.result.error).toBe('Constraint validation failed.');
         expect(result.result.logs).toContain('Transaction rolled back');
+    });
+
+    it('returns a blocking validation issue when the remote connection check fails before returning a result', async () => {
+        const { migrationService, schemaSyncClient } = createHarness();
+        schemaSyncClient.testConnection.mockRejectedValue(
+            new AppError(
+                'Schema sync service is unavailable while testing the database connection.',
+                502,
+                'schema_sync_service_unavailable'
+            )
+        );
+
+        const validation = await migrationService.validateMigration(
+            'diagram-1',
+            {
+                targetSchema,
+            }
+        );
+
+        expect(validation.readyToApply).toBe(false);
+        expect(validation.issues).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'migration_connection_validation_service_unavailable',
+                    severity: 'blocking',
+                }),
+            ])
+        );
+        expect(validation.checks).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'connection_reachable',
+                    status: 'failed',
+                    detail: 'Schema sync service is unavailable while testing the database connection.',
+                }),
+            ])
+        );
+    });
+
+    it('returns an explicit unknown-outcome failure when apply times out and no audit is available', async () => {
+        const { migrationService, schemaSyncClient } = createHarness();
+        schemaSyncClient.applySchema.mockRejectedValue(
+            new AppError(
+                'Schema sync service timed out while applying the migration.',
+                504,
+                'schema_sync_timeout'
+            )
+        );
+        schemaSyncClient.getLatestAuditForChangePlan.mockResolvedValue(null);
+
+        const result = await migrationService.applyMigration(
+            'diagram-1',
+            {
+                targetSchema,
+                destructiveApproval: {
+                    confirmed: true,
+                    confirmationText: '',
+                },
+            },
+            null,
+            'admin:owner@example.com'
+        );
+
+        expect(schemaSyncClient.applySchema).toHaveBeenCalledTimes(1);
+        expect(result.result.status).toBe('failed');
+        expect(result.result.error).toContain(
+            'Apply status could not be confirmed'
+        );
+    });
+
+    it('keeps apply marked succeeded when the remote audit proves the apply finished after a timeout', async () => {
+        const { migrationService, schemaSyncClient } = createHarness();
+        schemaSyncClient.applySchema.mockRejectedValue(
+            new AppError(
+                'Schema sync service timed out while applying the migration.',
+                504,
+                'schema_sync_timeout'
+            )
+        );
+        schemaSyncClient.getLatestAuditForChangePlan.mockResolvedValue({
+            id: 'audit-2',
+            actor: 'admin:owner@example.com',
+            connectionId: 'connection-1',
+            baselineSnapshotId: 'baseline-snapshot-1',
+            targetSnapshotId: 'target-snapshot-1',
+            preApplySnapshotId: 'pre-apply-1',
+            postApplySnapshotId: 'post-apply-2',
+            changePlanId: 'plan-1',
+            sqlStatements: [
+                'ALTER TABLE "public"."users" ADD COLUMN "display_name" text;',
+            ],
+            warnings: [],
+            status: 'succeeded',
+            logs: ['Apply requested', 'Transaction committed'],
+            error: null,
+            createdAt: '2026-03-29T18:10:00.000Z',
+            updatedAt: '2026-03-29T18:10:30.000Z',
+        });
+        schemaSyncClient.getSnapshot.mockResolvedValue({
+            id: 'post-apply-2',
+            connectionId: 'connection-1',
+            kind: 'post_apply',
+            fingerprint: hashCanonicalSchema(targetSchema),
+            importedSchemas: ['public'],
+            schema: targetSchema,
+            createdAt: '2026-03-29T18:10:30.000Z',
+        });
+
+        const result = await migrationService.applyMigration(
+            'diagram-1',
+            {
+                targetSchema,
+                destructiveApproval: {
+                    confirmed: true,
+                    confirmationText: '',
+                },
+            },
+            null,
+            'admin:owner@example.com'
+        );
+
+        expect(result.result.status).toBe('succeeded');
+        expect(result.result.auditId).toBe('audit-2');
+        expect(result.result.postApplySnapshotId).toBe('post-apply-2');
+        expect(result.result.updatedLiveSnapshotId).toBeTruthy();
+    });
+
+    it('keeps apply marked succeeded with a warning when post-apply snapshot refresh fails after success', async () => {
+        const { migrationService, schemaSyncClient } = createHarness();
+        schemaSyncClient.applySchema.mockResolvedValue({
+            jobId: 'job-2',
+            status: 'succeeded',
+            executedStatements: [
+                'ALTER TABLE "public"."users" ADD COLUMN "display_name" text;',
+            ],
+            logs: ['Transaction committed'],
+            error: null,
+            auditId: 'audit-3',
+            postApplySnapshotId: 'post-apply-3',
+        });
+        schemaSyncClient.getSnapshot.mockRejectedValue(
+            new AppError(
+                'Schema sync service is unavailable while loading the schema sync snapshot.',
+                502,
+                'schema_sync_service_unavailable'
+            )
+        );
+
+        const result = await migrationService.applyMigration(
+            'diagram-1',
+            {
+                targetSchema,
+                destructiveApproval: {
+                    confirmed: true,
+                    confirmationText: '',
+                },
+            },
+            null,
+            'admin:owner@example.com'
+        );
+
+        expect(result.result.status).toBe('succeeded');
+        expect(result.result.updatedLiveSnapshotId).toBeNull();
+        expect(result.result.error).toContain('Migration applied successfully');
     });
 });

@@ -1,6 +1,7 @@
 import {
     canonicalSchemaSchema,
     hashCanonicalSchema,
+    type ConnectionTestResponse,
     type CanonicalSchema,
     type ChangePlan,
     type RiskWarning,
@@ -94,6 +95,168 @@ const warningToIssue = (warning: RiskWarning): DiagramMigrationIssue => ({
 const resolveMigrationActorLabel = (actor?: AppUserRecord | null) =>
     actor?.displayName ?? actor?.email ?? 'workflow-preview';
 
+type RemoteMigrationOperation =
+    | 'get_connection'
+    | 'test_connection'
+    | 'import_live_schema'
+    | 'diff_schema'
+    | 'apply_schema'
+    | 'get_snapshot';
+
+type RemoteMigrationFailureClassification =
+    | 'timeout'
+    | 'service_unavailable'
+    | 'not_ready'
+    | 'invalid_response'
+    | 'remote_failure'
+    | 'other';
+
+const classifyRemoteMigrationFailure = (
+    operation: RemoteMigrationOperation,
+    error: unknown
+): {
+    classification: RemoteMigrationFailureClassification;
+    message: string;
+} => {
+    if (error instanceof AppError) {
+        switch (error.code) {
+            case 'schema_sync_timeout':
+                return {
+                    classification: 'timeout',
+                    message: error.message,
+                };
+            case 'schema_sync_service_unavailable':
+                return {
+                    classification: 'service_unavailable',
+                    message: error.message,
+                };
+            case 'schema_sync_service_not_ready':
+                return {
+                    classification: 'not_ready',
+                    message: error.message,
+                };
+            case 'schema_sync_invalid_response':
+                return {
+                    classification: 'invalid_response',
+                    message: error.message,
+                };
+            default:
+                return {
+                    classification: 'remote_failure',
+                    message: error.message,
+                };
+        }
+    }
+
+    return {
+        classification: 'other',
+        message:
+            error instanceof Error
+                ? error.message
+                : `Unexpected schema sync failure while ${operation}.`,
+    };
+};
+
+const createRemoteMigrationIssue = (
+    prefix: string,
+    operation: RemoteMigrationOperation,
+    error: unknown,
+    fallbackTitle: string,
+    fallbackMessage: string
+): DiagramMigrationIssue => {
+    const failure = classifyRemoteMigrationFailure(operation, error);
+
+    if (failure.classification === 'timeout') {
+        return {
+            code: `${prefix}_timeout`,
+            severity: 'blocking',
+            title: 'Schema sync request timed out',
+            message: failure.message,
+        };
+    }
+
+    if (failure.classification === 'service_unavailable') {
+        return {
+            code: `${prefix}_service_unavailable`,
+            severity: 'blocking',
+            title: 'Schema sync service unavailable',
+            message: failure.message,
+        };
+    }
+
+    if (failure.classification === 'not_ready') {
+        return {
+            code: `${prefix}_readiness_failed`,
+            severity: 'blocking',
+            title: 'Schema sync service not ready',
+            message: failure.message,
+        };
+    }
+
+    if (failure.classification === 'invalid_response') {
+        return {
+            code: `${prefix}_invalid_response`,
+            severity: 'blocking',
+            title: 'Schema sync service returned invalid data',
+            message: failure.message,
+        };
+    }
+
+    return {
+        code: `${prefix}_failed`,
+        severity: 'blocking',
+        title: fallbackTitle,
+        message: failure.message || fallbackMessage,
+    };
+};
+
+const describeApplyFailureMessage = (error: unknown) => {
+    const failure = classifyRemoteMigrationFailure('apply_schema', error);
+
+    if (failure.classification === 'timeout') {
+        return 'Schema sync service timed out while applying the migration. Apply status could not be confirmed. Check the schema sync service audit history before retrying.';
+    }
+
+    if (failure.classification === 'service_unavailable') {
+        return 'Schema sync service became unavailable while applying the migration. Apply status could not be confirmed. Check the schema sync service audit history before retrying.';
+    }
+
+    if (failure.classification === 'not_ready') {
+        return 'Schema sync service is enabled but not ready yet, so the migration could not be applied.';
+    }
+
+    if (failure.classification === 'invalid_response') {
+        return 'Schema sync service returned an invalid apply response. Check the schema sync service audit history before retrying.';
+    }
+
+    return failure.message || 'Failed to apply the migration plan.';
+};
+
+const describePostApplySyncWarning = (error: unknown) => {
+    const failure = classifyRemoteMigrationFailure('get_snapshot', error);
+
+    if (failure.classification === 'timeout') {
+        return 'Migration applied successfully, but SchemaDash timed out while refreshing the post-apply live snapshot. Refresh the live database before planning another migration.';
+    }
+
+    if (failure.classification === 'service_unavailable') {
+        return 'Migration applied successfully, but the schema sync service became unavailable before SchemaDash could refresh the post-apply live snapshot. Refresh the live database before planning another migration.';
+    }
+
+    if (failure.classification === 'not_ready') {
+        return 'Migration applied successfully, but the schema sync service is not ready for post-apply snapshot refresh yet. Refresh the live database before planning another migration.';
+    }
+
+    if (failure.classification === 'invalid_response') {
+        return 'Migration applied successfully, but the schema sync service returned invalid post-apply snapshot data. Refresh the live database before planning another migration.';
+    }
+
+    return (
+        failure.message ||
+        'Migration applied successfully, but SchemaDash could not refresh the post-apply live snapshot.'
+    );
+};
+
 type PersistedDiagramView = NonNullable<
     ReturnType<PersistenceService['getDiagram']>
 >;
@@ -183,20 +346,34 @@ export class DiagramMigrationService {
                 : null;
 
         let connectionName = state?.connectionNameCache ?? null;
+        let schemaSyncOperational = true;
         if (state?.connectionId) {
-            const connection = await this.schemaSyncClient.getConnection(
-                state.connectionId
-            );
-            if (!connection) {
-                issues.push({
-                    code: 'migration_connection_not_found',
-                    severity: 'blocking',
-                    title: 'Connection not found',
-                    message:
-                        'The saved connection for this diagram no longer exists.',
-                });
-            } else {
-                connectionName = connection.name;
+            try {
+                const connection = await this.schemaSyncClient.getConnection(
+                    state.connectionId
+                );
+                if (!connection) {
+                    issues.push({
+                        code: 'migration_connection_not_found',
+                        severity: 'blocking',
+                        title: 'Connection not found',
+                        message:
+                            'The saved connection for this diagram no longer exists.',
+                    });
+                } else {
+                    connectionName = connection.name;
+                }
+            } catch (error) {
+                issues.push(
+                    createRemoteMigrationIssue(
+                        'migration_connection_lookup',
+                        'get_connection',
+                        error,
+                        'Unable to load connection details',
+                        'The schema sync service could not load the saved connection.'
+                    )
+                );
+                schemaSyncOperational = false;
             }
         }
 
@@ -227,7 +404,8 @@ export class DiagramMigrationService {
         if (
             state?.connectionId &&
             persistedBaselineSnapshotId &&
-            liveSnapshot
+            liveSnapshot &&
+            schemaSyncOperational
         ) {
             try {
                 const response = await this.schemaSyncClient.diffSchema({
@@ -252,15 +430,15 @@ export class DiagramMigrationService {
                     });
                 }
             } catch (error) {
-                issues.push({
-                    code: 'migration_plan_generation_failed',
-                    severity: 'blocking',
-                    title: 'Unable to generate migration plan',
-                    message:
-                        error instanceof Error
-                            ? error.message
-                            : 'The schema sync service could not generate a migration plan.',
-                });
+                issues.push(
+                    createRemoteMigrationIssue(
+                        'migration_plan_generation',
+                        'diff_schema',
+                        error,
+                        'Unable to generate migration plan',
+                        'The schema sync service could not generate a migration plan.'
+                    )
+                );
             }
         }
 
@@ -318,15 +496,34 @@ export class DiagramMigrationService {
         const issues = [...preview.issues];
         const validatedAt = new Date().toISOString();
 
-        const connectionResult = state?.connectionId
-            ? await this.schemaSyncClient.testConnection({
-                  connectionId: state.connectionId,
-              })
-            : {
-                  ok: false,
-                  error: 'Connection not configured.',
-                  availableSchemas: [],
-              };
+        let connectionResult: ConnectionTestResponse;
+        if (state?.connectionId) {
+            try {
+                connectionResult = await this.schemaSyncClient.testConnection({
+                    connectionId: state.connectionId,
+                });
+            } catch (error) {
+                const issue = createRemoteMigrationIssue(
+                    'migration_connection_validation',
+                    'test_connection',
+                    error,
+                    'Unable to validate connection',
+                    'The schema sync service could not validate the saved connection.'
+                );
+                connectionResult = {
+                    ok: false,
+                    error: issue.message,
+                    availableSchemas: [],
+                };
+                issues.push(issue);
+            }
+        } else {
+            connectionResult = {
+                ok: false,
+                error: 'Connection not configured.',
+                availableSchemas: [],
+            };
+        }
         checks.push({
             code: 'connection_reachable',
             label: 'Connection reachable',
@@ -390,6 +587,13 @@ export class DiagramMigrationService {
                     });
                 }
             } catch (error) {
+                const issue = createRemoteMigrationIssue(
+                    'migration_live_drift_validation',
+                    'import_live_schema',
+                    error,
+                    'Unable to validate live baseline',
+                    'Unable to validate the live baseline against the schema sync service.'
+                );
                 checks.push({
                     code: 'baseline_snapshot_available',
                     label: 'Baseline snapshot available',
@@ -400,20 +604,9 @@ export class DiagramMigrationService {
                     code: 'live_baseline_match',
                     label: 'Live baseline still matches',
                     status: 'failed',
-                    detail:
-                        error instanceof Error
-                            ? error.message
-                            : 'Unable to validate the live baseline against the schema sync service.',
+                    detail: issue.message,
                 });
-                issues.push({
-                    code: 'migration_live_drift_validation_failed',
-                    severity: 'blocking',
-                    title: 'Unable to validate live baseline',
-                    message:
-                        error instanceof Error
-                            ? error.message
-                            : 'Unable to validate the live baseline against the schema sync service.',
-                });
+                issues.push(issue);
             }
         } else {
             checks.push({
@@ -499,8 +692,10 @@ export class DiagramMigrationService {
                 actor: actorLabel,
                 destructiveApproval: input.destructiveApproval,
             });
-            const updatedLiveSnapshotId =
-                await this.recordPostApplyLiveSnapshot({
+            let updatedLiveSnapshotId: string | null = null;
+            let followUpWarning: string | null = null;
+            try {
+                updatedLiveSnapshotId = await this.recordPostApplyLiveSnapshot({
                     diagramId,
                     actor,
                     connectionId: validation.plan.connectionId,
@@ -509,6 +704,9 @@ export class DiagramMigrationService {
                     postApplySnapshotId:
                         applyResult.postApplySnapshotId ?? null,
                 });
+            } catch (error) {
+                followUpWarning = describePostApplySyncWarning(error);
+            }
 
             return {
                 validation,
@@ -518,17 +716,63 @@ export class DiagramMigrationService {
                     auditId: applyResult.auditId,
                     logs: applyResult.logs,
                     executedStatements: applyResult.executedStatements,
-                    error: applyResult.error ?? null,
+                    error: applyResult.error ?? followUpWarning ?? null,
                     postApplySnapshotId:
                         applyResult.postApplySnapshotId ?? null,
                     updatedLiveSnapshotId,
                 },
             };
         } catch (error) {
-            const audit =
-                await this.schemaSyncClient.getLatestAuditForChangePlan(
+            let audit = null;
+            try {
+                audit = await this.schemaSyncClient.getLatestAuditForChangePlan(
                     validation.plan.id
                 );
+            } catch {
+                audit = null;
+            }
+
+            if (audit?.status === 'succeeded') {
+                let updatedLiveSnapshotId: string | null = null;
+                let followUpWarning: string | null = null;
+                try {
+                    updatedLiveSnapshotId =
+                        await this.recordPostApplyLiveSnapshot({
+                            diagramId,
+                            actor,
+                            connectionId: validation.plan.connectionId,
+                            previousLiveSnapshotId:
+                                validation.workflowLiveSnapshotId ?? undefined,
+                            postApplySnapshotId:
+                                audit.postApplySnapshotId ?? null,
+                        });
+                } catch (snapshotError) {
+                    followUpWarning =
+                        describePostApplySyncWarning(snapshotError);
+                }
+
+                return {
+                    validation,
+                    result: {
+                        status: 'succeeded',
+                        jobId: null,
+                        auditId: audit.id,
+                        logs: audit.logs,
+                        executedStatements: audit.sqlStatements,
+                        error: followUpWarning,
+                        postApplySnapshotId: audit.postApplySnapshotId ?? null,
+                        updatedLiveSnapshotId,
+                    },
+                };
+            }
+
+            const failureMessage = describeApplyFailureMessage(error);
+            const resultError =
+                audit?.status === 'failed'
+                    ? (audit.error ?? failureMessage)
+                    : audit?.status === 'running'
+                      ? `${failureMessage} The latest remote audit is still marked running.`
+                      : failureMessage;
 
             return {
                 validation,
@@ -537,11 +781,9 @@ export class DiagramMigrationService {
                     jobId: null,
                     auditId: audit?.id ?? null,
                     logs: audit?.logs ?? [],
-                    executedStatements: [],
-                    error:
-                        error instanceof Error
-                            ? error.message
-                            : 'Failed to apply the migration plan.',
+                    executedStatements:
+                        audit?.status === 'failed' ? audit.sqlStatements : [],
+                    error: resultError,
                     postApplySnapshotId: audit?.postApplySnapshotId ?? null,
                     updatedLiveSnapshotId: null,
                 },

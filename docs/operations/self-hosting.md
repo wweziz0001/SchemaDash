@@ -84,6 +84,16 @@ startup. This keeps unrelated product features reachable while
 is enabled, the main app surfaces the dependency state through `GET /api/readyz`
 and `GET /api/health`.
 
+Main app schema-sync readiness states:
+
+- `disabled`: schema sync is intentionally off and does not affect readiness
+- `ready`: the remote schema-sync service is reachable and its own `/api/readyz`
+  check passed
+- `not_ready`: the remote service process is reachable, but its readiness check
+  is still failing
+- `unavailable`: the main app could not reach the remote service or the request
+  timed out
+
 Useful follow-up commands:
 
 ```bash
@@ -102,6 +112,18 @@ Health endpoints:
 - `GET /api/health` for a detailed operational snapshot
 - `GET /readyz` on `schema-sync-adapter` for standalone service readiness
 - `GET /healthz` on `schema-sync-adapter` for standalone service diagnostics
+
+Remote timeout and retry behavior:
+
+- readiness checks use a short timeout and are not retried automatically
+- connection tests use a moderate timeout and a single conservative retry on
+  transport/readiness failures
+- connection lookup, audit lookup, snapshot lookup, and apply-job lookup use a
+  short timeout and a single conservative retry on transport/readiness failures
+- live schema import, migration preview generation, and apply use longer bounded
+  timeouts but are not retried automatically
+- apply is never auto-retried by the main app because it is a high-trust
+  operation and duplicate execution would be unsafe
 
 ## Environment variables
 
@@ -201,6 +223,13 @@ Standalone schema sync service variables:
 
 - If `api` health is green but `/api/readyz` returns `503`, inspect the
   `schemaSyncService` check in `/api/health`.
+- If `/api/health` reports `schemaSyncService.status=not_ready`, the remote
+  service process is alive but its own readiness check is failing. Inspect
+  `GET /readyz` on `schema-sync-adapter` and the service logs.
+- If `/api/health` reports `schemaSyncService.status=unavailable`, the main app
+  could not reach the remote service or timed out before it responded. Confirm
+  DNS/network reachability, container startup, and the configured
+  `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL`.
 - If schema sync is intentionally off, leave
   `SCHEMADASH_SCHEMA_SYNC_ENABLED=false`; the rest of SchemaDash should keep
   functioning normally.
@@ -209,5 +238,11 @@ Standalone schema sync service variables:
   `http://schema-sync-adapter:4020`.
 - If `schema-sync-adapter` fails readiness, check the mounted service data
   directory, secret configuration, and service logs.
+- If migration preview fails with a timeout or invalid-response error, treat it
+  as a remote-service problem first rather than assuming the diagram state is
+  bad.
+- If apply reports that the outcome could not be confirmed, do not retry
+  immediately. Inspect the latest remote audit and service logs first so you do
+  not double-apply a high-trust operation.
 - When running the service outside Docker, switch the main app URL to
   `http://localhost:4020`.
