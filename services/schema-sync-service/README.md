@@ -133,8 +133,10 @@ When that profile is enabled:
 - Compose starts `schema-sync-adapter`
 - the main app reads `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL=http://schema-sync-adapter:4020`
 - `api` does not hard-crash if the service is briefly unavailable
-- `/api/readyz` on the main app reports schema sync as `down` until the service
-  is healthy
+- `/api/readyz` on the main app reports schema sync as `not_ready` while the
+  service process is up but its readiness check is still failing
+- `/api/readyz` on the main app reports schema sync as `unavailable` when the
+  main app cannot reach the service or the readiness request times out
 
 This is intentional. The compose stack favors safe degraded startup for
 unrelated SchemaDash features over hard startup coupling.
@@ -177,16 +179,34 @@ Probe guidance:
 
 The container image healthcheck uses `GET /readyz`.
 
+Main-app remote client behavior:
+
+- readiness probes use a short timeout and no automatic retry
+- connection tests and read-only metadata lookups use bounded timeouts and one
+  conservative retry on transient transport/readiness failures
+- live schema import, diff preview generation, and apply use longer bounded
+  timeouts and no automatic retry
+- apply is intentionally never auto-retried by the main app
+
 ## Troubleshooting
 
 - If the main app returns `schema_sync_disabled`, confirm
   `SCHEMADASH_SCHEMA_SYNC_ENABLED=true`.
 - If the main app returns `schema_sync_service_unavailable`, confirm
   `SCHEMADASH_SCHEMA_SYNC_SERVICE_URL` points to the reachable service host.
+- If the main app returns `schema_sync_timeout`, the remote request exceeded the
+  main app timeout budget for that operation.
+- If the main app returns `schema_sync_service_not_ready`, the main app reached
+  the service process but the service readiness check is still failing.
+- If the main app returns `schema_sync_invalid_response`, inspect both the main
+  app logs and the schema-sync service logs before retrying the operation.
 - In Docker Compose, remember to start the `schema-sync` profile when enabling
   schema sync.
 - Check `GET /readyz` on the service first. If it returns `503`, the service
   metadata SQLite database is not ready.
+- If apply reports that the outcome could not be confirmed, inspect the latest
+  remote audit before retrying. The main app treats apply as a high-trust
+  operation and will not auto-retry it.
 - In containers, keep the service URL on `http://schema-sync-adapter:4020`.
   Use `http://localhost:4020` only when the main app runs outside Docker.
 
