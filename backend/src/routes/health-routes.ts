@@ -12,6 +12,8 @@ const resolveReadiness = async (context: AppContext) => {
             status: schemaSync.status,
             serviceUrl: schemaSync.serviceUrl,
             error: schemaSync.error,
+            errorCode: schemaSync.errorCode,
+            checkedAt: schemaSync.checkedAt,
         },
     } as const;
 
@@ -75,6 +77,8 @@ export const registerHealthRoutes = (
                     enabled: context.env.schemaSyncEnabled,
                     status: readiness.checks.schemaSyncService.status,
                     error: readiness.checks.schemaSyncService.error,
+                    errorCode: readiness.checks.schemaSyncService.errorCode,
+                    checkedAt: readiness.checks.schemaSyncService.checkedAt,
                 },
             },
             auth: {

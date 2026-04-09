@@ -99,6 +99,21 @@ export const buildApp = (options?: {
         }
 
         if (error instanceof AppError) {
+            if (
+                error.statusCode >= 500 ||
+                error.code?.startsWith('schema_sync')
+            ) {
+                request.log.warn(
+                    {
+                        appError: {
+                            code: error.code ?? null,
+                            statusCode: error.statusCode,
+                            message: error.message,
+                        },
+                    },
+                    'Request failed with an application error'
+                );
+            }
             return reply.code(error.statusCode).send({
                 error: error.message,
                 code: error.code,
