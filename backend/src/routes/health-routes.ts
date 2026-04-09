@@ -18,7 +18,7 @@ const resolveReadiness = async (context: AppContext) => {
     return {
         ok:
             checks.appDatabase.status === 'up' &&
-            (checks.schemaSyncService.status === 'up' ||
+            (checks.schemaSyncService.status === 'ready' ||
                 checks.schemaSyncService.status === 'disabled'),
         checks,
     };

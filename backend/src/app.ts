@@ -21,6 +21,7 @@ import {
     isShareTokenApiRoute,
     resolveRequestShareToken,
 } from './utils/request-share-token.js';
+import { setRequestContext } from './utils/request-context.js';
 import { AppError } from './utils/app-error.js';
 
 export const buildApp = (options?: {
@@ -40,6 +41,9 @@ export const buildApp = (options?: {
         appRepository: options?.appRepository,
         oidcProvider: options?.oidcProvider,
         schemaSyncClient: options?.schemaSyncClient,
+        schemaSyncClientLogger: app.log.child({
+            component: 'schema-sync-client',
+        }),
     });
 
     app.register(cors, {
@@ -49,6 +53,7 @@ export const buildApp = (options?: {
     app.register(cookie);
 
     app.addHook('onRequest', async (request, reply) => {
+        setRequestContext({ requestId: request.id });
         reply.header('X-Request-Id', request.id);
         request.auth = await context.authService.authenticateRequest(request);
         const requestPath = request.url.split('?')[0];

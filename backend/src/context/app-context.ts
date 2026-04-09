@@ -13,6 +13,7 @@ import { PersistenceService } from '../services/persistence-service.js';
 import {
     createSchemaSyncClient,
     type SchemaSyncClient,
+    type SchemaSyncClientLogger,
 } from '../schema-sync/client.js';
 
 export interface AppContext {
@@ -36,6 +37,7 @@ export const createAppContext = (
         appRepository?: AppRepository;
         oidcProvider?: OidcClientProvider;
         schemaSyncClient?: SchemaSyncClient;
+        schemaSyncClientLogger?: SchemaSyncClientLogger;
     }
 ): AppContext => {
     const appRepository =
@@ -49,7 +51,10 @@ export const createAppContext = (
         options?.oidcProvider
     );
     const schemaSyncClient =
-        options?.schemaSyncClient ?? createSchemaSyncClient(env);
+        options?.schemaSyncClient ??
+        createSchemaSyncClient(env, {
+            logger: options?.schemaSyncClientLogger,
+        });
     const diagramCollaborationBroker = new DiagramCollaborationBroker();
     const adminService = new AdminService(appRepository, authService, env);
     const persistenceService = new PersistenceService(
