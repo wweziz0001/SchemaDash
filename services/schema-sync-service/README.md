@@ -21,6 +21,10 @@ There is no supported embedded in-process mode in the main app.
 
 ## Main App Configuration
 
+For the full stack, use the repository root
+[`/.env.example`](/root/data/SchemaDash/.env.example) as the canonical env
+reference.
+
 Configure the main SchemaDash app with:
 
 - `SCHEMADASH_SCHEMA_SYNC_ENABLED=true`
@@ -30,6 +34,10 @@ If `SCHEMADASH_SCHEMA_SYNC_ENABLED=false`, the main app keeps running without
 schema sync.
 
 ## Service Configuration
+
+For service-only local runs, use
+[`services/schema-sync-service/.env.example`](/root/data/SchemaDash/services/schema-sync-service/.env.example)
+as the focused service-local reference.
 
 The service reads these variables:
 
