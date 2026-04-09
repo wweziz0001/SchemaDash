@@ -3,8 +3,10 @@ FROM node:24-bookworm-slim AS builder
 WORKDIR /usr/src/app
 
 COPY package.json package-lock.json ./
+COPY frontend/package.json ./frontend/package.json
 COPY packages/schema-sync-core/package.json ./packages/schema-sync-core/package.json
 COPY backend/package.json ./backend/package.json
+COPY services/schema-sync-service/package.json ./services/schema-sync-service/package.json
 
 RUN npm ci
 
