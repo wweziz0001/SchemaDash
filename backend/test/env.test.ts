@@ -23,6 +23,7 @@ const createEnvInput = (overrides: NodeJS.ProcessEnv = {}) => {
         CHARTDB_SECRET_KEY: 'development-secret-key',
         CHARTDB_DATA_DIR: dataDir,
         CHARTDB_AUTH_MODE: 'disabled',
+        SCHEMADASH_SCHEMA_SYNC_ENABLED: 'false',
         ...overrides,
     };
 };
@@ -57,6 +58,34 @@ describe('parseServerEnv', () => {
         expect(env.bootstrapSetupCodeTtlMs).toBeGreaterThan(0);
         expect(env.bootstrapSetupCodeMaxAttempts).toBeGreaterThan(0);
         expect(env.trustProxy).toBe(false);
+        expect(env.schemaSyncEnabled).toBe(false);
+        expect(env.schemaSyncMode).toBe('disabled');
+        expect(env.schemaSyncServiceUrl).toBeNull();
+    });
+
+    it('requires a service url when standalone schema sync is enabled', () => {
+        expect(() =>
+            parseServerEnv(
+                createEnvInput({
+                    SCHEMADASH_SCHEMA_SYNC_ENABLED: 'true',
+                })
+            )
+        ).toThrow(
+            /SCHEMADASH_SCHEMA_SYNC_SERVICE_URL must be set when SCHEMADASH_SCHEMA_SYNC_ENABLED=true/
+        );
+    });
+
+    it('parses the standalone schema sync service url when enabled', () => {
+        const env = parseServerEnv(
+            createEnvInput({
+                SCHEMADASH_SCHEMA_SYNC_ENABLED: 'true',
+                SCHEMADASH_SCHEMA_SYNC_SERVICE_URL: 'http://localhost:4020',
+            })
+        );
+
+        expect(env.schemaSyncEnabled).toBe(true);
+        expect(env.schemaSyncMode).toBe('external-service');
+        expect(env.schemaSyncServiceUrl).toBe('http://localhost:4020');
     });
 
     it('requires env-assisted password bootstrap credentials to be set together', () => {

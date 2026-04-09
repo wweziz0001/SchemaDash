@@ -1,23 +1,18 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-    generateMigrationSql,
     hashCanonicalSchema,
-    type AuditRecord,
     type CanonicalSchema,
+    type ChangePlan,
 } from '@schemadash/schema-sync-core';
 import { AppRepository } from '../src/repositories/app-repository.js';
 import { DiagramWorkflowRepository } from '../src/repositories/diagram-workflow-repository.js';
-import { MetadataRepository } from '../src/repositories/metadata-repository.js';
-import type { SchemaSyncAdapterRegistry } from '../src/engines/registry.js';
 import { DiagramMigrationService } from '../src/services/diagram-migration-service.js';
-import type { ApplyService } from '../src/services/apply-service.js';
-import type { ConnectionsService } from '../src/services/connections-service.js';
 import { PersistenceService } from '../src/services/persistence-service.js';
+import type { SchemaSyncClient } from '../src/schema-sync/client.js';
 
-const mockedIntrospectPostgresSchema = vi.fn();
 const tempDirs: string[] = [];
 
 const baselineSchema: CanonicalSchema = {
@@ -71,6 +66,44 @@ const targetSchema: CanonicalSchema = {
     ],
 };
 
+const createPlan = (): ChangePlan => ({
+    id: 'plan-1',
+    baselineSnapshotId: 'baseline-snapshot-1',
+    connectionId: 'connection-1',
+    engine: 'postgresql',
+    baselineFingerprint: hashCanonicalSchema(baselineSchema),
+    targetFingerprint: hashCanonicalSchema(targetSchema),
+    changes: [
+        {
+            id: 'add-column:users.display_name',
+            kind: 'add_column',
+            tableId: 'users',
+            schemaName: 'public',
+            tableName: 'users',
+            column: {
+                id: 'users.display_name',
+                name: 'display_name',
+                dataType: 'text',
+                nullable: true,
+            },
+        },
+    ],
+    warnings: [],
+    sqlStatements: [
+        'ALTER TABLE "public"."users" ADD COLUMN "display_name" text;',
+    ],
+    summary: {
+        totalChanges: 1,
+        safeChanges: 1,
+        warningChanges: 0,
+        destructiveChanges: 0,
+        blockedChanges: 0,
+    },
+    requiresConfirmation: false,
+    blocked: false,
+    createdAt: '2026-03-29T18:00:00.000Z',
+});
+
 const createHarness = (options?: { includeWorkflowState?: boolean }) => {
     const dataDir = mkdtempSync(
         path.join(os.tmpdir(), 'schemadash-migration-service-')
@@ -78,10 +111,8 @@ const createHarness = (options?: { includeWorkflowState?: boolean }) => {
     tempDirs.push(dataDir);
 
     const appDbPath = path.join(dataDir, 'app.sqlite');
-    const metadataDbPath = path.join(dataDir, 'metadata.sqlite');
     const appRepository = new AppRepository(appDbPath);
     const workflowRepository = new DiagramWorkflowRepository(appDbPath);
-    const metadataRepository = new MetadataRepository(metadataDbPath);
     const persistenceService = new PersistenceService(appRepository, {
         defaultOwnerName: 'Test Owner',
         defaultProjectName: 'Test Project',
@@ -95,23 +126,15 @@ const createHarness = (options?: { includeWorkflowState?: boolean }) => {
             name: 'Development Diagram',
             databaseType: 'postgresql',
             tables: [{ id: 'dev-users', name: 'users' }],
+            schemaSync: {
+                connectionId: 'connection-1',
+                baselineSnapshotId: 'baseline-snapshot-1',
+                baselineFingerprint: hashCanonicalSchema(baselineSchema),
+                importedSchemas: ['public'],
+            },
             createdAt: '2026-03-28T10:00:00.000Z',
             updatedAt: '2026-03-28T10:00:00.000Z',
         },
-    });
-
-    metadataRepository.putConnection({
-        id: 'connection-1',
-        name: 'Warehouse',
-        engine: 'postgresql',
-        defaultSchemas: ['public'],
-        host: 'localhost',
-        port: 5432,
-        database: 'warehouse',
-        username: 'postgres',
-        secretCiphertext: 'ciphertext',
-        createdAt: '2026-03-28T09:00:00.000Z',
-        updatedAt: '2026-03-28T09:00:00.000Z',
     });
 
     if (options?.includeWorkflowState !== false) {
@@ -149,58 +172,88 @@ const createHarness = (options?: { includeWorkflowState?: boolean }) => {
         });
     }
 
-    const connectionsService = {
+    const plan = createPlan();
+    const schemaSyncClient = {
+        config: {
+            enabled: true,
+            mode: 'external-service',
+            serviceUrl: 'http://schema-sync.test',
+        },
+        getReadiness: vi.fn().mockResolvedValue({
+            enabled: true,
+            mode: 'external-service',
+            serviceUrl: 'http://schema-sync.test',
+            status: 'up',
+            ok: true,
+            error: null,
+        }),
+        getConnection: vi.fn().mockResolvedValue({
+            id: 'connection-1',
+            name: 'Warehouse',
+            engine: 'postgresql',
+            defaultSchemas: ['public'],
+            host: 'localhost',
+            port: 5432,
+            database: 'warehouse',
+            username: 'postgres',
+            createdAt: '2026-03-28T09:00:00.000Z',
+            updatedAt: '2026-03-28T09:00:00.000Z',
+        }),
+        diffSchema: vi.fn().mockResolvedValue({ plan }),
         testConnection: vi.fn().mockResolvedValue({
             ok: true,
             databaseName: 'warehouse',
             availableSchemas: ['public'],
         }),
-        getDecryptedSecret: vi.fn().mockReturnValue({
-            host: 'localhost',
-            port: 5432,
-            database: 'warehouse',
-            username: 'postgres',
-            password: 'postgres',
-            sslMode: 'disable',
+        importLiveSchema: vi.fn().mockResolvedValue({
+            connection: {
+                id: 'connection-1',
+                name: 'Warehouse',
+                engine: 'postgresql',
+                defaultSchemas: ['public'],
+                host: 'localhost',
+                port: 5432,
+                database: 'warehouse',
+                username: 'postgres',
+                createdAt: '2026-03-28T09:00:00.000Z',
+                updatedAt: '2026-03-28T09:00:00.000Z',
+            },
+            snapshotId: 'live-check-1',
+            fingerprint: hashCanonicalSchema(baselineSchema),
+            canonicalSchema: baselineSchema,
         }),
-    } as unknown as ConnectionsService;
-    const applyService = {
-        applyPlan: vi.fn(),
-    } as unknown as ApplyService;
-    const adapterRegistry = {
-        resolve: vi.fn().mockReturnValue({
-            engine: 'postgresql',
-            renderPlan: ({
-                changes,
-                targetSchema: renderedTargetSchema,
-            }: {
-                changes: Parameters<typeof generateMigrationSql>[0];
-                targetSchema: Parameters<typeof generateMigrationSql>[1];
-            }) => generateMigrationSql(changes, renderedTargetSchema),
-            introspectSchema: mockedIntrospectPostgresSchema,
-        }),
-    } as unknown as SchemaSyncAdapterRegistry;
+        applySchema: vi.fn(),
+        getLatestAuditForChangePlan: vi.fn().mockResolvedValue(null),
+        getSnapshot: vi.fn().mockResolvedValue(null),
+        listConnections: vi.fn(),
+        createConnection: vi.fn(),
+        updateConnection: vi.fn(),
+        deleteConnection: vi.fn(),
+        getApplyJob: vi.fn(),
+        getAudit: vi.fn(),
+    } as unknown as SchemaSyncClient;
     const migrationService = new DiagramMigrationService(
         workflowRepository,
-        metadataRepository,
         persistenceService,
-        connectionsService,
-        applyService,
-        adapterRegistry
+        schemaSyncClient
     );
 
     return {
         bootstrap,
         workflowRepository,
-        metadataRepository,
         migrationService,
-        applyPlan: vi.mocked(applyService.applyPlan),
+        schemaSyncClient: {
+            diffSchema: vi.mocked(schemaSyncClient.diffSchema),
+            testConnection: vi.mocked(schemaSyncClient.testConnection),
+            importLiveSchema: vi.mocked(schemaSyncClient.importLiveSchema),
+            applySchema: vi.mocked(schemaSyncClient.applySchema),
+            getLatestAuditForChangePlan: vi.mocked(
+                schemaSyncClient.getLatestAuditForChangePlan
+            ),
+            getSnapshot: vi.mocked(schemaSyncClient.getSnapshot),
+        },
     };
 };
-
-beforeEach(() => {
-    mockedIntrospectPostgresSchema.mockReset();
-});
 
 afterEach(() => {
     while (tempDirs.length > 0) {
@@ -212,12 +265,12 @@ afterEach(() => {
 });
 
 describe('diagram migration service', () => {
-    it('hydrates missing workflow state from the migration fallback payload', () => {
+    it('hydrates missing workflow state from the migration fallback payload', async () => {
         const { workflowRepository, migrationService } = createHarness({
             includeWorkflowState: false,
         });
 
-        const preview = migrationService.previewMigration('diagram-1', {
+        const preview = await migrationService.previewMigration('diagram-1', {
             targetSchema,
             expectedLiveSnapshotId: 'workflow-live-1',
             workflowFallback: {
@@ -235,16 +288,6 @@ describe('diagram migration service', () => {
         });
 
         expect(preview.plan).not.toBeNull();
-        expect(preview.issues).not.toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    code: 'migration_connection_missing',
-                }),
-                expect.objectContaining({
-                    code: 'migration_live_snapshot_missing',
-                }),
-            ])
-        );
         expect(workflowRepository.getState('diagram-1')?.connectionId).toBe(
             'connection-1'
         );
@@ -253,15 +296,21 @@ describe('diagram migration service', () => {
         );
     });
 
-    it('updates the workflow live snapshot after a successful apply', async () => {
-        const {
-            workflowRepository,
-            metadataRepository,
-            migrationService,
-            applyPlan,
-        } = createHarness();
-        mockedIntrospectPostgresSchema.mockResolvedValue(baselineSchema);
-        metadataRepository.putSnapshot({
+    it('validates and applies through the schema sync client, then updates the workflow live snapshot', async () => {
+        const { workflowRepository, migrationService, schemaSyncClient } =
+            createHarness();
+        schemaSyncClient.applySchema.mockResolvedValue({
+            jobId: 'job-1',
+            status: 'succeeded',
+            executedStatements: [
+                'ALTER TABLE "public"."users" ADD COLUMN "display_name" text;',
+            ],
+            logs: ['Transaction committed'],
+            error: null,
+            auditId: 'audit-1',
+            postApplySnapshotId: 'post-apply-1',
+        });
+        schemaSyncClient.getSnapshot.mockResolvedValue({
             id: 'post-apply-1',
             connectionId: 'connection-1',
             kind: 'post_apply',
@@ -269,17 +318,6 @@ describe('diagram migration service', () => {
             importedSchemas: ['public'],
             schema: targetSchema,
             createdAt: '2026-03-29T18:05:00.000Z',
-        });
-        applyPlan.mockResolvedValue({
-            jobId: 'job-1',
-            status: 'succeeded',
-            executedStatements: [
-                'ALTER TABLE "users" ADD COLUMN "display_name" text;',
-            ],
-            logs: ['Transaction committed'],
-            error: null,
-            auditId: 'audit-1',
-            postApplySnapshotId: 'post-apply-1',
         });
 
         const result = await migrationService.applyMigration(
@@ -295,6 +333,22 @@ describe('diagram migration service', () => {
             'admin:owner@example.com'
         );
 
+        expect(schemaSyncClient.diffSchema).toHaveBeenCalled();
+        expect(schemaSyncClient.testConnection).toHaveBeenCalledWith({
+            connectionId: 'connection-1',
+        });
+        expect(schemaSyncClient.importLiveSchema).toHaveBeenCalledWith({
+            connectionId: 'connection-1',
+            schemas: ['public'],
+        });
+        expect(schemaSyncClient.applySchema).toHaveBeenCalledWith({
+            planId: 'plan-1',
+            actor: 'admin:owner@example.com',
+            destructiveApproval: {
+                confirmed: true,
+                confirmationText: '',
+            },
+        });
         expect(result.result.status).toBe('succeeded');
         expect(result.result.updatedLiveSnapshotId).toBeTruthy();
         expect(workflowRepository.getState('diagram-1')?.liveFingerprint).toBe(
@@ -306,31 +360,29 @@ describe('diagram migration service', () => {
         ).toEqual(targetSchema.tables);
     });
 
-    it('returns stored audit logs when apply fails', async () => {
-        const { metadataRepository, migrationService, applyPlan } =
-            createHarness();
-        mockedIntrospectPostgresSchema.mockResolvedValue(baselineSchema);
-        applyPlan.mockImplementation(async ({ planId }) => {
-            const plan = metadataRepository.getChangePlan(planId)!;
-            const audit: AuditRecord = {
-                id: 'audit-1',
-                actor: 'admin:owner@example.com',
-                connectionId: 'connection-1',
-                baselineSnapshotId: plan.baselineSnapshotId,
-                targetSnapshotId: null,
-                preApplySnapshotId: null,
-                postApplySnapshotId: null,
-                changePlanId: plan.id,
-                sqlStatements: plan.sqlStatements,
-                warnings: plan.warnings,
-                status: 'failed',
-                logs: ['Apply requested', 'Transaction rolled back'],
-                error: 'Constraint validation failed.',
-                createdAt: '2026-03-29T18:10:00.000Z',
-                updatedAt: '2026-03-29T18:10:00.000Z',
-            };
-            metadataRepository.putAudit(audit);
-            throw new Error('Constraint validation failed.');
+    it('returns stored remote audit logs when apply fails', async () => {
+        const { migrationService, schemaSyncClient } = createHarness();
+        schemaSyncClient.applySchema.mockRejectedValue(
+            new Error('Constraint validation failed.')
+        );
+        schemaSyncClient.getLatestAuditForChangePlan.mockResolvedValue({
+            id: 'audit-1',
+            actor: 'admin:owner@example.com',
+            connectionId: 'connection-1',
+            baselineSnapshotId: 'baseline-snapshot-1',
+            targetSnapshotId: null,
+            preApplySnapshotId: null,
+            postApplySnapshotId: null,
+            changePlanId: 'plan-1',
+            sqlStatements: [
+                'ALTER TABLE "public"."users" ADD COLUMN "display_name" text;',
+            ],
+            warnings: [],
+            status: 'failed',
+            logs: ['Apply requested', 'Transaction rolled back'],
+            error: 'Constraint validation failed.',
+            createdAt: '2026-03-29T18:10:00.000Z',
+            updatedAt: '2026-03-29T18:10:00.000Z',
         });
 
         const result = await migrationService.applyMigration(
